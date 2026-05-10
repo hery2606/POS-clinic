@@ -1,6 +1,5 @@
 import type { LoginCredentials } from '../types/auth.types';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, Lock, Info, User, CheckCircle2 } from 'lucide-react';
@@ -16,7 +15,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   isLoading = false, 
   error = null 
 }) => {
-  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: '',
@@ -64,7 +62,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     if (!validateForm()) return;
     try {
       await onSubmit(credentials);
-      navigate('/kasir');
     } catch (err) {
       console.error('Login failed:', err);
     }
@@ -76,13 +73,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <div className="w-full max-w-5xl bg-white rounded-[20px] shadow-xl overflow-hidden grid grid-cols-1 lg:grid-cols-10 min-h-[600px] border border-[#DFE6EB]">
         
         {/* LEFT SIDE - BRANDING (4 COLUMNS) */}
-        <div className="lg:col-span-4 bg-[#1B9C90] p-10 flex flex-col justify-between relative overflow-hidden">
+        <div className="lg:col-span-4 bg-[#25323C] p-10 flex flex-col justify-between relative overflow-hidden">
           <div className="relative z-10">
             {/* Logo */}
             <div className="flex items-center gap-3 mb-10">
               <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                <div className="w-6 h-6 border-2 border-[#1B9C90] rounded-full flex items-center justify-center">
-                  <span className="text-[#1B9C90] font-bold text-lg">+</span>
+                <div className="w-6 h-6 border-2 border-[#25323C] rounded-full flex items-center justify-center">
+                  <span className="text-[#25323C] font-bold text-lg">+</span>
                 </div>
               </div>
               <span className="font-bold text-white text-xl tracking-tight">KLINIK PAYMENT</span>
@@ -229,8 +226,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             
             {/* Demo Button Container */}
             <div className="mt-6 flex flex-wrap justify-center gap-2">
-               <button onClick={() => handleDemoCredentialClick('admin@klinikbanani.com', 'admin123')} className="text-[10px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tighter border border-[#DFE6EB]">Login Admin</button>
-               <button onClick={() => handleDemoCredentialClick('kasir@klinikbanani.com', 'kasir123')} className="text-[10px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tighter border border-[#DFE6EB]">Login Kasir</button>
+               <button onClick={() => handleDemoCredentialClick('admin@klinik.com', 'admin123')} className="text-[10px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tighter border border-[#DFE6EB]">Login Admin</button>
+               <button onClick={() => handleDemoCredentialClick('kasir@klinik.com', 'kasir123')} className="text-[10px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tighter border border-[#DFE6EB]">Login Kasir</button>
             </div>
           </div>
         </div>

@@ -15,4 +15,14 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://midtrans-backend-eight.vercel.app',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
 })

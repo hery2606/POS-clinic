@@ -56,7 +56,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <div className="flex items-center gap-3 px-2 py-3">
+        <div className="flex items-center gap-3 px-2 py-3 border-b-2">
           <div className="flex items-center justify-center bg-[#29B5A8] text-primary-foreground rounded-lg h-10 w-10">
             <HeartHandshakeIcon className="h-6 w-6" />
           </div>
