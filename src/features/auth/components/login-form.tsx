@@ -68,7 +68,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FEFC] flex items-center justify-center p-6 font-sans">
+    <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6 font-sans">
       {/* MAIN CARD CONTAINER */}
       <div className="w-full max-w-5xl bg-white rounded-[20px] shadow-xl overflow-hidden grid grid-cols-1 lg:grid-cols-10 min-h-[600px] border border-[#DFE6EB]">
         
@@ -92,7 +92,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </div>
 
             {/* Heading */}
-            <h1 className="text-4xl font-extrabold text-white mb-6 leading-[1.2]">
+            <h1 className="text-4xl font-bold text-white mb-6 leading-[1.2]">
               Kelola Klinik & <br /> Apotek Lebih <br /> Cerdas.
             </h1>
 
@@ -120,7 +120,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           <div className="max-w-md mx-auto w-full">
             {/* Header */}
             <div className="mb-10 text-left">
-              <h2 className="text-4xl font-black text-[#13222D] mb-4">Selamat Datang</h2>
+              <h2 className="text-4xl font-bold text-[#13222D] mb-4">Selamat Datang</h2>
               <p className="text-[#67737C] font-medium text-sm leading-relaxed">
                 Silakan masukkan detail akun Anda untuk mengakses sistem Banani.
               </p>

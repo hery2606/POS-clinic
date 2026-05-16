@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Filter, X, Check } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 interface FilterTransactionProps {
@@ -15,10 +15,8 @@ interface FilterTransactionProps {
 }
 
 export interface FilterState {
-  dateRange: 'today' | 'week' | 'month' | 'custom';
-  status: string[];
-  type: string[];
-  search?: string;
+  statuses: string[];
+  types: string[];
 }
 
 const transactionTypes = [
@@ -28,180 +26,128 @@ const transactionTypes = [
 ];
 
 const transactionStatus = [
-  { id: 'lunas', label: 'Lunas', color: 'bg-emerald-100', textColor: 'text-emerald-600' },
-  { id: 'menunggu', label: 'Menunggu', color: 'bg-orange-100', textColor: 'text-orange-600' },
-  { id: 'dibatalkan', label: 'Dibatalkan', color: 'bg-red-100', textColor: 'text-red-600' },
-];
-
-const dateRangeOptions = [
-  { value: 'today', label: 'Hari Ini' },
-  { value: 'week', label: 'Minggu Ini' },
-  { value: 'month', label: 'Bulan Ini' },
-  { value: 'custom', label: 'Custom' },
+  { id: 'lunas', label: 'Lunas' },
+  { id: 'menunggu', label: 'Menunggu' },
+  { id: 'dibatalkan', label: 'Dibatalkan' },
 ];
 
 export const FilterTransaction = ({ onFilterChange }: FilterTransactionProps) => {
-  const [filters, setFilters] = useState<FilterState>({
-    dateRange: 'today',
-    status: [],
-    type: [],
+  const [selectedFilters, setSelectedFilters] = useState<FilterState>({
+    statuses: [],
+    types: [],
   });
 
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleStatusChange = (statusId: string) => {
-    const newFilters: FilterState = {
-      ...filters,
-      status: filters.status.includes(statusId)
-        ? filters.status.filter((s) => s !== statusId)
-        : [...filters.status, statusId],
-    };
-    setFilters(newFilters);
-    onFilterChange?.(newFilters);
+  const toggleFilter = (type: keyof FilterState, value: string) => {
+    setSelectedFilters((prev) => {
+      const current = prev[type];
+      const updated = current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value];
+      
+      const newFilters = { ...prev, [type]: updated };
+      if (onFilterChange) onFilterChange(newFilters);
+      return newFilters;
+    });
   };
 
-  const handleTypeChange = (typeId: string) => {
-    const newFilters: FilterState = {
-      ...filters,
-      type: filters.type.includes(typeId)
-        ? filters.type.filter((t) => t !== typeId)
-        : [...filters.type, typeId],
-    };
-    setFilters(newFilters);
-    onFilterChange?.(newFilters);
+  const resetFilters = () => {
+    const cleared = { statuses: [], types: [] };
+    setSelectedFilters(cleared);
+    if (onFilterChange) onFilterChange(cleared);
   };
 
-  const handleDateRangeChange = (value: string) => {
-    const newFilters: FilterState = {
-      ...filters,
-      dateRange: value as 'today' | 'week' | 'month' | 'custom',
-    };
-    setFilters(newFilters);
-    onFilterChange?.(newFilters);
-  };
-
-  const handleResetFilters = () => {
-    const resetFilters: FilterState = {
-      dateRange: 'today',
-      status: [],
-      type: [],
-    };
-    setFilters(resetFilters);
-    onFilterChange?.(resetFilters);
-  };
-
-  const activeFilterCount = filters.status.length + filters.type.length + (filters.dateRange !== 'today' ? 1 : 0);
+  const activeCount = 
+    selectedFilters.statuses.length + 
+    selectedFilters.types.length;
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
+        <Button 
+          variant="outline" 
           className={cn(
-            "rounded-full h-12 px-6 gap-2 border-slate-200 font-bold text-slate-700 hover:bg-slate-50 transition-all relative",
-            activeFilterCount > 0 && "ring-2 ring-[#29B5A8] ring-offset-2"
+            "h-11 px-4 gap-2 border-[#DFE6EB] font-bold text-[#13222D] rounded-md transition-all",
+            activeCount > 0 ? "bg-[#DFF6F2] border-[#1B9C90]/30 text-[#1B9C90] hover:bg-[#DFF6F2]/80" : "hover:bg-[#EFF4F8]"
           )}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          Filter
-          {activeFilterCount > 0 && (
-            <Badge className="ml-1 bg-[#29B5A8] text-white text-xs rounded-full">
-              {activeFilterCount}
+          <Filter className={cn("w-4 h-4", activeCount > 0 ? "text-[#1B9C90]" : "text-[#67737C]")} />
+          <span>Filter</span>
+          {activeCount > 0 && (
+            <Badge className="ml-1 bg-[#1B9C90] text-white hover:bg-[#1B9C90] h-5 min-w-5 px-1 rounded-full flex items-center justify-center text-[10px] font-extrabold border-none shadow-none">
+              {activeCount}
             </Badge>
           )}
         </Button>
       </DropdownMenuTrigger>
-
-      <DropdownMenuContent className="w-80 p-0 border-slate-200 rounded-2xl" align="end">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-linear-to-r from-slate-50 to-white">
-          <h3 className="text-sm font-bold text-slate-900">Filter Transaksi</h3>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+      
+      <DropdownMenuContent className="w-80 bg-white rounded-[20px] border border-[#DFE6EB] p-5 shadow-xl space-y-5 z-50" align="end">
+        {/* HEADER MINI */}
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-bold text-[#13222D]">Filter Transaksi</h4>
+          {activeCount > 0 && (
+            <Button 
+              variant="ghost" 
+              onClick={resetFilters}
+              className="h-auto p-0 text-xs font-bold text-red-500 hover:text-red-600 hover:bg-transparent flex items-center gap-1"
+            >
+              <X className="w-3 h-3" />
+              Atur Ulang
+            </Button>
+          )}
         </div>
 
-        {/* Date Range Filter */}
-        <div className="px-6 py-4 border-b border-slate-100">
-          <div className="text-xs font-bold text-slate-900 mb-3">Rentang Waktu</div>
-          <div className="space-y-1">
-            {dateRangeOptions.map((option) => (
-              <DropdownMenuCheckboxItem
-                key={option.value}
-                checked={filters.dateRange === option.value}
-                onCheckedChange={() => handleDateRangeChange(option.value)}
-                className="text-sm cursor-pointer hover:bg-slate-50 py-2 px-2 rounded-lg transition-colors"
-              >
-                {option.label}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </div>
-        </div>
+        <Separator className="bg-[#EFF4F8]" />
 
-        {/* Status Filter */}
-        <div className="px-6 py-4 border-b border-slate-100">
-          <div className="text-xs font-bold text-slate-900 mb-3">Status</div>
-          <div className="space-y-1">
-            {transactionStatus.map((status) => (
-              <DropdownMenuCheckboxItem
-                key={status.id}
-                checked={filters.status.includes(status.id)}
-                onCheckedChange={() => handleStatusChange(status.id)}
-                className="text-sm cursor-pointer hover:bg-slate-50 py-2 px-2 rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Badge
+        {/* SECTION 1: STATUS */}
+        <div className="space-y-2.5">
+          <span className="text-[10px] font-bold text-[#67737C] uppercase tracking-wider block">Status Transaksi</span>
+          <div className="flex flex-wrap gap-2">
+            {transactionStatus.map((status) => {
+              const isSelected = selectedFilters.statuses.includes(status.id);
+              return (
+                <button
+                  key={status.id}
+                  onClick={() => toggleFilter('statuses', status.id)}
                   className={cn(
-                    status.color,
-                    status.textColor,
-                    'rounded-full font-medium border-none text-xs px-2 py-0.5'
+                    "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1",
+                    isSelected 
+                      ? "bg-[#1B9C90] border-none text-white font-bold" 
+                      : "bg-white border-[#DFE6EB] text-[#67737C] hover:border-[#67737C]"
                   )}
                 >
+                  {isSelected && <Check className="w-3 h-3 shrink-0" />}
                   {status.label}
-                </Badge>
-              </DropdownMenuCheckboxItem>
-            ))}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Transaction Type Filter */}
-        <div className="px-6 py-4 border-b border-slate-100">
-          <div className="text-xs font-bold text-slate-900 mb-3">Jenis Transaksi</div>
-          <div className="space-y-1">
-            {transactionTypes.map((type) => (
-              <DropdownMenuCheckboxItem
-                key={type.id}
-                checked={filters.type.includes(type.id)}
-                onCheckedChange={() => handleTypeChange(type.id)}
-                className="text-sm cursor-pointer hover:bg-slate-50 py-2 px-2 rounded-lg transition-colors"
-              >
-                {type.label}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </div>
-        </div>
+        <Separator className="bg-[#EFF4F8]" />
 
-        {/* Footer */}
-        <div className="flex gap-2 p-4 border-t border-slate-100 bg-slate-50/50">
-          <Button
-            variant="outline"
-            onClick={handleResetFilters}
-            size="sm"
-            className="flex-1 h-9 rounded-lg border-slate-200 font-semibold text-slate-700 hover:bg-slate-100 text-xs"
-          >
-            Reset
-          </Button>
-          <Button
-            onClick={() => setIsOpen(false)}
-            size="sm"
-            className="flex-1 h-9 rounded-lg bg-[#29B5A8] text-white font-semibold hover:bg-[#1e9c95] transition-colors shadow-sm text-xs"
-          >
-            Terapkan
-          </Button>
+        {/* SECTION 2: TRANSACTION TYPE */}
+        <div className="space-y-2.5">
+          <span className="text-[10px] font-bold text-[#67737C] uppercase tracking-wider block">Jenis Transaksi</span>
+          <div className="flex flex-wrap gap-2">
+            {transactionTypes.map((type) => {
+              const isSelected = selectedFilters.types.includes(type.id);
+              return (
+                <button
+                  key={type.id}
+                  onClick={() => toggleFilter('types', type.id)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1",
+                    isSelected 
+                      ? "bg-[#1B9C90] border-none text-white font-bold" 
+                      : "bg-white border-[#DFE6EB] text-[#67737C] hover:border-[#67737C]"
+                  )}
+                >
+                  {isSelected && <Check className="w-3 h-3 shrink-0" />}
+                  {type.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

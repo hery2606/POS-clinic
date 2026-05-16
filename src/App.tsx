@@ -9,12 +9,16 @@ import { DashboardLayout } from "@/features/kasir/layout/dashboard-layout";
 import { AnalitikLayout } from "@/features/analitik/layout/Analitik-layout";
 import { LoginPage } from "@/features/auth/page/login";
 import { AuthProvider } from "@/features/auth/context/auth-context";
+{/* KASIR*/}
 import { KasirPage } from "@/features/kasir/pages/Kasir";
-import { AnalitikDashboard } from "@/features/analitik/pages/AnalitikDashboard";
 import { RiwayatTransaksi } from "./features/kasir/pages/RiwayatTransaksi";
 import { DataPasien } from "./features/kasir/pages/DataPasien";
 import { Stok } from "./features/kasir/pages/Stok";
+import { SettingsPage } from "./features/kasir/pages/Pengaturan";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
+{/* ANALITIK*/}
+import { DashboardPage } from "@/features/analitik/pages/Dashboard";
+import {PasienPage} from "@/features/analitik/pages/Pasien";
 import { ROUTES } from "@/routes/routeConfig";
 
 function App() {
@@ -24,8 +28,6 @@ function App() {
         <Routes>
           {/* ROOT - Redirect ke login */}
           <Route path="/" element={<Navigate to={ROUTES.AUTH.LOGIN} replace />} />
-
-          {/* AUTH ROUTES */}
           <Route path={ROUTES.AUTH.LOGIN} element={<LoginPage />} />
 
           {/* ADMIN ROUTES */}
@@ -36,8 +38,15 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path={ROUTES.ADMIN.ANALYTICS} element={<AnalitikDashboard />} />
+            <Route path={ROUTES.ADMIN.DASHBOARD} element={<DashboardPage />} />
+            <Route path={ROUTES.ADMIN.PASIEN} element={<PasienPage />} />
+            <Route path={ROUTES.ADMIN.TRANSAKSI} element={<div className="p-6"><p>Halaman Riwayat Transaksi</p></div>} />
+            <Route path={ROUTES.ADMIN.SETTINGS} element={<div className="p-6"><p>Halaman Pengaturan</p></div>} />
+            <Route path={ROUTES.ADMIN.LAPORAN} element={<div className="p-6"><p>Halaman Laporan</p></div>} />
           </Route>
+
+
+
 
           {/* KASIR ROUTES */}
           <Route
@@ -51,17 +60,8 @@ function App() {
             <Route path={ROUTES.KASIR.RIWAYAT} element={<RiwayatTransaksi />} />
             <Route path={ROUTES.KASIR.PASIEN} element={<DataPasien />} />
             <Route path={ROUTES.KASIR.STOK} element={<Stok />} />
-            <Route
-              path={ROUTES.KASIR.PENGATURAN}
-              element={
-                <div className="p-6">
-                  <p>Halaman Pengaturan</p>
-                </div>
-              }
-            />
+            <Route path={ROUTES.KASIR.PENGATURAN} element={<SettingsPage/>} />
           </Route>
-
-          {/* FALLBACK - Route tidak ditemukan */}
           <Route path="*" element={<Navigate to={ROUTES.AUTH.LOGIN} replace />} />
         </Routes>
       </Router>

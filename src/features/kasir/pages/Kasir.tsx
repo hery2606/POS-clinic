@@ -3,10 +3,14 @@ import { Button } from '@/components/ui/button'
 import { BillingTable } from '@/features/kasir/components/billing/billing-table'
 import { PatientCard } from '@/features/kasir/components/billing/patient-card'
 import { PatientSearch } from '@/features/kasir/components/billing/patient-search'
+import { PatientQueue } from '@/features/kasir/components/billing/patient-queue'
 import { InsuranceSimulation } from '@/features/kasir/components/billing/insurance-simulation'
-import { BillingTablePharmacy } from '@/features/kasir/components/obat/BillingTablePharmacy'
-import MedicineSearch from '@/features/kasir/components/obat/MedicineSearch'
+import { BillingTablePharmacy } from '@/features/kasir/components/billing/obat/BillingTablePharmacy'
+import MedicineSearch from '@/features/kasir/components/billing/obat/MedicineSearch'
+import { BuyerNameInput } from '@/features/kasir/components/billing/buyer-name-input'
 import { useRightPanel } from '@/features/kasir/context/right-panel-context'
+import { patientsData, type Patient } from '@/features/kasir/data/patients'
+import { getBillingItemsByPatientId, type BillingItem } from '@/features/kasir/data/billing-items'
 import * as React from 'react'
 
 interface PharmacyItem {
@@ -20,14 +24,47 @@ interface PharmacyItem {
 export const KasirPage = () => {
   const [activeTab, setActiveTab] = React.useState<'medis' | 'obat'>('medis')
   const [pharmacyItems, setPharmacyItems] = React.useState<PharmacyItem[]>([])
+  const [buyerName, setBuyerName] = React.useState('')
+  const [searchValue, setSearchValue] = React.useState('')
+  const [queuePatients, setQueuePatients] = React.useState<Patient[]>(patientsData.slice(0, 3))
+  const [selectedPatient, setSelectedPatient] = React.useState<Patient | null>(queuePatients[0] || null)
+  const [billingItems, setBillingItems] = React.useState<BillingItem[]>(() => 
+    getBillingItemsByPatientId(queuePatients[0]?.id || null)
+  )
   const { setContent } = useRightPanel()
-  
-  // If InsuranceSimulation has no proper props typing, cast it to a component accepting props used below
+
+  // Generate transaction code
+  const generateTransactionCode = () => {
+    const timestamp = Date.now()
+    const random = Math.floor(Math.random() * 1000)
+    return `TXN${timestamp}${random}`
+  }
+
+  // Filter pasien berdasarkan search value
+  const filteredPatients = React.useMemo(() => {
+    if (!searchValue.trim()) return queuePatients
+    
+    const query = searchValue.toLowerCase()
+    return queuePatients.filter(patient => 
+      patient.name.toLowerCase().includes(query) ||
+      patient.registrationNo.toLowerCase().includes(query)
+    )
+  }, [queuePatients, searchValue])
+
+  // Update billing items ketika pasien berubah
+  React.useEffect(() => {
+    const items = getBillingItemsByPatientId(selectedPatient?.id || null)
+    setBillingItems(items)
+  }, [selectedPatient])
+
   const InsuranceSimulationComp = (InsuranceSimulation as unknown) as React.ComponentType<{
     total: number
     covered: number
     remainder: number
   }>
+
+  const calculateBillingTotal = () => 
+    billingItems.reduce((sum, item) => sum + item.total, 0)
 
   const handleAddMedicine = (medicine: any) => {
     const existingItem = pharmacyItems.find(item => item.id === medicine.id.toString())
@@ -57,47 +94,117 @@ export const KasirPage = () => {
   const calculatePharmacyTotal = () => 
     pharmacyItems.reduce((acc, item) => acc + (item.qty * item.price), 0)
 
+  const handleSelectPatient = (patient: Patient) => {
+    setSelectedPatient(patient)
+  }
+
+  const handleRemovePatientFromQueue = (patientId: string) => {
+    const filtered = queuePatients.filter(p => p.id !== patientId)
+    setQueuePatients(filtered)
+    if (selectedPatient?.id === patientId && filtered.length > 0) {
+      setSelectedPatient(filtered[0])
+    }
+  }
+
   const handlePaymentClick = () => {
+    const total = calculateBillingTotal()
     setContent('payment', { 
       source: 'kasir',
-      total: 220000,
-      patientName: 'Budi Santoso'
+      total: total,
+      patientName: selectedPatient?.name || 'Pasien'
     })
   }
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-300 mx-auto animate-in fade-in duration-500 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-      {/* 1. TOP SECTION: Search & Filter */}
+      {/* 1. TOP SECTION: Search & Filter / Buyer Name */}
       <section>
-        <PatientSearch activeTab={activeTab} onTabChange={setActiveTab} />
+        {activeTab === 'medis' ? (
+          <PatientSearch 
+            activeTab={activeTab} 
+            onTabChange={setActiveTab}
+            searchValue={searchValue}
+            onSearchChange={setSearchValue}
+            totalPatientsInQueue={queuePatients.length}
+            filteredCount={filteredPatients.length}
+          />
+        ) : (
+          <div className="flex items-center gap-4 w-full">
+            <div className="flex-1">
+              <BuyerNameInput 
+                value={buyerName}
+                onChange={setBuyerName}
+              />
+            </div>
+            {/* Toggle buttons tetap di sebelah kanan */}
+            <div className="bg-white border border-slate-200 p-1 rounded-full flex items-center shadow-sm">
+              <button
+                onClick={() => setActiveTab("medis")}
+                className={`px-6 py-2 rounded-full text-sm font-bold transition-all duration-200 ${
+                  activeTab === "medis"
+                    ? "bg-[#29B5A8] text-white shadow-md shadow-emerald-100"
+                    : "bg-transparent text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Pelayanan Medis
+              </button>
+              <button
+                onClick={() => setActiveTab("obat")}
+                className={`px-6 py-2 rounded-full text-sm font-bold transition-all duration-200 ${
+                  activeTab === "obat"
+                    ? "bg-[#29B5A8] text-white shadow-md shadow-emerald-100"
+                    : "bg-transparent text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Obat Saja
+              </button>
+            </div>
+          </div>
+        )}
       </section>
+
+      {/* 2. PATIENT QUEUE SECTION */}
+      {activeTab === 'medis' && (
+        <section>
+          <PatientQueue 
+            patients={filteredPatients} 
+            selectedPatientId={selectedPatient?.id || null}
+            onSelectPatient={handleSelectPatient}
+            onRemovePatient={handleRemovePatientFromQueue}
+            searchQuery={searchValue}
+            totalPatients={queuePatients.length}
+          />
+        </section>
+      )}
 
       {activeTab === 'medis' && (
         <div className="flex flex-col gap-6">
-          {/* 2. PATIENT INFO SECTION */}
-          <section>
-            <PatientCard
-              initials="BS"
-              name="Budi Santoso"
-              phone="+62 812-3456-7890"
-              insurance="BPJS Kesehatan"
-            />
-          </section>
+          {/* 3. PATIENT INFO SECTION */}
+          {selectedPatient && (
+            <section>
+              <PatientCard
+                initials={selectedPatient.initials}
+                name={selectedPatient.name}
+                phone={selectedPatient.phone}
+                insurance={selectedPatient.insurance}
+                registrationNo={selectedPatient.registrationNo}
+                age={selectedPatient.age}
+              />
+            </section>
+          )}
 
-          {/* 3. MAIN BILLING AREA: Grid Layout 2 Kolom */}
+          {/* 4. MAIN BILLING AREA: Grid Layout 2 Kolom */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
             {/* KOLOM KIRI: Table & Add Item (Cakupan 7/12 area) */}
             <div className="lg:col-span-8 space-y-4">
-              <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm overflow-hidden">
-                <BillingTable />
-                
-                {/* Footer Internal Tabel: Total Sementara */}
-                <div className="p-6 bg-slate-50/50 border-t flex justify-between items-center">
-                  <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Total Tagihan</span>
-                  <span className="text-2xl font-black text-slate-900">Rp 220.000</span>
-                </div>
-              </div>
+              <BillingTable 
+                items={billingItems}
+                onRemoveItem={(id) => setBillingItems(billingItems.filter(item => item.id !== id))}
+                onUpdateQty={(id, qty) => setBillingItems(billingItems.map(item => 
+                  item.id === id ? { ...item, qty, total: item.price * qty } : item
+                ))}
+              />
 
               {/* Button Tambah Item Manual */}
               <Button 
@@ -120,11 +227,18 @@ export const KasirPage = () => {
             {/* KOLOM KANAN: Simulation & Notification (Cakupan 4/12 area) */}
             <div className="lg:col-span-4 space-y-4">
               {/* Modul Simulasi Klaim Penjaminan */}
-              <InsuranceSimulationComp 
-                total={220000}
-                covered={150000}
-                remainder={70000}
-              />
+              {(() => {
+                const total = calculateBillingTotal()
+                const covered = Math.floor(total * 0.7)
+                const remainder = total - covered
+                return (
+                  <InsuranceSimulationComp 
+                    total={total}
+                    covered={covered}
+                    remainder={remainder}
+                  />
+                )
+              })()}
 
               {/* Info Box: WhatsApp Notification Status */}
               <div className="bg-emerald-50/50 border border-emerald-100 rounded-[24px] p-5">
@@ -136,7 +250,7 @@ export const KasirPage = () => {
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs font-medium text-slate-700 leading-snug">
-                      Resi digital akan otomatis dikirimkan ke WhatsApp pasien (+62 812-3456-7890) setelah pelunasan.
+                      Resi digital akan otomatis dikirimkan ke WhatsApp pasien ({selectedPatient?.phone}) setelah pelunasan.
                     </p>
                     <span className="text-[10px] font-medium text-[#29B5A8] uppercase tracking-tighter">
                       Sistem Terhubung (WMS & WA)
@@ -199,7 +313,8 @@ export const KasirPage = () => {
                   onClick={() => setContent('payment', { 
                     source: 'obat',
                     total: calculatePharmacyTotal(),
-                    items: pharmacyItems
+                    items: pharmacyItems,
+                    buyerName: buyerName || generateTransactionCode()
                   })}
                   className="w-full bg-[#29B5A8] hover:bg-[#1B9C90] text-white rounded-xl h-12 font-bold"
                 >
@@ -229,3 +344,4 @@ export const KasirPage = () => {
     </div>
   )
 }
+

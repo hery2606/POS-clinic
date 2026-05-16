@@ -9,7 +9,9 @@ export const ROUTES = {
   },
   ADMIN: {
     DASHBOARD: '/admin/dashboard',
-    ANALYTICS: '/admin/analytics',
+    PASIEN: '/admin/Pasien',
+    TRANSAKSI: '/admin/Transaksi',
+    LAPORAN: '/admin/Laporan',
     SETTINGS: '/admin/settings',
   },
   KASIR: {
@@ -26,7 +28,7 @@ export const ROUTES = {
 
 export const getRoleRedirectPath = (role: 'admin' | 'kasir' | 'dokter'): string => {
   const roleRoutes = {
-    admin: ROUTES.ADMIN.ANALYTICS,
+    admin: ROUTES.ADMIN.DASHBOARD,
     kasir: ROUTES.KASIR.DASHBOARD,
     dokter: ROUTES.DOKTER.DASHBOARD,
   };

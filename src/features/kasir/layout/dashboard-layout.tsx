@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom"
+import { Outlet, useLocation } from "react-router-dom"
 import { AppSidebar } from "./sidebar/app-sidebar"
 import { Header } from "./header"
 import { RightPanel } from "./right-panel"
@@ -9,6 +9,9 @@ import {
 } from "@/components/ui/sidebar"
 
 export function DashboardLayout() {
+  const location = useLocation();
+  const isSettingsPage = location.pathname.includes('/pengaturan');
+
   return (
     <RightPanelProvider>
       <SidebarProvider>
@@ -23,9 +26,11 @@ export function DashboardLayout() {
               </main>
             </div>
 
-            <aside className="w-95 lg:w-105 bg-white overflow-y-auto hidden xl:block [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <RightPanel />
-            </aside>
+            {!isSettingsPage && (
+              <aside className="w-95 lg:w-105 bg-white overflow-y-auto hidden xl:block [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <RightPanel />
+              </aside>
+            )}
 
           </div>
         </SidebarInset>

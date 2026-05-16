@@ -1,12 +1,14 @@
 import { PaymentPanel } from "../components/payment/PaymentPanel";
 import { TransactionDetail } from "../components/RiwayatTransaksi/Transactiondetail";
 import { PatientDetail } from "../components/dataPasien/PatientDetail";
+import { NotificationPanel } from "../components/notification/NotificationPanel";
+import { StockDetailView } from "../components/StokObat/StockDetailView";
 import { useRightPanel } from "../context/right-panel-context";
 import { useRightPanelTitle } from "@/hooks/useRightPanelTitle";
 import { LayoutGrid } from "lucide-react";
 
 export function RightPanel() {
-  const { contentType, data } = useRightPanel();
+  const { contentType, data, clearContent } = useRightPanel();
   const title = useRightPanelTitle(contentType);
 
   return (
@@ -37,6 +39,23 @@ export function RightPanel() {
         {contentType === "patient-detail" && (
           <div className="flex-1 overflow-y-auto p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <PatientDetail patient={data} />
+          </div>
+        )}
+
+        {contentType === "notification" && (
+          <div className="flex-1 overflow-hidden flex">
+            <NotificationPanel />
+          </div>
+        )}
+
+        {contentType === "stock-detail" && (
+          <div className="flex-1 overflow-y-auto">
+            <StockDetailView 
+              item={data.stock} 
+              onBack={() => {
+                clearContent();
+              }}
+            />
           </div>
         )}
 

@@ -1,83 +1,56 @@
+import { useNavigate } from "react-router-dom"
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
-import { ChevronsUpDownIcon } from "lucide-react"
+import { LogOutIcon } from "lucide-react"
+import { useAuth } from "@/features/auth/hooks/useAuth"
 
 export function NavUser({
   user,
 }: {
   user: {
-    name?: string
-    email?: string
-    avatar?: string
-  } | null
+    name: string
+    email: string
+    avatar: string
+  }
 }) {
-  const { isMobile } = useSidebar()
+  const { logout } = useAuth()
+  const navigate = useNavigate()
 
-  const displayName = user?.name || "User"
-  const displayEmail = user?.email || "user@example.com"
-  const avatarFallback = displayName.charAt(0).toUpperCase()
+  const handleLogout = () => {
+    logout()
+    navigate("/login")
+  }
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            >
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user?.avatar} alt={displayName} />
-                <AvatarFallback className="rounded-lg">{avatarFallback}</AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{displayName}</span>
-                <span className="truncate text-xs">{displayEmail}</span>
-              </div>
-              <ChevronsUpDownIcon className="ml-auto size-4" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
-            align="end"
-            sideOffset={4}
-          >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user?.avatar} alt={displayName} />
-                  <AvatarFallback className="rounded-lg">{avatarFallback}</AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{displayName}</span>
-                  <span className="truncate text-xs">{displayEmail}</span>
-                </div>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>
-              <span className="text-xs text-[#67737C]">Admin Role</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-3 px-3 py-3">
+          <Avatar className="h-10 w-10 rounded-lg">
+            <AvatarImage src={user.avatar} alt={user.name} />
+            <AvatarFallback className="rounded-lg bg-[#1B9C90] text-white font-semibold">
+              {user.name.substring(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-semibold text-sm text-white">{user.name}</span>
+            <span className="truncate text-xs text-[#8B96A3]">{user.email}</span>
+          </div>
+        </div>
+        <SidebarMenuButton 
+          onClick={handleLogout}
+          className="w-full mt-2 mx-0 h-9 px-3 text-[#FF6B6B] hover:text-white hover:bg-[#FF6B6B]/20 transition-colors duration-200"
+        >
+          <LogOutIcon className="h-4 w-4" />
+          <span className="text-sm font-medium">Logout</span>
+        </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>
   )

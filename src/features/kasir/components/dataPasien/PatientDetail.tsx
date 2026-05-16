@@ -7,10 +7,13 @@ import {
   ChevronRight,
   Clock,
 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useRightPanel } from "../../context/right-panel-context";
+import { PatientHistoryModal } from "./PatientHistoryModal";
+import type { PatientDetailData } from "./PatientHistoryModal";
 
 interface PatientData {
   id: string;
@@ -31,7 +34,8 @@ export const PatientDetail = ({
 }: {
   patient?: Partial<PatientData>;
 }) => {
-  const { clearContent, setContent } = useRightPanel();
+  const { clearContent } = useRightPanel();
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   const data: PatientData = {
     id: patient?.id || "RM-098123",
@@ -45,6 +49,27 @@ export const PatientDetail = ({
     insurance: patient?.insurance || "BPJS",
     lastVisit: patient?.lastVisit || "14 Ags 2023",
     initial: patient?.initial || "BU",
+  };
+
+  const patientHistoryData: PatientDetailData = {
+    nik: "3404010101900001",
+    namaLengkap: patient?.name || "Budi Santoso",
+    tanggalLahir: "1990-01-01",
+    jenisKelamin: patient?.gender === "P" ? "PEREMPUAN" : "LAKI_LAKI",
+    alamat: patient?.address || "Jl. Melati No. 12",
+    rt: "01",
+    rw: "02",
+    kelurahan: "Sleman",
+    kecamatan: "Sleman",
+    kabupaten: "Sleman",
+    provinsi: "Daerah Istimewa Yogyakarta",
+    telepon: patient?.phone || "+62 812-3456-7890",
+    email: "budi.santoso@email.com",
+    golonganDarah: patient?.bloodType || "O+",
+    alergi: patient?.allergy ? [patient.allergy] : ["Antibiotik"],
+    noBpjs: "0001234567890123",
+    jenisPeserta: "Keluarga",
+    fktp: "PUSKESMAS SLEMAN",
   };
 
   const getInsuranceBadgeColor = (insurance: string) => {
@@ -200,7 +225,7 @@ export const PatientDetail = ({
 
       {/* ACTION BUTTONS */}
       <div className="space-y-2 border-t border-[#DFE6EB] mt-4 pt-4">
-        <Button
+        {/*<Button
           className="w-full h-10 bg-[#1B9C90] hover:bg-[#15857a] rounded-full text-white font-bold text-sm shadow-lg shadow-[#1B9C90]/20 gap-2"
           onClick={() =>
             setContent("payment", {
@@ -211,7 +236,7 @@ export const PatientDetail = ({
         >
           <ChevronRight className="w-4 h-4" />
           Lanjut Pembayaran
-        </Button>
+        </Button>*/}
         <Button className="w-full h-10 bg-blue-600 hover:bg-blue-700 rounded-full text-white font-bold text-sm shadow-lg shadow-blue-600/20 gap-2">
           <Edit3 className="w-4 h-4" />
           Edit Profil
@@ -219,10 +244,16 @@ export const PatientDetail = ({
         <Button
           variant="outline"
           className="w-full h-10 rounded-full border-[#DFE6EB] text-[#13222D] font-bold text-sm bg-[#F9FEFC] hover:bg-[#EFF4F8] gap-2"
+          onClick={() => setIsHistoryModalOpen(true)}
         >
           <ChevronRight className="w-4 h-4" />
           Riwayat Lengkap
         </Button>
+        <PatientHistoryModal
+          isOpen={isHistoryModalOpen}
+          onClose={() => setIsHistoryModalOpen(false)}
+          patientData={patientHistoryData}
+        />
       </div>
     </div>
   );

@@ -1,62 +1,81 @@
+"use client"
+
+import React from 'react'
 import { Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   Breadcrumb,
   BreadcrumbList,
+  BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { useBreadcrumb } from '@/hooks/useBreadcrumb'
+import { useRightPanel } from '../context/right-panel-context'
 import { Link } from 'react-router-dom'
 
 export function Header() {
   const breadcrumbs = useBreadcrumb()
+  const { setContent } = useRightPanel()
+
+  const handleNotificationClick = () => {
+    setContent('notification')
+  }
 
   return (
-    <header className="border-b-2 bg-white sticky top-0 z-10">
-      <div className="px-6 py-4">
-        <div className="mb-4">
-            <h1 className="text-2xl font-bold">
-              {breadcrumbs[breadcrumbs.length - 1]?.label || 'Kasir & Tagihan'}
-            </h1>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div>
+    <header className="border-b border-[#DFE6EB] bg-white sticky top-0 z-10 w-full">
+      <div className="px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        
+        {/* LEFT PANEL: BREADCRUMBS & TITLES */}
+        <div className="space-y-1">
           <Breadcrumb>
             <BreadcrumbList>
               {breadcrumbs.map((crumb, index) => (
-                <div key={index} className="flex items-center gap-1.5">
-                  {index > 0 && <BreadcrumbSeparator />}
-                  {crumb.isActive ? (
-                    <BreadcrumbPage className="text-sm">{crumb.label}</BreadcrumbPage>
-                  ) : (
-                    <BreadcrumbLink asChild>
-                      <Link to={crumb.href || '#'} className="text-sm">
+                <React.Fragment key={index}>
+                  {index > 0 && <BreadcrumbSeparator className="text-[#67737C]/40" />}
+                  <BreadcrumbItem>
+                    {crumb.isActive ? (
+                      <BreadcrumbPage className="text-xs font-semibold text-[#13222D]">
                         {crumb.label}
-                      </Link>
-                    </BreadcrumbLink>
-                  )}
-                </div>
+                      </BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink asChild className="text-xs font-medium text-[#67737C] hover:text-[#1B9C90] transition-colors">
+                        <Link to={crumb.href || '#'}>
+                          {crumb.label}
+                        </Link>
+                      </BreadcrumbLink>
+                    )}
+                  </BreadcrumbItem>
+                </React.Fragment>
               ))}
             </BreadcrumbList>
           </Breadcrumb>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-              <span className="h-2 w-2 bg-green-600 rounded-full mr-2 inline-block"></span>
-              Sistem Terhubung (WMS & WA)
-            </Badge>
-
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-            </Button>
-          </div>
+          
+          <h1 className="text-xl font-bold text-[#13222D] tracking-wide">
+            {breadcrumbs[breadcrumbs.length - 1]?.label || 'Kasir & Tagihan'}
+          </h1>
         </div>
+
+        {/* RIGHT PANEL: ACTIONS & APP STATUS */}
+        <div className="flex items-center gap-3.5 sm:ml-auto">
+          <Badge className="bg-[#DFF6F2] text-[#1B9C90] border-none shadow-none px-3 py-1 text-xs font-bold rounded-full flex items-center gap-2">
+            <span className="h-1.5 w-1.5 bg-[#1B9C90] rounded-full animate-pulse"></span>
+            Sistem Terhubung (WMS & WA)
+          </Badge>
+
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="relative h-10 w-10 rounded-xl bg-[#F9FEFC] border border-[#DFE6EB] hover:bg-[#EFF4F8] text-[#67737C] hover:text-[#13222D] transition-all"
+            onClick={handleNotificationClick}
+          >
+            <Bell className="h-4.5 w-4.5" />
+            <span className="absolute top-2.5 right-2.5 h-1.5 w-1.5 bg-red-500 rounded-full"></span>
+          </Button>
+        </div>
+
       </div>
     </header>
   )
