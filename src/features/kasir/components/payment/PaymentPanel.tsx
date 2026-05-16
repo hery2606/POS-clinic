@@ -3,6 +3,7 @@ import { PaymentTabs } from './payment-tabs';
 import { MethodSelector } from './method-selector';
 import { QrisDisplay } from './qris-display';
 import { PaymentFooter } from './payment-footer';
+import { PaymentHeader } from './payment-header';
 
 type PaymentCategory = "penjaminan" | "mandiri";
 
@@ -16,6 +17,11 @@ export const PaymentPanel = () => {
 
   return (
     <div className="flex h-full flex-col bg-white">
+      {/* Payment Header with Patient Name & Total */}
+      <div className="px-0">
+        <PaymentHeader className="mb-6" />
+      </div>
+
       <div className="p-6">
         <div className=" bg-white  p-2">
           <div className="flex items-start justify-between gap-4">
@@ -23,12 +29,7 @@ export const PaymentPanel = () => {
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                 Pembayaran
               </p>
-              <h2 className="text-lg font-semibold text-slate-900">
-                Pilih Metode Pembayaran
-              </h2>
-              <p className="text-sm text-slate-500 mt-1">
-                Sesuaikan kategori dan metode sesuai kebutuhan pasien.
-              </p>
+              
             </div>
             <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
               {payType === 'mandiri' ? 'Mandiri' : 'Penjaminan'}

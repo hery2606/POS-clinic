@@ -1,19 +1,11 @@
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import {
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-import { ChevronRightIcon } from "lucide-react"
+import { Link, useLocation } from "react-router-dom"
+import { cn } from "@/lib/utils"
 
 export function NavMain({
   items,
@@ -22,47 +14,48 @@ export function NavMain({
     title: string
     url: string
     icon?: React.ReactNode
-    isActive?: boolean
-    items?: {
-      title: string
-      url: string
-    }[]
   }[]
 }) {
+  const location = useLocation()
+
+  const isActive = (url: string) => {
+    if (url === "/kasir") {
+      return location.pathname === "/kasir" || location.pathname === "/kasir/"
+    }
+    return location.pathname === url
+  }
+
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
-      <SidebarMenu>
+   <SidebarGroup className="p-0">
+      <SidebarMenu className="space-y-1">
         {items.map((item) => (
-          <Collapsible
-            key={item.title}
-            asChild
-            defaultOpen={item.isActive}
-            className="group/collapsible"
-          >
-            <SidebarMenuItem>
-              <CollapsibleTrigger asChild>
-                <SidebarMenuButton tooltip={item.title}>
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton 
+              asChild 
+              className={cn(
+                "w-full h-16 px-2 py-3  transition-all duration-200 flex items-center gap-4 relative text-[15px]  tracking-wide",
+                isActive(item.url) 
+                  ? "bg-[#13272F] text-[#29B5A8] font-bold"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+              )}
+            >
+              <Link to={item.url} className="flex items-center w-full h-full">
+                {/* Indikator vertikal aktif di sisi paling kiri */}
+                {isActive(item.url) && (
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#1B9C90] rounded-r-md" />
+                )}
+                
+                <div className={cn(
+                  "shrink-0 transition-colors flex items-center justify-center",
+                  isActive(item.url) ? "text-[#29B5A8]" : "text-slate-400 group-hover/btn:text-white"
+                )}>
                   {item.icon}
-                  <span>{item.title}</span>
-                  <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenuSub>
-                  {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton asChild>
-                        <a href={subItem.url}>
-                          <span>{subItem.title}</span>
-                        </a>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
-                </SidebarMenuSub>
-              </CollapsibleContent>
-            </SidebarMenuItem>
-          </Collapsible>
+                </div>
+                
+                <span className="group-data-[collapse=icon]:hidden">{item.title}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         ))}
       </SidebarMenu>
     </SidebarGroup>

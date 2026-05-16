@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { 
   Search, 
-  Filter, 
-  Plus, 
-  MoreVertical, 
-  Phone 
+  Phone,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { 
   Table, 
@@ -19,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useRightPanel } from '../../context/right-panel-context';
+import { PatientFilter } from './PatientFilter';
+import type { FilterState } from './PatientFilter';
 
 interface Patient {
   id: string
@@ -103,6 +104,7 @@ export const PatientList = () => {
   const [activePatientId, setActivePatientId] = useState(
     () => patients.find((patient) => patient.highlighted)?.id ?? null
   )
+  const [filteredPatients, setFilteredPatients] = useState(patients)
 
   const handlePatientClick = (patient: Patient) => {
     setActivePatientId(patient.id)
@@ -123,131 +125,136 @@ export const PatientList = () => {
     setContent('patient-detail', patientData)
   }
 
-  return (
-    <div className="bg-[#F9FEFC] min-h-screen p-6">
-      <div className="bg-white rounded-[20px] border border-[#DFE6EB] shadow-sm overflow-hidden">
-        
-        {/* TOP BAR: SEARCH & ACTIONS */}
-        <div className="p-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:max-w-lg group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#67737C] group-focus-within:text-[#1B9C90] transition-colors" />
-            <Input 
-              placeholder="Cari Nama / No. Rekam Medis..." 
-              className="pl-12 h-14 rounded-full bg-[#F9FEFC] border-[#DFE6EB] focus-visible:ring-[#1B9C90] text-sm font-medium"
-            />
-          </div>
-          
-          <div className="flex gap-3 w-full md:w-auto">
-            <Button variant="outline" className="rounded-full h-14 px-6 gap-2 border-[#DFE6EB] font-bold text-[#13222D] hover:bg-[#EFF4F8]">
-              <Filter className="w-5 h-5" />
-              Filter
-            </Button>
-            <Button className="rounded-full h-14 px-8 gap-2 bg-[#1B9C90] hover:opacity-90 font-bold text-white shadow-lg shadow-[#1B9C90]/20">
-              <Plus className="w-5 h-5" />
-              Pasien Baru
-            </Button>
-          </div>
-        </div>
+  const handleApplyFilter = (filters: FilterState) => {
+    let result = patients
+    
+    // Filter by gender - convert L/P to LAKI_LAKI/PEREMPUAN for comparison
+    if (filters.genders && filters.genders.length > 0) {
+      result = result.filter(p => {
+        const patientGender = p.gender === 'L' ? 'LAKI_LAKI' : 'PEREMPUAN'
+        return filters.genders.includes(patientGender)
+      })
+    }
+    
+    // Filter by insurance
+    if (filters.insurances && filters.insurances.length > 0) {
+      result = result.filter(p => filters.insurances.includes(p.insurance))
+    }
+    
+    // Filter by visits (would need date comparison in real implementation)
+    // For now, we'll skip this as it requires actual date data
+    
+    setFilteredPatients(result)
+  }
 
-        {/* PATIENT TABLE */}
-        <div className="px-4 pb-8">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent border-none">
-                <TableHead className="pl-6 text-[11px] font-bold text-[#67737C] uppercase tracking-widest">No. RM</TableHead>
-                <TableHead className="text-[11px] font-bold text-[#67737C] uppercase tracking-widest">Nama Pasien</TableHead>
-                <TableHead className="text-[11px] font-bold text-[#67737C] uppercase tracking-widest text-center">L/P (Usia)</TableHead>
-                <TableHead className="text-[11px] font-bold text-[#67737C] uppercase tracking-widest">No. HP</TableHead>
-                <TableHead className="text-[11px] font-bold text-[#67737C] uppercase tracking-widest text-center">Penjamin</TableHead>
-                <TableHead className="text-[11px] font-bold text-[#67737C] uppercase tracking-widest text-center">Kunjungan Terakhir</TableHead>
-                <TableHead className="pr-6 text-[11px] font-bold text-[#67737C] uppercase tracking-widest text-center">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {patients.map((patient) => {
-                const isActive = activePatientId === patient.id
-                return (
+  return (
+    <div className="bg-white rounded-lg border shadow-sm overflow-hidden w-full">
+      {/* HEADER: SEARCH & ACTIONS */}
+      <div className="p-6 flex flex-col md:flex-row gap-4 items-center justify-between border-b">
+        <div className="relative w-full md:max-w-md group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-green-600 transition-colors" />
+          <Input 
+            placeholder="Cari Nama / No. Rekam Medis..." 
+            className="pl-12 h-11 rounded-md bg-gray-50 border-gray-200 focus-visible:ring-green-600"
+          />
+        </div>
+        
+        <div className="flex gap-3 w-full md:w-auto">
+          <PatientFilter onFilterChange={handleApplyFilter} />
+        </div>
+      </div>
+
+      {/* PATIENT TABLE */}
+      <div className="overflow-x-auto w-full">
+        <Table className="w-full table-fixed min-w-[850px]">
+          <TableHeader>
+            <TableRow className="bg-gray-50">
+              <TableHead className="pl-8 text-gray-700 font-semibold h-12 text-left w-[15%]">No. RM</TableHead>
+              <TableHead className="text-gray-700 font-semibold h-12 text-left w-[28%]">Nama Pasien</TableHead>
+              <TableHead className="text-center text-gray-700 font-semibold h-12 w-[12%]">L/P (Usia)</TableHead>
+              <TableHead className="text-gray-700 font-semibold h-12 text-left w-[18%]">No. HP</TableHead>
+              <TableHead className="text-center text-gray-700 font-semibold h-12 w-[15%]">Penjamin</TableHead>
+              <TableHead className="pr-8 text-center text-gray-700 font-semibold h-12 w-[12%]">Kunjungan Terakhir</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredPatients.map((patient) => {
+              const isActive = activePatientId === patient.id
+              return (
                 <TableRow 
                   key={patient.id} 
                   className={cn(
-                    "border-none transition-colors group cursor-pointer hover:bg-[#DFF6F2]/30",
-                    isActive ? "bg-[#DFF6F2]/50 shadow-[inset_0_0_0_1px_rgba(27,156,144,0.2)] rounded-2xl" : ""
+                    "transition-colors cursor-pointer hover:bg-gray-50 border-b",
+                    isActive ? "bg-green-50/50" : ""
                   )}
                   onClick={() => handlePatientClick(patient)}
                 >
-                  {/* No RM */}
-                  <TableCell className="pl-6 py-6 font-bold text-[#13222D] text-sm">
+                  <TableCell className="pl-8 py-4 font-medium text-gray-900 text-left">
                     {patient.id}
                   </TableCell>
 
-                  {/* Nama Pasien */}
-                  <TableCell>
+                  <TableCell className="py-4 text-left">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#DFF6F2] text-[#1B9C90] flex items-center justify-center text-xs font-bold border border-[#DFE6EB]">
+                      <div className="w-8 h-8 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-[10px] font-bold border border-green-100 shrink-0">
                         {patient.initial}
                       </div>
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#13222D] text-sm">{patient.name}</span>
-                          {isActive && (
-                            <span className="rounded-full bg-[#1B9C90]/10 px-2 py-0.5 text-[10px] font-bold text-[#1B9C90]">
-                              Aktif
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[11px] text-[#67737C] font-medium">{patient.id}</span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-medium text-gray-900 truncate">{patient.name}</span>
+                        <span className="text-[11px] text-gray-500">{patient.id}</span>
                       </div>
                     </div>
                   </TableCell>
 
-                  {/* L/P (Usia) */}
-                  <TableCell className="text-center text-[#13222D] font-bold text-sm">
+                  <TableCell className="text-center text-gray-900 font-medium py-4">
                     {patient.gender} ({patient.age})
                   </TableCell>
 
-                  {/* No HP */}
-                  <TableCell>
-                    <div className="flex items-center gap-2 text-[#67737C]">
-                      <Phone className="w-4 h-4 text-[#DFE6EB]" />
-                      <span className="text-sm font-medium">{patient.phone}</span>
+                  <TableCell className="py-4 text-left">
+                    <div className="flex items-center gap-2 text-gray-600</div>">
+                      <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span className="text-sm">{patient.phone}</span>
                     </div>
                   </TableCell>
 
-                  {/* Penjamin */}
-                  <TableCell className="text-center">
+                  <TableCell className="text-center py-4">
                     <Badge 
                       className={cn(
-                        "rounded-full px-4 py-1 text-[10px] font-bold border shadow-none",
-                        patient.insurance === 'BPJS' && "bg-[#DFF6F2] text-[#1B9C90] border-[#DFE6EB]",
-                        patient.insurance === 'Mandiri' && "bg-[#FFF9EB] text-[#F2A618] border-[#FFE6A8]",
-                        patient.insurance === 'Asuransi Astra' && "bg-[#F0FDF4] text-[#3EB268] border-[#DCFCE7]"
+                        "rounded-full px-3 py-0.5 text-[10px] font-semibold border shadow-none inline-flex items-center justify-center",
+                        patient.insurance === 'BPJS' && "bg-green-50 text-green-700 border-green-100",
+                        patient.insurance === 'Mandiri' && "bg-orange-50 text-orange-700 border-orange-100",
+                        patient.insurance === 'Asuransi Astra' && "bg-blue-50 text-blue-700 border-blue-100"
                       )}
                     >
-                      <div className="flex items-center gap-1.5">
-                        <div className={cn(
-                          "w-1.5 h-1.5 rounded-full",
-                          patient.insurance === 'BPJS' ? "bg-[#1B9C90]" : patient.insurance === 'Mandiri' ? "bg-[#F2A618]" : "bg-[#3EB268]"
-                        )} />
-                        {patient.insurance}
-                      </div>
+                      {patient.insurance}
                     </Badge>
                   </TableCell>
 
-                  {/* Kunjungan Terakhir */}
-                  <TableCell className="text-center text-[#13222D] font-bold text-sm">
+                  <TableCell className="text-center text-gray-900 font-medium py-4 pr-8">
                     {patient.lastVisit}
                   </TableCell>
-
-                  {/* Aksi */}
-                  <TableCell className="pr-6 text-center">
-                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-[#EFF4F8] text-[#67737C]">
-                      <MoreVertical className="w-5 h-5" />
-                    </Button>
-                  </TableCell>
                 </TableRow>
-              )})}
-            </TableBody>
-          </Table>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* PAGINATION FOOTER */}
+      <div className="p-4 flex items-center justify-between border-t border-gray-100 bg-white text-sm shrink-0">
+        <p className="text-xs font-medium text-gray-500 pl-4">
+          Menampilkan <span className="font-bold text-gray-900">1-5</span> dari <span className="font-bold text-gray-900">1.240</span> Pasien
+        </p>
+        
+        <div className="flex items-center gap-1.5 pr-4">
+          <Button variant="outline" size="icon" className="w-8 h-8 rounded-md border-gray-200 text-gray-400 hover:bg-gray-50" disabled>
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <Button className="w-8 h-8 rounded-md bg-green-600 text-white font-bold text-xs border-none shadow-none hover:bg-green-700">1</Button>
+          <Button variant="ghost" className="w-8 h-8 rounded-md text-gray-400 font-bold text-xs hover:bg-gray-50">2</Button>
+          <Button variant="ghost" className="w-8 h-8 rounded-md text-gray-400 font-bold text-xs hover:bg-gray-50">3</Button>
+          <Button variant="outline" size="icon" className="w-8 h-8 rounded-md border-gray-200 text-gray-400 hover:bg-gray-50">
+            <ChevronRight className="w-4 h-4" />
+          </Button>
         </div>
       </div>
     </div>

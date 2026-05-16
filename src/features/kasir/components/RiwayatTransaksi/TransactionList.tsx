@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { 
-  SearchIcon, 
-  CalendarIcon, 
-  FilterIcon 
+  SearchIcon,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { 
   Table, 
@@ -16,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useRightPanel } from '../../context/right-panel-context';
+import { FilterTransaction, type FilterState } from './components/FilterTransaction';
+import { DateRangeSelector, type DateRange } from './components/DateRangeSelector';
 
 interface Transaction {
   id: string
@@ -79,6 +82,12 @@ const transactions: Transaction[] = [
 
 export const TransactionList = () => {
   const { setContent } = useRightPanel()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filters, setFilters] = useState<FilterState>({
+    statuses: [],
+    types: [],
+  })
+  const [filteredTransactions, setFilteredTransactions] = useState(transactions)
 
   const handleTransactionClick = (transaction: Transaction) => {
     const transactionData = {
@@ -99,106 +108,193 @@ export const TransactionList = () => {
     setContent('transaction-detail', transactionData)
   }
 
+  const applyFilters = (newFilters: FilterState, search: string) => {
+    let result = transactions
+
+    // Filter by search
+    if (search.trim()) {
+      const query = search.toLowerCase()
+      result = result.filter(trx =>
+        trx.id.toLowerCase().includes(query) ||
+        trx.patient.toLowerCase().includes(query)
+      )
+    }
+
+    // Filter by status - map status text to filter id
+    if (newFilters.statuses && newFilters.statuses.length > 0) {
+      result = result.filter(trx => {
+        const statusId = trx.status.toLowerCase()
+        return newFilters.statuses.includes(statusId)
+      })
+    }
+
+    // Filter by type - map type text to filter id
+    if (newFilters.types && newFilters.types.length > 0) {
+      result = result.filter(trx => {
+        const typeLabel = trx.type
+        const typeId = typeLabel === 'Pelayanan Medis' ? 'medis' : 
+                       typeLabel === 'Obat Saja' ? 'obat' : 
+                       typeLabel === 'Laboratorium' ? 'laboratorium' : ''
+        return newFilters.types.includes(typeId)
+      })
+    }
+
+    setFilteredTransactions(result)
+  }
+
+  const handleFilterChange = (newFilters: FilterState) => {
+    setFilters(newFilters)
+    applyFilters(newFilters, searchQuery)
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
+    applyFilters(filters, value)
+  }
+
+  const handleDateRangeChange = (dateRange: DateRange) => {
+    console.log('Date range selected:', dateRange);
+  }
+
   return (
-    <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-lg border shadow-sm overflow-hidden w-full">
       {/* HEADER: SEARCH & FILTERS */}
-      <div className="p-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="p-6 flex flex-col md:flex-row gap-4 items-center justify-between border-b border-gray-100">
         <div className="relative w-full md:max-w-md group">
-          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-[#29B5A8] transition-colors" />
+          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-green-600 transition-colors" />
           <Input 
             id="search-invoice"
             name="searchInvoice"
             placeholder="Cari No. Invoice atau Nama Pasien..." 
-            className="pl-12 h-12 rounded-full bg-slate-50/50 border-slate-200 focus-visible:ring-[#29B5A8]"
+            className="pl-12 h-11 rounded-md bg-gray-50 border-gray-200 focus-visible:ring-green-600 font-medium text-gray-900"
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
           />
         </div>
         
         <div className="flex gap-3 w-full md:w-auto">
-          <Button variant="outline" className="rounded-full h-12 px-6 gap-2 border-slate-200 font-bold text-slate-700">
-            <CalendarIcon className="w-4 h-4" />
-            Hari Ini
-            <span className="ml-1 text-[10px]">▼</span>
-          </Button>
-          <Button variant="outline" className="rounded-full h-12 px-6 gap-2 border-slate-200 font-bold text-slate-700">
-            <FilterIcon className="w-4 h-4" />
-            Filter
-          </Button>
+          <DateRangeSelector onDateRangeChange={handleDateRangeChange} />
+          <FilterTransaction onFilterChange={handleFilterChange} />
         </div>
       </div>
 
       {/* TRANSACTION TABLE */}
-      <div className="px-2 pb-6">
-        <Table>
+      <div className="overflow-x-auto w-full">
+        <Table className="w-full table-fixed min-w-[850px]">
           <TableHeader>
-            <TableRow className="hover:bg-transparent border-none">
-              <TableHead className="pl-8 text-[11px] font-black text-slate-400 uppercase tracking-widest">No. Invoice</TableHead>
-              <TableHead className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Waktu</TableHead>
-              <TableHead className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Pasien / Keterangan</TableHead>
-              <TableHead className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Jenis</TableHead>
-              <TableHead className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Status</TableHead>
-              <TableHead className="pr-8 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">Total</TableHead>
+            <TableRow className="bg-gray-50 hover:bg-gray-50 border-none">
+              <TableHead className="pl-8 text-gray-700 font-bold h-12 text-left w-[20%]">No. Invoice</TableHead>
+              <TableHead className="text-gray-700 font-bold h-12 text-left w-[10%]">Waktu</TableHead>
+              <TableHead className="text-gray-700 font-bold h-12 text-left w-[27%]">Pasien / Keterangan</TableHead>
+              <TableHead className="text-gray-700 font-bold h-12 text-left w-[15%]">Jenis</TableHead>
+              <TableHead className="text-center text-gray-700 font-bold h-12 w-[13%]">Status</TableHead>
+              <TableHead className="pr-8 text-right text-gray-700 font-bold h-12 w-[15%]">Total</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactions.map((trx) => (
-              <TableRow 
-                key={trx.id} 
-                className={cn(
-                  "border-none transition-colors group cursor-pointer hover:bg-emerald-50/40 rounded-2xl",
-                  trx.highlighted ? "bg-emerald-50/40 rounded-2xl" : ""
-                )}
-                onClick={() => handleTransactionClick(trx)}
-              >
-                {/* No Invoice */}
-                <TableCell className="pl-8 py-5 font-bold text-slate-900 text-sm">
-                  {trx.id}
-                </TableCell>
+            {filteredTransactions.map((trx) => {
+              const isActive = trx.highlighted;
+              return (
+                <TableRow 
+                  key={trx.id} 
+                  className={cn(
+                    "border-b border-gray-100 transition-colors cursor-pointer hover:bg-gray-50/80",
+                    isActive ? "bg-green-50/50 hover:bg-green-50/60" : ""
+                  )}
+                  onClick={() => handleTransactionClick(trx)}
+                >
+                  <TableCell className="pl-8 py-4 font-medium text-gray-900 text-sm text-left">
+                    {trx.id}
+                  </TableCell>
 
-                {/* Waktu */}
-                <TableCell className="text-slate-500 font-medium">
-                  {trx.time}
-                </TableCell>
+                  <TableCell className="text-gray-500 font-medium text-sm text-left">
+                    {trx.time}
+                  </TableCell>
 
-                {/* Pasien */}
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-50 text-[#29B5A8] flex items-center justify-center text-[10px] font-black border border-emerald-100">
-                      {trx.initial}
+                  <TableCell className="text-left">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-[10px] font-bold border border-green-100 shrink-0">
+                        {trx.initial}
+                      </div>
+                      <span className="font-medium text-gray-900 truncate">{trx.patient}</span>
                     </div>
-                    <span className="font-bold text-slate-900">{trx.patient}</span>
-                  </div>
-                </TableCell>
+                  </TableCell>
 
-                {/* Jenis */}
-                <TableCell>
-                  <Badge variant="secondary" className="rounded-full bg-slate-100 text-slate-500 font-medium hover:bg-slate-100 border-none px-3 py-1 text-[10px]">
-                    {trx.type}
-                  </Badge>
-                </TableCell>
+                  <TableCell className="text-left">
+                    <Badge variant="secondary" className="rounded-full bg-gray-100 text-gray-600 font-bold hover:bg-gray-100 border-none px-3 py-0.5 text-[10px]">
+                      {trx.type}
+                    </Badge>
+                  </TableCell>
 
-                {/* Status */}
-                <TableCell className="text-center">
-                  <Badge 
-                    className={cn(
-                      "rounded-full px-4 py-1 text-[11px] font-bold border-none shadow-none",
-                      trx.status === 'Lunas' 
-                        ? "bg-emerald-100 text-[#29B5A8] hover:bg-emerald-100" 
-                        : "bg-orange-100 text-orange-600 hover:bg-orange-100"
-                    )}
-                  >
-                    {trx.status}
-                  </Badge>
-                </TableCell>
+                  <TableCell className="text-center">
+                    <Badge 
+                      className={cn(
+                        "rounded-full px-3 py-0.5 text-[10px] font-bold border-none shadow-none inline-flex items-center justify-center",
+                        trx.status === 'Lunas' 
+                          ? "bg-green-50 text-green-700 border-green-100 hover:bg-green-50" 
+                          : "bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-50"
+                      )}
+                    >
+                      {trx.status}
+                    </Badge>
+                  </TableCell>
 
-                {/* Total */}
-                <TableCell className="pr-8 text-right font-bold text-slate-900 text-base">
-                  {trx.total}
-                </TableCell>
-              </TableRow>
-            ))}
+                  <TableCell className="pr-8 text-right font-bold text-gray-900 text-sm">
+                    {trx.total}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </div>
+
+      {/* PAGINATION FOOTER */}
+      <div className="p-4 flex items-center justify-between border-t border-gray-100 bg-white text-sm shrink-0">
+        <p className="text-xs font-medium text-gray-400 pl-4">
+          Menampilkan <span className="font-bold text-gray-900">1-{Math.min(5, filteredTransactions.length)}</span> dari <span className="font-bold text-gray-900">{filteredTransactions.length}</span> Transaksi
+        </p>
+        
+        <div className="flex items-center gap-1.5 pr-4">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="w-8 h-8 rounded-md border-gray-200 text-gray-400 hover:bg-gray-50" 
+            disabled
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          
+          <Button 
+            className="w-8 h-8 rounded-md bg-green-600 hover:bg-green-700 text-white font-bold text-xs border-none shadow-none"
+          >
+            1
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            className="w-8 h-8 rounded-md text-gray-400 font-bold text-xs hover:bg-gray-50"
+          >
+            2
+          </Button>
+          
+          <Button 
+            variant="ghost" 
+            className="w-8 h-8 rounded-md text-gray-400 font-bold text-xs hover:bg-gray-50"
+          >
+            3
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="w-8 h-8 rounded-md border-gray-200 text-gray-400 hover:bg-gray-50"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
     </div>
   );
 };

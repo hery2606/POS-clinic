@@ -59,7 +59,7 @@ export const TransactionDetail = ({ transaction }: { transaction?: Partial<Trans
     : { bg: '#FFF4E6', icon: '#F59E0B', text: '#F59E0B' }
 
   return (
-    <div className="space-y-5 w-full max-w-md mx-auto">
+    <div className="space-y-5  w-full max-w-md mx-auto">
       {/* HEADER - Close Button Only */}
       <div className="flex justify-end mb-2">
         <Button 
