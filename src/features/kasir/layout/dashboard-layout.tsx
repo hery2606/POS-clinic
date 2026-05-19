@@ -17,7 +17,7 @@ export function DashboardLayout() {
       <SidebarProvider>
         <AppSidebar />
 
-        <SidebarInset className="bg-[#f8fafc]"> 
+        <SidebarInset className="flex-1 overflow-hidden bg-[#EFF4F8]"> 
           <div className="flex h-screen w-full overflow-hidden">
             <div className="flex flex-col flex-1 min-w-0 border-r border-gray-200">
               <Header /> 

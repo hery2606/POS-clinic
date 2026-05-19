@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react";
 import { TrendingUp } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 
@@ -18,11 +19,13 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
+import { Skeleton } from "@/components/ui/skeleton"
+import { analitikService } from "@/features/analitik/services/analitik.service"
 
 export const description = "Stacked bar chart untuk Tren Pendapatan dan Kas Masuk"
 
 // Data dummy yang disesuaikan dengan pola visual gambar (10 bar)
-const chartData = [
+const defaultChartData = [
   { day: "01 Mei", pendapatan: 80, kasMasuk: 40, pendapatanCount: 80000, kasMasukCount: 40000, totalCount: 120000 },
   { day: "02 Mei", pendapatan: 150, kasMasuk: 60, pendapatanCount: 150000, kasMasukCount: 60000, totalCount: 210000 },
   { day: "03 Mei", pendapatan: 120, kasMasuk: 50, pendapatanCount: 120000, kasMasukCount: 50000, totalCount: 170000 },
@@ -47,14 +50,89 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
+const ChartSkeleton = () => (
+  <div className="border-none">
+    <CardHeader>
+      <Skeleton className="h-6 w-64 mb-2" />
+      <Skeleton className="h-4 w-80" />
+    </CardHeader>
+    <CardContent>
+      <div className="min-h-75 w-full">
+        <Skeleton className="h-full w-full" />
+      </div>
+    </CardContent>
+    <CardFooter className="flex-col items-start gap-2 text-sm pt-4 border-t border-slate-50">
+      <Skeleton className="h-4 w-64" />
+      <Skeleton className="h-4 w-96" />
+    </CardFooter>
+  </div>
+)
+
 export function ChartBarStacked() {
+  const [chartData, setChartData] = useState(defaultChartData)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [cashflowData, setCashflowData] = useState<any>(null)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        const response = await analitikService.getCashflowSummary()
+        
+        if (response.status === 'success' && response.data) {
+          const data = response.data
+          setCashflowData(data)
+          // You can update chart data based on cashflow summary if needed
+          setChartData(defaultChartData)
+        }
+      } catch (err) {
+        console.error('Error fetching cashflow data:', err)
+        setError('Gagal memuat data kas masuk')
+        setCashflowData(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  if (isLoading) {
+    return <ChartSkeleton />
+  }
+
+  if (error) {
+    return (
+      <div className="border-none">
+        <CardHeader>
+          <CardTitle className="text-lg font-bold text-slate-800">
+            Tren Pendapatan & Kas Masuk
+          </CardTitle>
+          <CardDescription>Analisis performa keuangan 10 hari terakhir</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="min-h-75 w-full flex items-center justify-center">
+            <p className="text-red-500">{error}</p>
+          </div>
+        </CardContent>
+      </div>
+    )
+  }
+
   return (
     <div className="border-none">
       <CardHeader>
         <CardTitle className="text-lg font-bold text-slate-800">
           Tren Pendapatan & Kas Masuk
         </CardTitle>
-        <CardDescription>Analisis performa keuangan 10 hari terakhir</CardDescription>
+        <CardDescription>
+          Kas Masuk Hari Ini: Rp {new Intl.NumberFormat('id-ID').format(cashflowData?.kas_masuk_harian || 0)} | 
+          Transaksi Lunas: {cashflowData?.total_transaksi_lunas_hari_ini || 0} | 
+          Pending: {cashflowData?.total_transaksi_pending_hari_ini || 0}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="min-h-75 w-full">
@@ -91,7 +169,7 @@ export function ChartBarStacked() {
       </CardContent>
       <CardFooter className="flex-col items-start gap-2 text-sm pt-4 border-t border-slate-50">
         <div className="flex gap-2 leading-none font-medium text-emerald-600">
-          Meningkat 8.4% dibandingkan minggu lalu <TrendingUp className="h-4 w-4" />
+          Nilai Invoice Belum Lunas: Rp {new Intl.NumberFormat('id-ID').format(cashflowData?.nilai_total_invoice_belum_lunas || 0)} <TrendingUp className="h-4 w-4" />
         </div>
         <div className="leading-none text-muted-foreground">
           Menampilkan akumulasi invoice lunas vs total uang masuk secara harian

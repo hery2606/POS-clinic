@@ -14,7 +14,7 @@ export const AnalitikLayout: React.FC = () => {
           <AnalitikHeader />
         </div>
 
-        <SidebarInset className="flex-1 overflow-hidden bg-[#F5F7FA]">
+        <SidebarInset className="flex-1 overflow-hidden bg-[#EFF4F8]">
           <main className="h-full overflow-y-auto px-6 lg:px-8 py-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <Outlet />
           </main>

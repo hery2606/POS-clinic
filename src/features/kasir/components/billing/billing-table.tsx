@@ -29,7 +29,7 @@ export function BillingTable({
     <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+          <TableRow className="bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200">
             <TableHead className="text-slate-700 font-semibold">Item</TableHead>
             <TableHead className="text-center text-slate-700 font-semibold">Qty</TableHead>
             <TableHead className="text-right text-slate-700 font-semibold">Harga</TableHead>
@@ -54,7 +54,7 @@ export function BillingTable({
               >
                 <TableCell className="py-4">
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex-shrink-0">
+                    <div className="mt-0.5 shrink-0">
                       {item.icon === 'stethoscope' ? (
                         <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
                           <Stethoscope className="h-5 w-5 text-[#29B5A8]" />
@@ -120,7 +120,7 @@ export function BillingTable({
             ))
           )}
         </TableBody>
-        <TableFooter className="bg-gradient-to-r from-slate-50 to-slate-100 border-t border-slate-200">
+        <TableFooter className="bg-linear-to-r from-slate-50 to-slate-100 border-t border-slate-200">
           <TableRow>
             <TableCell colSpan={onRemoveItem ? 3 : 2} className="text-right py-4">
               <span className="font-semibold text-gray-700">Total Tagihan</span>

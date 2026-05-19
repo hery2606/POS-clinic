@@ -22,7 +22,7 @@ interface PharmacyItem {
 }
 
 export const KasirPage = () => {
-  const [activeTab, setActiveTab] = React.useState<'medis' | 'obat'>('medis')
+  const [activeTab, setActiveTab] = React.useState<string>('medis')
   const [pharmacyItems, setPharmacyItems] = React.useState<PharmacyItem[]>([])
   const [buyerName, setBuyerName] = React.useState('')
   const [searchValue, setSearchValue] = React.useState('')
@@ -116,7 +116,7 @@ export const KasirPage = () => {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-300 mx-auto animate-in fade-in duration-500 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+    <div className=" flex flex-col gap-6 w-full max-w-300 mx-auto animate-in fade-in duration-500 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       {/* 1. TOP SECTION: Search & Filter / Buyer Name */}
       <section>
         {activeTab === 'medis' ? (
@@ -142,7 +142,7 @@ export const KasirPage = () => {
                 onClick={() => setActiveTab("medis")}
                 className={`px-6 py-2 rounded-full text-sm font-bold transition-all duration-200 ${
                   activeTab === "medis"
-                    ? "bg-[#29B5A8] text-white shadow-md shadow-emerald-100"
+                    ? "bg-[#1B9C90] text-white shadow-md shadow-emerald-100"
                     : "bg-transparent text-slate-600 hover:text-slate-900"
                 }`}
               >

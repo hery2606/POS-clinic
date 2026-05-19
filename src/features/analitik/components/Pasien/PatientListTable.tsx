@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Filter, Plus, Phone } from 'lucide-react';
+import { Search, Filter, Phone,ChevronLeft, ChevronRight } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -121,6 +121,47 @@ export const PatientListTable = () => {
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* FOOTER PAGINATION BLOCK */}
+      <div className="px-6 py-4 border-t border-[#DFE6EB] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#F9FEFC]/30">
+        <span className="text-xs font-medium text-[#67737C]">
+          Menampilkan <span className="text-[#13222D] font-bold">1 - 5</span> dari <span className="text-[#13222D] font-bold">48</span> data entri
+        </span>
+        
+        <div className="flex items-center gap-1.5">
+          <Button 
+            variant="outline" 
+            disabled 
+            className="h-8 w-8 p-0 rounded-lg border-[#DFE6EB] text-[#67737C] disabled:opacity-40"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            className="h-8 px-3 rounded-lg text-xs font-bold bg-[#13272F]/5 border-none text-[#1B9C90] shadow-none"
+          >
+            1
+          </Button>
+          <Button 
+            variant="outline" 
+            className="h-8 px-3 rounded-lg text-xs font-bold border-none text-[#67737C] hover:bg-[#F4F7F9] shadow-none"
+          >
+            2
+          </Button>
+          <Button 
+            variant="outline" 
+            className="h-8 px-3 rounded-lg text-xs font-bold border-none text-[#67737C] hover:bg-[#F4F7F9] shadow-none"
+          >
+            3
+          </Button>
+          <Button 
+            variant="outline" 
+            className="h-8 w-8 p-0 rounded-lg border-[#DFE6EB] text-[#67737C] hover:bg-[#F4F7F9]"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
