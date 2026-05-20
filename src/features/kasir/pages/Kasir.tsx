@@ -111,7 +111,8 @@ export const KasirPage = () => {
     setContent('payment', { 
       source: 'kasir',
       total: total,
-      patientName: selectedPatient?.name || 'Pasien'
+      patientName: selectedPatient?.name || 'Pasien',
+      insurance: selectedPatient?.insurance || 'Mandiri'
     })
   }
 

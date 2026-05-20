@@ -70,3 +70,28 @@ export interface PaymentsAnalyticsResponse {
     tren_metode_favorit: TrendMethodData[];
   };
 }
+
+export interface PasienLoyalData {
+  id_pasien: string;
+  nama_pasien: string;
+  kunjungan_terbanyak: number;
+}
+
+export interface PasienSpendData {
+  id_pasien: string;
+  nama_pasien: string;
+  total_spend: number;
+}
+
+export interface PatientAnalyticsResponse {
+  status: string;
+  data: {
+    total_pasien_unik_periode_ini: number;
+    segmentasi: {
+      pasien_baru: number;
+      pasien_lama: number;
+    };
+    pasien_paling_loyal: PasienLoyalData[];
+    pasien_spend_tertinggi: PasienSpendData[];
+  };
+}

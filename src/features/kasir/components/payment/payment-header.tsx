@@ -1,5 +1,8 @@
+"use client"
+
 import { useRightPanel } from '@/features/kasir/context/right-panel-context';
 import { cn } from '@/lib/utils';
+import { Pill, Activity } from 'lucide-react';
 
 export interface PaymentHeaderProps {
   className?: string;
@@ -21,50 +24,63 @@ export const PaymentHeader = ({ className }: PaymentHeaderProps) => {
 
   return (
     <div className={cn(
-      "bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 rounded-[16px]",
+      "bg-[#F4F7F9]/50 border-b border-[#DFE6EB] rounded-b-[24px] overflow-hidden",
       className
     )}>
-      <div className="p-6 space-y-4">
-        {/* Patient Name */}
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-            Nama Pasien
-          </p>
-          <p className="text-lg font-bold text-slate-900">
-            {patientName}
-          </p>
-        </div>
-
-        {/* Total Payment */}
-        <div className="pt-4 border-t border-slate-100 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-            Total Pembayaran
-          </p>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-black text-[#29B5A8]">
-              {formatCurrency(total)}
+      <div className="p-6 space-y-5">
+        
+        {/* BARIS ATAS: DETAIL PASIEN & BADGE SUMBER */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <span className="text-[10px] font-medium uppercase tracking-widest text-[#67737C]">
+              Registrasi Pasien
             </span>
-            {total > 0 && (
-              <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-                Siap Dibayar
-              </span>
-            )}
+            <p className="text-base font-medium text-[#13222D]">
+              {patientName}
+            </p>
           </div>
-        </div>
 
-        {/* Payment Source Info */}
-        {data?.source && (
-          <div className="pt-4 border-t border-slate-100">
-            <span className={cn(
-              "inline-block px-3 py-1 rounded-full text-xs font-semibold",
+          {/* BADGE SUMBER MINIMALIS */}
+          {data?.source && (
+            <div className={cn(
+              "px-3 py-1 rounded-xl text-[11px] font-bold border flex items-center gap-1.5 shadow-none",
               data.source === 'obat'
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-emerald-100 text-emerald-700'
+                ? 'bg-blue-50/50 text-blue-600 border-blue-100'
+                : 'bg-[#DFF6F2] text-[#1B9C90] border-[#1B9C90]/10'
             )}>
-              {data.source === 'obat' ? '💊 Pembayaran Obat' : '🏥 Pembayaran Medis'}
+              {data.source === 'obat' ? (
+                <>
+                  <Pill className="w-3.5 h-3.5 shrink-0" />
+                  <span>Farmasi</span>
+                </>
+              ) : (
+                <>
+                  <Activity className="w-3.5 h-3.5 shrink-0" />
+                  <span>Tindakan Medis</span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* BARIS BAWAH: TOTAL TAGIHAN */}
+        <div className="pt-4 border-t border-dashed border-[#DFE6EB] flex items-center justify-between">
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#67737C]">
+              Total Tagihan Klinik
             </span>
+            <p className="text-2xl font-bold text-[#1B9C90] tracking-tight">
+              {formatCurrency(total)}
+            </p>
           </div>
-        )}
+
+          {total > 0 && (
+            <span className="text-[10px] font-extrabold text-[#1B9C90] bg-[#DFF6F2] px-2.5 py-1 rounded-lg uppercase tracking-wider">
+              Siap Bayar
+            </span>
+          )}
+        </div>
+
       </div>
     </div>
   );

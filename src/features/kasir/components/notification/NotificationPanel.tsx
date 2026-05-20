@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Check, 
   AlertTriangle, 
@@ -9,20 +9,22 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { warehouseService } from '../../services/warehouse.service';
 
 interface NotificationItem {
-  id: number;
+  id: string;
   title: string;
   description: string;
   time: string;
   type: 'success' | 'warning' | 'error' | 'info';
-  category: 'sistem' | 'transaksi';
+  category: 'sistem' | 'transaksi' | 'stok';
   unread: boolean;
 }
 
 const initialNotifications: NotificationItem[] = [
   {
-    id: 1,
+    id: '1',
     title: 'Resi Terkirim (WhatsApp)',
     description: 'Resi untuk INV-230814-001 telah berhasil dikirim ke +62 812-3456-7890.',
     time: 'BARU SAJA',
@@ -30,47 +32,68 @@ const initialNotifications: NotificationItem[] = [
     category: 'transaksi',
     unread: true,
   },
-  {
-    id: 2,
-    title: 'Stok Obat Menipis',
-    description: 'Stok Paracetamol 500mg tersisa 15 strip. Segera lakukan restock.',
-    time: '10 MENIT YANG LALU',
-    type: 'warning',
-    category: 'sistem',
-    unread: true,
-  },
-  {
-    id: 3,
-    title: 'Sinkronisasi BPJS Berhasil',
-    description: 'Data klaim untuk pasien Siti Aminah (RM-098124) telah disinkronkan ke V-Claim.',
-    time: '1 JAM YANG LALU',
-    type: 'info',
-    category: 'sistem',
-    unread: false,
-  },
-  {
-    id: 4,
-    title: 'Gagal Sinkronisasi WMS',
-    description: 'Sistem gagal memotong stok untuk transaksi INV-230814-002. Silakan coba lagi.',
-    time: '2 JAM YANG LALU',
-    type: 'error',
-    category: 'sistem',
-    unread: false,
-  },
-  {
-    id: 5,
-    title: 'Update Sistem',
-    description: 'Pembaruan modul kasir v2.4 telah berhasil diaplikasikan.',
-    time: 'KEMARIN, 08:00',
-    type: 'info',
-    category: 'sistem',
-    unread: false,
-  },
 ];
 
 export const NotificationPanel = () => {
-  const [activeTab, setActiveTab] = useState<'semua' | 'sistem' | 'transaksi'>('semua');
+  const [activeTab, setActiveTab] = useState<'semua' | 'sistem' | 'transaksi' | 'stok'>('semua');
   const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
+
+  // Fetch medicines to check stock status
+  const { data: medicinesData } = useQuery({
+    queryKey: ['medicines'],
+    queryFn: warehouseService.getMedicinesList,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  // Generate stock notifications whenever medicines change
+  useEffect(() => {
+    if (medicinesData?.data) {
+      const stockNotifications: NotificationItem[] = [];
+      
+      medicinesData.data.forEach((medicine) => {
+        // Check if stok is critical (at 0 or very low)
+        const isCritical = medicine.stokSaatIni === 0;
+        
+        // Check if stok is low (below minimum threshold)
+        const isLow = medicine.stokSaatIni > 0 && medicine.stokSaatIni < medicine.stokMinimum;
+
+        if (isCritical) {
+          // Critical stock notification
+          stockNotifications.push({
+            id: `stok-kritis-${medicine.id}`,
+            title: 'Stok Obat KRITIS ❌',
+            description: `${medicine.nama} HABIS. Stok saat ini: 0 ${medicine.satuan}. SEGERA lakukan restock!`,
+            time: 'BARU SAJA',
+            type: 'error',
+            category: 'stok',
+            unread: true,
+          });
+        } else if (isLow) {
+          // Low stock notification
+          stockNotifications.push({
+            id: `stok-menipis-${medicine.id}`,
+            title: 'Stok Obat Menipis ⚠️',
+            description: `${medicine.nama} tersisa ${medicine.stokSaatIni} ${medicine.satuan}. Batas minimum: ${medicine.stokMinimum} ${medicine.satuan}.`,
+            time: 'BARU SAJA',
+            type: 'warning',
+            category: 'stok',
+            unread: true,
+          });
+        }
+      });
+
+      // Merge stock notifications with existing ones, avoiding duplicates
+      setNotifications((prevNotifications) => {
+        const nonStockNotifications = prevNotifications.filter(n => n.category !== 'stok');
+        const newNotifications = [
+          ...stockNotifications,
+          ...nonStockNotifications
+        ];
+        return newNotifications;
+      });
+    }
+  }, [medicinesData?.data]);
 
   const filteredNotifications = notifications.filter(n => {
     if (activeTab === 'semua') return true;
@@ -115,19 +138,19 @@ export const NotificationPanel = () => {
     <div className="w-full bg-white flex flex-col h-full overflow-hidden flex-1">
       {/* TABS CONTROLLER */}
       <div className="px-6 py-4 shrink-0">
-        <div className="flex bg-[#EFF4F8] p-1 rounded-full w-full">
-          {(['semua', 'sistem', 'transaksi'] as const).map((tab) => (
+        <div className="flex bg-[#EFF4F8] p-1 rounded-full w-full overflow-x-auto">
+          {(['semua', 'stok', 'sistem', 'transaksi'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                "flex-1 text-xs font-bold py-2.5 rounded-full transition-all capitalize",
+                "flex-shrink-0 text-xs font-bold py-2.5 px-3 rounded-full transition-all capitalize whitespace-nowrap",
                 activeTab === tab 
                   ? "bg-white text-[#13222D] shadow-sm" 
                   : "text-[#67737C] hover:text-[#13222D]"
               )}
             >
-              {tab}
+              {tab === 'stok' ? 'Stok Obat' : tab}
             </button>
           ))}
         </div>

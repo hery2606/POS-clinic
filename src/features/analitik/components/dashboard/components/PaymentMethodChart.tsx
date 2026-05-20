@@ -10,7 +10,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { analitikService } from '../../services/analitik.service';
+import { analitikService } from '@/features/analitik/services/analitik.service';
 
 interface PaymentData {
   name: string;

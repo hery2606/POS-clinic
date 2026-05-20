@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Filter, X, Check } from 'lucide-react';
 import {
   DropdownMenu,
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { warehouseService } from '../../services/warehouse.service';
 
 export interface FilterState {
   categories: string[];
@@ -27,9 +29,59 @@ export const InventoryFilter: React.FC<InventoryFilterProps> = ({ onFilterChange
     types: [],
   });
 
-  const categoriesOptions = ['Antibiotik', 'Analgetik', 'Antiseptik', 'Suplemen', 'Hipertensi'];
-  const statusesOptions = ['Tersedia', 'Stok Menipis'];
-  const typesOptions = ['Tablet', 'Sirup', 'Cair'];
+  // FETCH MEDICINES DATA TO EXTRACT DYNAMIC FILTER OPTIONS
+  const { data: medicinesResponse } = useQuery({
+    queryKey: ['warehouseMedicines'],
+    queryFn: () => warehouseService.getMedicinesList(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  const medicines = medicinesResponse?.data || [];
+
+  // EXTRACT UNIQUE FILTER OPTIONS DYNAMICALLY FROM DATA
+  const filterOptions = useMemo(() => {
+    // Extract unique categories
+    const uniqueCategories = Array.from(
+      new Set(medicines.map(m => m.kategori).filter(Boolean))
+    ).sort();
+
+    // Map category display names
+    const categoryDisplay: Record<string, string> = {
+      'obat_bebas': 'Obat Bebas',
+      'obat_keras': 'Obat Keras',
+      'alkes': 'Alkes (Alat Kesehatan)',
+    };
+
+    const categoriesOptions = uniqueCategories.map(cat => 
+      categoryDisplay[cat] || cat.charAt(0).toUpperCase() + cat.slice(1)
+    );
+
+    // Extract unique satuan (units) for "Bentuk Sediaan"
+    const uniqueUnits = Array.from(
+      new Set(medicines.map(m => m.satuan).filter(Boolean))
+    ).sort();
+
+    // Extract unique storage types from lokasiGudang
+    const uniqueTypes = Array.from(
+      new Set(
+        medicines
+          .map(m => m.lokasiGudang?.tipe)
+          .filter((t): t is string => Boolean(t))
+      )
+    ).sort();
+
+    // Status options include all three statuses now
+    const statusesOptions = ['Tersedia', 'Stok Menipis', 'Stok Kritis'];
+
+    return {
+      categoriesOptions,
+      statusesOptions,
+      typesOptions: uniqueTypes.length > 0 ? uniqueTypes : ['A', 'B', 'C'],
+      unitsOptions: uniqueUnits,
+      categoryMap: uniqueCategories, // Keep original values for filtering
+    };
+  }, [medicines]);
 
   const toggleFilter = (type: keyof FilterState, value: string) => {
     setSelectedFilters((prev) => {
@@ -98,7 +150,7 @@ export const InventoryFilter: React.FC<InventoryFilterProps> = ({ onFilterChange
         <div className="space-y-2.5">
           <span className="text-[10px] font-bold text-[#67737C] uppercase tracking-wider block">Status Stok</span>
           <div className="flex flex-wrap gap-2">
-            {statusesOptions.map((status) => {
+            {filterOptions.statusesOptions.map((status) => {
               const isSelected = selectedFilters.statuses.includes(status);
               return (
                 <button
@@ -123,12 +175,13 @@ export const InventoryFilter: React.FC<InventoryFilterProps> = ({ onFilterChange
         <div className="space-y-2.5">
           <span className="text-[10px] font-bold text-[#67737C] uppercase tracking-wider block">Kategori Obat</span>
           <div className="flex flex-wrap gap-2">
-            {categoriesOptions.map((category) => {
-              const isSelected = selectedFilters.categories.includes(category);
+            {filterOptions.categoriesOptions.map((categoryDisplay, idx) => {
+              const categoryKey = filterOptions.categoryMap[idx];
+              const isSelected = selectedFilters.categories.includes(categoryKey);
               return (
                 <button
-                  key={category}
-                  onClick={() => toggleFilter('categories', category)}
+                  key={categoryKey}
+                  onClick={() => toggleFilter('categories', categoryKey)}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1",
                     isSelected 
@@ -137,37 +190,39 @@ export const InventoryFilter: React.FC<InventoryFilterProps> = ({ onFilterChange
                   )}
                 >
                   {isSelected && <Check className="w-3 h-3 shrink-0" />}
-                  {category}
+                  {categoryDisplay}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* SECTION 3: TIPE SEDIAAN */}
-        <div className="space-y-2.5">
-          <span className="text-[10px] font-bold text-[#67737C] uppercase tracking-wider block">Bentuk Sediaan</span>
-          <div className="flex flex-wrap gap-2">
-            {typesOptions.map((type) => {
-              const isSelected = selectedFilters.types.includes(type);
-              return (
-                <button
-                  key={type}
-                  onClick={() => toggleFilter('types', type)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1",
-                    isSelected 
-                      ? "bg-[#1B9C90] border-none text-white font-bold" 
-                      : "bg-white border-[#DFE6EB] text-[#67737C] hover:border-[#67737C]"
-                  )}
-                >
-                  {isSelected && <Check className="w-3 h-3 shrink-0" />}
-                  {type}
-                </button>
-              );
-            })}
+        {/* SECTION 3: LOKASI/TIPE GUDANG */}
+        {filterOptions.typesOptions.length > 0 && (
+          <div className="space-y-2.5">
+            <span className="text-[10px] font-bold text-[#67737C] uppercase tracking-wider block">Lokasi Gudang</span>
+            <div className="flex flex-wrap gap-2">
+              {filterOptions.typesOptions.map((type) => {
+                const isSelected = selectedFilters.types.includes(type);
+                return (
+                  <button
+                    key={type}
+                    onClick={() => toggleFilter('types', type)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1",
+                      isSelected 
+                        ? "bg-[#1B9C90] border-none text-white font-bold" 
+                        : "bg-white border-[#DFE6EB] text-[#67737C] hover:border-[#67737C]"
+                    )}
+                  >
+                    {isSelected && <Check className="w-3 h-3 shrink-0" />}
+                    Tipe {type}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

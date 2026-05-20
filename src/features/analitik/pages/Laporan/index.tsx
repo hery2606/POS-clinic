@@ -27,10 +27,14 @@ const chartComponents: Record<string, JSX.Element> = {
 
 export const LaporanPage = () => {
   const [selectedChart, setSelectedChart] = useState<string>("Pendapatan");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("2026-05");
 
   return (
     <div className="min-h-screen  p-4 sm:p-6 lg:p-8 space-y-6  animate-in fade-in duration-300">
-      <FinancialReportHeader />
+      <FinancialReportHeader 
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+      />
 
       <div className="flex items-center gap-6 border-b border-[#DFE6EB] pb-px overflow-x-auto scrollbar-none">
         {tabs.map((tab) => (
@@ -52,7 +56,7 @@ export const LaporanPage = () => {
         ))}
       </div>
 
-      <FinancialSummaryCards />
+      <FinancialSummaryCards period={selectedPeriod} />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Left Column: Active Chart */}
