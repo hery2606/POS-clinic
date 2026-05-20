@@ -2,29 +2,29 @@ import type { LoginCredentials, AuthResponse, User } from '../types/auth.types';
 
 // Demo users untuk development
 const DEMO_USERS: Record<string, { password: string; user: User }> = {
-  'admin@klinikbanani.com': {
+  'admin@klinik.com': {
     password: 'admin123',
     user: {
       id: '1',
-      email: 'admin@klinikbanani.com',
+      email: 'admin@klinik.com',
       name: 'Admin Banani',
       role: 'admin',
     },
   },
-  'kasir@klinikbanani.com': {
+  'kasir@klinik.com': {
     password: 'kasir123',
     user: {
       id: '2',
-      email: 'kasir@klinikbanani.com',
-      name: 'Kasir Banani',
+      email: 'kasir@klinik.com',
+      name: 'Kasir ',
       role: 'kasir',
     },
   },
-  'dokter@klinikbanani.com': {
+  'dokter@klinik.com': {
     password: 'dokter123',
     user: {
       id: '3',
-      email: 'dokter@klinikbanani.com',
+      email: 'dokter@klinik.com',
       name: 'Dr. Banani',
       role: 'dokter',
     },

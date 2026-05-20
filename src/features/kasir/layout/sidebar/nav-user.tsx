@@ -32,24 +32,24 @@ export function NavUser({
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <div className="flex items-center gap-3 px-2 py-3 border-t">
+        <div className="flex items-center gap-3 px-3 py-3">
           <Avatar className="h-10 w-10 rounded-lg">
             <AvatarImage src={user.avatar} alt={user.name} />
-            <AvatarFallback className="rounded-lg bg-primary text-primary-foreground font-semibold">
+            <AvatarFallback className="rounded-lg bg-[#1B9C90] text-white font-semibold">
               {user.name.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-semibold text-base">{user.name}</span>
-            <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+            <span className="truncate font-semibold text-sm text-white">{user.name}</span>
+            <span className="truncate text-xs text-[#8B96A3]">{user.email}</span>
           </div>
         </div>
         <SidebarMenuButton 
           onClick={handleLogout}
-          className="w-full mt-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+          className="w-full mt-2 mx-0 h-9 px-3 text-[#FF6B6B] hover:text-white hover:bg-[#FF6B6B]/20 transition-colors duration-200"
         >
-          <LogOutIcon className="h-5 w-5" />
-          <span className="text-base font-medium">Logout</span>
+          <LogOutIcon className="h-4 w-4" />
+          <span className="text-sm font-medium">Logout</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>

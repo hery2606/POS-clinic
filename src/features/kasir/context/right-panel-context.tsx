@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react'
 
-export type RightPanelContentType = 'payment' | 'transaction-detail' | 'patient-detail' | null
+export type RightPanelContentType = 'payment' | 'transaction-detail' | 'patient-detail' | 'notification' | 'stock-detail' | null
 
 export interface RightPanelContextType {
   contentType: RightPanelContentType
