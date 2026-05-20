@@ -44,6 +44,7 @@ function App() {
             <Route path={ROUTES.ADMIN.LAPORAN} element={<LaporanPage />} />
             <Route path={ROUTES.ADMIN.PASIEN} element={<PasienPage />} />
             <Route path={ROUTES.ADMIN.SETTINGS} element={<div className="p-6"><p>Halaman Pengaturan</p></div>} />
+            <Route path={ROUTES.ADMIN.SETTINGS} element={<div className="p-6"><p>Halaman Pengaturan</p></div>} />
           </Route>
 
 
