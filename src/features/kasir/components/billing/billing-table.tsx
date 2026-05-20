@@ -1,4 +1,4 @@
-import { Stethoscope, Pill, Trash2 } from 'lucide-react'
+import { Stethoscope, Pill, Trash2, Copy } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -25,15 +25,20 @@ export function BillingTable({
   const billingItems = items.length > 0 ? items : []
   const total = billingItems.reduce((sum, item) => sum + item.total, 0)
 
+  const handleCopyTotal = () => {
+    const text = `Rp ${total.toLocaleString('id-ID')}`
+    navigator.clipboard.writeText(text)
+  }
+
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+          <TableRow className="bg-linear-to-r from-slate-50 to-slate-100 border-b border-slate-200">
             <TableHead className="text-slate-700 font-semibold">Item</TableHead>
             <TableHead className="text-center text-slate-700 font-semibold">Qty</TableHead>
-            <TableHead className="text-right text-slate-700 font-semibold">Harga</TableHead>
-            <TableHead className="text-right text-slate-700 font-semibold">Total</TableHead>
+            <TableHead className="text-right text-slate-700 font-semibold">Harga Satuan</TableHead>
+            <TableHead className="text-right text-slate-700 font-semibold">Subtotal</TableHead>
             {onRemoveItem && <TableHead className="text-center text-slate-700 font-semibold">Aksi</TableHead>}
           </TableRow>
         </TableHeader>
@@ -54,7 +59,7 @@ export function BillingTable({
               >
                 <TableCell className="py-4">
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex-shrink-0">
+                    <div className="mt-0.5 shrink-0">
                       {item.icon === 'stethoscope' ? (
                         <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
                           <Stethoscope className="h-5 w-5 text-[#29B5A8]" />
@@ -80,7 +85,7 @@ export function BillingTable({
                         className="h-6 w-6 p-0 text-xs"
                         onClick={() => onUpdateQty(item.id, Math.max(1, item.qty - 1))}
                       >
-                        -
+                        −
                       </Button>
                     )}
                     <span className="w-8 text-center font-medium text-gray-900 text-sm">
@@ -120,15 +125,24 @@ export function BillingTable({
             ))
           )}
         </TableBody>
-        <TableFooter className="bg-gradient-to-r from-slate-50 to-slate-100 border-t border-slate-200">
+        <TableFooter className="bg-linear-to-r from-slate-50 to-slate-100 border-t border-slate-200">
           <TableRow>
             <TableCell colSpan={onRemoveItem ? 3 : 2} className="text-right py-4">
               <span className="font-semibold text-gray-700">Total Tagihan</span>
             </TableCell>
             <TableCell className="text-right py-4">
-              <span className="text-lg font-bold text-[#29B5A8]">
-                Rp {total.toLocaleString('id-ID')}
-              </span>
+              <div className="flex items-center justify-end gap-2 group">
+                <span className="text-lg font-bold text-[#29B5A8]">
+                  Rp {total.toLocaleString('id-ID')}
+                </span>
+                <button
+                  onClick={handleCopyTotal}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-slate-200 rounded"
+                  title="Salin ke clipboard"
+                >
+                  <Copy className="h-3.5 w-3.5 text-slate-500" />
+                </button>
+              </div>
             </TableCell>
             {onRemoveItem && <TableCell></TableCell>}
           </TableRow>

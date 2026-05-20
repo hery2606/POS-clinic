@@ -17,7 +17,6 @@ import {
   SettingsIcon,
   HeartHandshakeIcon,
   ReceiptText,
-  Users,
   Pill,
 } from "lucide-react";
 
@@ -35,11 +34,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: ROUTES.KASIR.RIWAYAT,
       icon: <ReceiptText className="h-5 w-5" />,
     },
-    {
-      title: "Data Pasien",
-      url: ROUTES.KASIR.PASIEN,
-      icon: <Users className="h-5 w-5" />,
-    },
+    
     {
       title: "Stok Obat",
       url: ROUTES.KASIR.STOK,

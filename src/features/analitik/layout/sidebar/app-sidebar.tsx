@@ -66,10 +66,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <HeartHandshakeIcon className="h-6 w-6" />
             </div>
             <div className="flex flex-col group-data-[collapse=icon]:hidden min-w-0">
-              <span className="text-sm font-bold text-white tracking-tight leading-tight">
+              <span className="text-base font-bold text-white tracking-tight leading-tight">
                 Smart Clinic
               </span>
-              <span className="text-[11px] text-[#1B9C90] font-medium tracking-tight">
+              <span className="text-xs text-[#1B9C90] font-medium tracking-tight">
                 ANALITIK DASHBOARD
               </span>
             </div>

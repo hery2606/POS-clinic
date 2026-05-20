@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import { useEffect, useState } from 'react'
 import { Activity, Pill, Stethoscope, HeartPulse } from "lucide-react"
 import {
   CardDescription,
@@ -8,28 +8,133 @@ import {
   CardTitle,
   CardContent,
 } from "@/components/ui/card"
+import { analitikService } from '@/features/analitik/services/analitik.service'
 
-const chartData = [
-  { item: "Konsultasi Dokter Umum", value: 85, count: 1700, total: 2000, type: "layanan" },
-  { item: "Cek Darah Lengkap", value: 55, count: 1100, total: 2000, type: "laboratorium" },
-  { item: "Amoxicillin 500mg", value: 45, count: 900, total: 2000, type: "produk" },
-  { item: "USG Kehamilan", value: 30, count: 600, total: 2000, type: "layanan" },
-]
+interface ChartItem {
+  item: string
+  value: number
+  count: number
+  total: number
+  type: "layanan" | "produk" | "laboratorium"
+}
 
 export function ChartBarMixed() {
-  // Fungsi penentu ikon berdasarkan tipe item agar lebih interaktif
+  const [chartData, setChartData] = useState<ChartItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const response = await analitikService.getProductAnalytics()
+        const data = response.data
+
+        // Combine produk dan layanan data
+        const combinedData: ChartItem[] = []
+
+        // Add produk (top 5)
+        data.produk_terlaris_top_10.slice(0, 5).forEach((produk) => {
+          combinedData.push({
+            item: produk.nama_obat,
+            value: Math.round((produk.jumlah_terjual / 150) * 100), // Normalize based on max
+            count: produk.jumlah_terjual,
+            total: 2000,
+            type: "produk",
+          })
+        })
+
+        // Add layanan
+        data.pemeriksaan_layanan_terlaris.slice(0, 5).forEach((layanan) => {
+          combinedData.push({
+            item: layanan.nama_layanan,
+            value: Math.round((layanan.jumlah_transaksi / 120) * 100), // Normalize based on max
+            count: layanan.jumlah_transaksi,
+            total: 2000,
+            type: "layanan",
+          })
+        })
+
+        // Sort by value descending and take top items
+        const sortedData = combinedData.sort((a, b) => b.value - a.value).slice(0, 4)
+        setChartData(sortedData)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch data')
+        console.error('Error fetching product analytics:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
   const getItemIcon = (type: string) => {
     switch (type) {
       case "layanan":
-        return <Stethoscope className="w-4 h-4 text-[#1B9C90]" />;
+        return <Stethoscope className="w-4 h-4 text-[#1B9C90]" />
       case "produk":
-        return <Pill className="w-4 h-4 text-[#1B9C90]" />;
+        return <Pill className="w-4 h-4 text-[#1B9C90]" />
       case "laboratorium":
-        return <HeartPulse className="w-4 h-4 text-[#1B9C90]" />;
+        return <HeartPulse className="w-4 h-4 text-[#1B9C90]" />
       default:
-        return <Activity className="w-4 h-4 text-[#1B9C90]" />;
+        return <Activity className="w-4 h-4 text-[#1B9C90]" />
     }
-  };
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden h-full w-full">
+        <CardHeader className="p-6 pb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#DFF6F2] flex items-center justify-center">
+              <Activity className="w-5 h-5 text-[#1B9C90]" />
+            </div>
+            <div>
+              <CardTitle className="text-base font-bold text-[#13222D]">
+                Produk & Layanan Terlaris
+              </CardTitle>
+              <CardDescription className="text-xs font-medium text-red-600 mt-0.5">
+                Error: {error}
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden h-full w-full">
+        <CardHeader className="p-6 pb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#DFF6F2] flex items-center justify-center">
+              <Activity className="w-5 h-5 text-[#1B9C90]" />
+            </div>
+            <div>
+              <CardTitle className="text-base font-bold text-[#13222D]">
+                Produk & Layanan Terlaris
+              </CardTitle>
+              <CardDescription className="text-xs font-medium text-[#67737C] mt-0.5">
+                Memuat data...
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 pt-0">
+          <div className="space-y-5">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-2.5 bg-gray-100 rounded animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden h-full w-full">
@@ -81,7 +186,7 @@ export function ChartBarMixed() {
                     {data.value}%
                   </span>
                   <span className="text-[11px] font-semibold text-[#67737C] ml-1.5">
-                    ({data.count.toLocaleString('id-ID')} unit)
+                    ({data.count.toLocaleString('id-ID')} {data.type === 'produk' ? 'unit' : 'transaksi'})
                   </span>
                 </div>
               </div>

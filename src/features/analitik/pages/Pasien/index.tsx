@@ -10,7 +10,7 @@ import { PatientAnalysisDashboard } from "@/features/analitik/components/Pasien/
 
 export const PasienPage = () => {
   return (
-    <div className="min-h-screen bg-[#F9FEFC]/50 p-4 sm:p-6 lg:p-8 space-y-8 max-w-400 mx-auto animate-in fade-in duration-300">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 space-y-8 max-w-400 mx-auto animate-in fade-in duration-300">
       <div className="w-full py-2 border border-[#c4d1cf] shadow-sm rounded-[24px] bg-white">
         <div className="p-6">
           <PatientAnalysisDashboard />

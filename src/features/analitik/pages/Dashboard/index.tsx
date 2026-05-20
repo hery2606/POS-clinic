@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 
 export const DashboardPage = () => {
   return (
-    <div className="min-h-screen bg-[#F5F7FA] p-6">
+    <div className="min-h-screen  p-6">
       {/* AI Insight Banner */}
       <div className="mb-8">
         <AiInsightBanner />
