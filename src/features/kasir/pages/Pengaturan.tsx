@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Settings } from '../components/pengaturan/Settings';
-import { SettingsSidebarNav } from '../components/pengaturan/SettingsSidebarNav';
+import { Settings } from '../pengaturan/Settings';
+import { SettingsSidebarNav } from '../pengaturan/SettingsSidebarNav';
 import { useRightPanel } from '../context/right-panel-context';
 
 export const SettingsPage = () => {

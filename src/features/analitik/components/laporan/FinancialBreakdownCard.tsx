@@ -1,7 +1,10 @@
 "use client";
 
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { analitikService } from "../../services/analitik.service";
 
 export type BreakdownTabType = "Pendapatan" | "Pengeluaran" | "Laba Rugi" | "Neraca" | "Arus Kas";
 
@@ -17,7 +20,7 @@ interface BreakdownData {
   contributors: { name: string; amount: string }[];
 }
 
-const breakdownConfigs: Record<BreakdownTabType, BreakdownData> = {
+const staticBreakdownConfigs: Record<BreakdownTabType, BreakdownData> = {
   Pendapatan: {
     title: "Breakdown Pendapatan",
     subtitle: "Berdasarkan Kategori",
@@ -90,8 +93,104 @@ const breakdownConfigs: Record<BreakdownTabType, BreakdownData> = {
   },
 };
 
+const formatCurrency = (amount: number): string => {
+  if (amount >= 1_000_000) {
+    return `Rp ${(amount / 1_000_000).toFixed(1)}M`;
+  } else if (amount >= 1_000) {
+    return `Rp ${(amount / 1_000).toFixed(1)}K`;
+  }
+  return `Rp ${amount}`;
+};
+
 export function FinancialBreakdownCard({ activeTab }: FinancialBreakdownCardProps) {
-  const data = breakdownConfigs[activeTab] || breakdownConfigs.Pendapatan;
+  // Fetch cashflow and product data
+  const cashflowQuery = useQuery({
+    queryKey: ["cashflowSummary"],
+    queryFn: () => analitikService.getCashflowSummary(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  const productsQuery = useQuery({
+    queryKey: ["productsAnalytics"],
+    queryFn: () => analitikService.getProductAnalytics(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  // Generate dynamic data for Arus Kas tab
+  const dynamicArusKasData = useMemo(() => {
+    if (!cashflowQuery.data?.data) return staticBreakdownConfigs["Arus Kas"];
+
+    const cashflow = cashflowQuery.data.data;
+    const kasMasuk = cashflow.kas_masuk_harian || 0;
+    const kasKeluar = kasMasuk * 0.4; // Estimate 40% for cashOut
+
+    const totalKas = kasMasuk + kasKeluar;
+    const persenMasuk = totalKas > 0 ? Math.round((kasMasuk / totalKas) * 100) : 62;
+    const persenKeluar = 100 - persenMasuk;
+
+    return {
+      title: "Breakdown Arus Kas",
+      subtitle: "Rasio Aliran Dana",
+      categories: [
+        { name: "Kas Masuk", percentage: persenMasuk, color: "#1B9C90" },
+        { name: "Kas Keluar", percentage: persenKeluar, color: "#E62C2C" },
+      ],
+      contributorsTitle: "Sumber Aliran Terbesar",
+      contributors: [
+        { name: "Kas Masuk Hari Ini", amount: formatCurrency(kasMasuk) },
+        { name: `${cashflow.total_transaksi_lunas_hari_ini || 0} Transaksi Lunas`, amount: formatCurrency(kasMasuk / Math.max(1, cashflow.total_transaksi_lunas_hari_ini || 1)) },
+        { name: "Invoice Belum Lunas", amount: formatCurrency(cashflow.nilai_total_invoice_belum_lunas || 0) },
+      ],
+    };
+  }, [cashflowQuery.data]);
+
+  // Generate dynamic data for Pendapatan tab using products
+  const dynamicPendapatanData = useMemo(() => {
+    if (!productsQuery.data?.data) return staticBreakdownConfigs.Pendapatan;
+
+    const products = productsQuery.data.data;
+    const topProducts = products.produk_terlaris_top_10 || [];
+    const topServices = products.pemeriksaan_layanan_terlaris || [];
+
+    // Calculate percentages
+    const totalServiceRevenue = topServices.reduce((sum: number, s: any) => sum + (s.pendapatan_layanan || 0), 0);
+    const totalProductRevenue = topProducts.reduce((sum: number, p: any) => sum + (p.pendapatan_produk || 0), 0);
+    const total = totalServiceRevenue + totalProductRevenue;
+
+    const persenLayanan = total > 0 ? Math.round((totalServiceRevenue / total) * 100) : 65;
+    const persenFarmasi = 100 - persenLayanan;
+
+    return {
+      title: "Breakdown Pendapatan",
+      subtitle: "Berdasarkan Kategori",
+      categories: [
+        { name: "Layanan Medis", percentage: persenLayanan, color: "#1B9C90" },
+        { name: "Farmasi & Obat", percentage: persenFarmasi, color: "#84DFD4" },
+      ],
+      contributorsTitle: "Top 3 Kontributor",
+      contributors: [
+        ...(topServices.length > 0 ? [{ name: topServices[0].nama_layanan, amount: formatCurrency(topServices[0].pendapatan_layanan) }] : []),
+        ...(topProducts.length > 0 ? [{ name: topProducts[0].nama_obat, amount: formatCurrency(topProducts[0].pendapatan_produk) }] : []),
+        ...(topProducts.length > 1 ? [{ name: topProducts[1].nama_obat, amount: formatCurrency(topProducts[1].pendapatan_produk) }] : []),
+      ].slice(0, 3),
+    };
+  }, [productsQuery.data]);
+
+  // Map active tab to data source
+  const getDataForTab = (): BreakdownData => {
+    switch (activeTab) {
+      case "Arus Kas":
+        return dynamicArusKasData;
+      case "Pendapatan":
+        return dynamicPendapatanData;
+      default:
+        return staticBreakdownConfigs[activeTab];
+    }
+  };
+
+  const data = getDataForTab();
 
   return (
     <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm w-full max-w-md space-y-5 h-full flex flex-col justify-between">

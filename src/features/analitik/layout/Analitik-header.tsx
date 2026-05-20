@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Calendar as CalendarIcon, Sparkles, Download, ChevronDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { VisualSummaryModal } from "@/features/analitik/ui/VisualSummaryModal";
+import { VisualSummaryModal } from "@/features/analitik/components/modals/VisualSummaryModal";
 import { periodOptions, monthOptions, yearOptions, type PeriodType } from "./periodOptionsConfig";
 
 export const AnalitikHeader = () => {

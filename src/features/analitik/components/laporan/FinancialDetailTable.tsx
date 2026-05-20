@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Table, 
   TableBody, 
@@ -13,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BreakdownTabType } from "./FinancialBreakdownCard";
+import { analitikService } from "../../services/analitik.service";
 
 interface FinancialDetailTableProps {
   activeTab: BreakdownTabType;
@@ -75,9 +78,61 @@ const dummyTableData: Record<BreakdownTabType, any[]> = {
   ],
 };
 
+const formatCurrency = (amount: number): string => {
+  if (amount >= 1_000_000) {
+    return `Rp ${(amount / 1_000_000).toFixed(1)}M`;
+  } else if (amount >= 1_000) {
+    return `Rp ${(amount / 1_000).toFixed(1)}K`;
+  }
+  return `Rp ${amount}`;
+};
+
+const getTodayDate = (): string => {
+  const today = new Date();
+  const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  return `${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+};
+
 export function FinancialDetailTable({ activeTab, onViewAllClick }: FinancialDetailTableProps) {
+  // Fetch cashflow data only for Arus Kas tab
+  const cashflowQuery = useQuery({
+    queryKey: ["cashflowSummary"],
+    queryFn: () => analitikService.getCashflowSummary(),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    enabled: activeTab === "Arus Kas",
+  });
+
+  // Generate dynamic data for Arus Kas tab
+  const dynamicArusKasData = useMemo(() => {
+    if (!cashflowQuery.data?.data) return dummyTableData["Arus Kas"];
+
+    const cashflow = cashflowQuery.data.data;
+    const today = getTodayDate();
+    const kasKeluar = Math.max(0, cashflow.kas_masuk_harian * 0.4);
+    
+    return [
+      {
+        col1: today,
+        col2: `${cashflow.total_transaksi_lunas_hari_ini || 0} Transaksi Lunas`,
+        col3: formatCurrency(cashflow.kas_masuk_harian),
+        col4: formatCurrency(kasKeluar),
+        col5: formatCurrency(cashflow.kas_masuk_harian + (cashflow.nilai_total_invoice_belum_lunas || 0)),
+        isHighlight: true,
+      },
+      {
+        col1: today,
+        col2: `${cashflow.total_transaksi_pending_hari_ini || 0} Transaksi Pending`,
+        col3: "Rp 0",
+        col4: formatCurrency(cashflow.nilai_total_invoice_belum_lunas || 0),
+        col5: formatCurrency(cashflow.nilai_total_invoice_belum_lunas || 0),
+      },
+      ...dummyTableData["Arus Kas"].slice(1),
+    ];
+  }, [cashflowQuery.data]);
+
   const config = tableConfigs[activeTab] || tableConfigs.Pendapatan;
-  const rows = dummyTableData[activeTab] || dummyTableData.Pendapatan;
+  const rows = activeTab === "Arus Kas" ? dynamicArusKasData : dummyTableData[activeTab] || dummyTableData.Pendapatan;
 
   return (
     <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full flex flex-col justify-between">

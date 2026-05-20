@@ -35,10 +35,10 @@ export function PatientQueue({
             <Users className="w-5 h-5 text-[#1B9C90]" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[#13222D]">Antrian Pasien</h3>
+            <h3 className="text-sm font-medium text-[#13222D]">Antrian Pasien</h3>
             <div className="flex items-center gap-1.5 mt-0.5">
               <div className="w-1.5 h-1.5 rounded-full bg-[#1B9C90] animate-pulse" />
-              <p className="text-[10px] font-bold text-[#67737C] uppercase tracking-wider">
+              <p className="text-[10px] font-medium text-[#67737C] uppercase tracking-wider">
                 {patients.length} Menunggu
               </p>
             </div>

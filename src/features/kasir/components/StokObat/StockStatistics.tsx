@@ -1,17 +1,28 @@
+import { useQuery } from '@tanstack/react-query';
 import { 
   Package, 
   AlertCircle, 
-  XCircle, 
-  Wallet 
+  XCircle
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from "@/lib/utils";
+import { warehouseService } from '../../services/warehouse.service';
 
 export const StockStatistics = () => {
+  // FETCH REAL STOCK STATS DATA
+  const { data: statsData, isLoading } = useQuery({
+    queryKey: ['medicineStats'],
+    queryFn: () => warehouseService.getMedicineStats(),
+    staleTime: 5 * 60 * 1000, // 5 menit
+    gcTime: 10 * 60 * 1000,   // 10 menit
+  });
+
+  // BUILD STATS ARRAY DENGAN DATA REAL ATAU FALLBACK
   const stats = [
     {
       title: "Total Item",
-      value: "1,245",
+      value: statsData?.total?.toLocaleString() || "0",
       unit: "Item",
       icon: Package,
       bgColor: "bg-white",
@@ -20,36 +31,57 @@ export const StockStatistics = () => {
       iconColor: "text-[#67737C]"
     },
     {
+      title: "Stok Aman",
+      value: statsData?.aman?.toLocaleString() || "0",
+      unit: "Item",
+      icon: Package,
+      bgColor: "bg-[#DFF6F2]",
+      borderColor: "border-[#B8EBE5]",
+      textColor: "text-[#1B9C90]",
+      iconColor: "text-[#1B9C90]"
+    },
+    {
       title: "Stok Menipis",
-      value: "24",
+      value: statsData?.menipis?.toLocaleString() || "0",
       unit: "Item",
       icon: AlertCircle,
-      bgColor: "bg-[#FFF9EB]", // Light Warning
+      bgColor: "bg-[#FFF9EB]",
       borderColor: "border-[#FFE6A8]",
-      textColor: "text-[#F2A618]", // --warning
+      textColor: "text-[#F2A618]",
       iconColor: "text-[#F2A618]"
     },
     {
-      title: "Stok Habis",
-      value: "5",
+      title: "Stok Kritis",
+      value: statsData?.kritis?.toLocaleString() || "0",
       unit: "Item",
       icon: XCircle,
-      bgColor: "bg-[#FEF2F2]", // Light Destructive
+      bgColor: "bg-[#FEF2F2]",
       borderColor: "border-[#FEE2E2]",
-      textColor: "text-[#E62C2C]", // --destructive
+      textColor: "text-[#E62C2C]",
       iconColor: "text-[#E62C2C]"
-    },
-    {
-      title: "Nilai Aset",
-      value: "42.5M",
-      unit: "IDR",
-      icon: Wallet,
-      bgColor: "bg-[#DFF6F2]", // Light Primary/Secondary
-      borderColor: "border-[#B8EBE5]",
-      textColor: "text-[#1B9C90]", // --primary
-      iconColor: "text-[#1B9C90]"
     }
   ];
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 p-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i} className="rounded-[20px] p-6 border border-[#DFE6EB]">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-3 w-20 rounded-md bg-[#EFF4F8]" />
+                <Skeleton className="h-10 w-10 rounded-xl bg-[#EFF4F8]" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <Skeleton className="h-8 w-16 rounded-md bg-[#EFF4F8]" />
+                <Skeleton className="h-3 w-10 rounded-md bg-[#EFF4F8]" />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-in fade-in p-4 slide-in-from-top-4 duration-500 ">

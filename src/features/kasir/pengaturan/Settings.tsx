@@ -38,7 +38,7 @@ interface SettingsProps {
   onTabChange: (id: string) => void;
 }
 
-export function Settings({ activeTab, onTabChange }: SettingsProps) {
+export function Settings({ activeTab }: SettingsProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
