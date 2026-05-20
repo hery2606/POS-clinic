@@ -31,7 +31,7 @@ export const PaymentTabs = ({
           disabled={isLoading}
           onClick={() => handleTabClick("penjaminan")}
           className={cn(
-            "flex-1 px-6 py-3 rounded-full text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2",
+            "flex-1 px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2",
             activeTab === "penjaminan"
               ? "bg-[#29B5A8] text-white shadow-md shadow-emerald-100"
               : "bg-transparent text-slate-600 hover:text-slate-900 disabled:opacity-50"
@@ -46,7 +46,7 @@ export const PaymentTabs = ({
           disabled={isLoading}
           onClick={() => handleTabClick("mandiri")}
           className={cn(
-            "flex-1 px-6 py-3 rounded-full text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2",
+            "flex-1 px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2",
             activeTab === "mandiri"
               ? "bg-[#29B5A8] text-white shadow-md shadow-emerald-100"
               : "bg-transparent text-slate-600 hover:text-slate-900 disabled:opacity-50"

@@ -8,7 +8,6 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 
 interface PharmacyItem {
   id: string;
@@ -35,6 +34,7 @@ export const BillingTablePharmacy = ({
           { id: '1', name: 'Amoxicillin 500mg', category: 'Obat-obatan', qty: 10, price: 2500 },
           { id: '2', name: 'Paracetamol 500mg', category: 'Obat-obatan', qty: 10, price: 1000 },
           { id: '3', name: 'Vitamin C', category: 'Obat-obatan', qty: 1, price: 35000 },
+          
         ]
   );
 

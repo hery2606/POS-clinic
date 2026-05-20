@@ -5,6 +5,8 @@ export function useRightPanelTitle(contentType: RightPanelContentType): string {
     'payment': 'Pembayaran',
     'transaction-detail': 'Detail Transaksi',
     'patient-detail': 'Detail Pasien',
+    'notification': 'Notifikasi',
+    'stock-detail': 'Detail Stok Obat',
   }
 
   return titles[contentType as Exclude<RightPanelContentType, null>] || ''

@@ -59,7 +59,7 @@ export const TransactionDetail = ({ transaction }: { transaction?: Partial<Trans
     : { bg: '#FFF4E6', icon: '#F59E0B', text: '#F59E0B' }
 
   return (
-    <div className="space-y-5 w-full max-w-md mx-auto">
+    <div className="space-y-5  w-full max-w-md mx-auto">
       {/* HEADER - Close Button Only */}
       <div className="flex justify-end mb-2">
         <Button 
@@ -90,15 +90,15 @@ export const TransactionDetail = ({ transaction }: { transaction?: Partial<Trans
       <div className="bg-[#F9FEFC] rounded-[16px] p-5 border border-[#DFE6EB] space-y-4">
         <div className="flex justify-between items-center">
           <span className="text-sm font-medium text-[#67737C]">No. Invoice</span>
-          <span className="text-sm font-bold text-[#13222D]">{data.id}</span>
+          <span className="text-sm font-medium text-[#13222D]">{data.id}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-sm font-medium text-[#67737C]">Pasien</span>
-          <span className="text-sm font-bold text-[#13222D]">{data.patientName}</span>
+          <span className="text-sm font-medium text-[#13222D]">{data.patientName}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="text-sm font-medium text-[#67737C]">Kasir</span>
-          <span className="text-sm font-bold text-[#13222D]">{data.cashierName}</span>
+          <span className="text-sm font-medium text-[#13222D]">{data.cashierName}</span>
         </div>
         <Separator className="bg-[#DFE6EB]" />
         <div className="flex justify-between items-center">
