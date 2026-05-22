@@ -292,7 +292,7 @@ export const PatientDetailModal = ({
                   {formatDate(patient.createdAt)}
                 </p>
                 <p className="text-xs text-[#67737C] font-medium mt-2">
-                  Pasien sudah terdaftar selama{' '}
+                  Pasien sudah terdaftar s{' '}
                   <span className="font-medium text-[#1B9C90]">
                     {Math.floor(
                       (Date.now() - new Date(patient.createdAt).getTime()) / (1000 * 60 * 60 * 24)
