@@ -246,7 +246,7 @@ export const PatientListTable = () => {
                       onClick={() => handleViewPatient(patient)}
                       className="h-8 rounded-xl px-5 text-xs font-bold bg-[#1B9C90] hover:bg-[#157A71] text-white border-none transition-colors"
                     >
-                      Lihat
+                      Lihat 
                     </Button>
                   </TableCell>
                 </TableRow>
