@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   SearchIcon,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { 
   Table, 
   TableBody, 
@@ -19,6 +20,9 @@ import { cn } from "@/lib/utils";
 import { useRightPanel } from '../../context/right-panel-context';
 import { FilterTransaction, type FilterState } from './components/FilterTransaction';
 import { DateRangeSelector, type DateRange } from './components/DateRangeSelector';
+import { TransactionListSkeleton } from './ui/TransactionListSkeleton';
+import { billingService } from '../../services';
+import { type Billing } from '../../types/billing.types';
 
 interface Transaction {
   id: string
@@ -29,56 +33,48 @@ interface Transaction {
   status: string
   total: string
   highlighted?: boolean
+  billingData?: Billing
 }
 
-const transactions: Transaction[] = [
-  { 
-    id: 'INV-230814-001', 
-    time: '14:30', 
-    patient: 'Budi Santoso', 
-    initial: 'BU', 
-    type: 'Pelayanan Medis', 
-    status: 'Lunas', 
-    total: 'Rp 220.000', 
-    highlighted: true 
-  },
-  { 
-    id: 'INV-230814-002', 
-    time: '14:15', 
-    patient: 'Umum (Obat Saja)', 
-    initial: 'UM', 
-    type: 'Obat Saja', 
-    status: 'Lunas', 
-    total: 'Rp 75.000' 
-  },
-  { 
-    id: 'INV-230814-003', 
-    time: '13:45', 
-    patient: 'Siti Aminah', 
-    initial: 'SI', 
-    type: 'Pelayanan Medis', 
-    status: 'Menunggu', 
-    total: 'Rp 150.000' 
-  },
-  { 
-    id: 'INV-230814-004', 
-    time: '13:10', 
-    patient: 'Agus Pratama', 
-    initial: 'AG', 
-    type: 'Pelayanan Medis', 
-    status: 'Lunas', 
-    total: 'Rp 350.000' 
-  },
-  { 
-    id: 'INV-230814-005', 
-    time: '12:05', 
-    patient: 'Umum (Obat Saja)', 
-    initial: 'UM', 
-    type: 'Obat Saja', 
-    status: 'Lunas', 
-    total: 'Rp 12.000' 
-  },
-];
+const formatCurrency = (value: string | number) => {
+  const num = typeof value === 'string' ? parseInt(value) : value;
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+  }).format(num);
+};
+
+const getInitials = (name: string) => {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map(word => word[0].toUpperCase())
+    .join('')
+    .slice(0, 2);
+};
+
+const mapBillingToTransaction = (billing: Billing): Transaction => {
+  const statusMap: Record<string, string> = {
+    'LUNAS': 'Lunas',
+    'BELUM_LUNAS': 'Menunggu',
+    'SEBAGIAN': 'Sebagian',
+  };
+
+  const tanggal = new Date(billing.createdAt);
+  const time = tanggal.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+  return {
+    id: billing.noInvoice,
+    time,
+    patient: billing.janji.pasien.namaLengkap,
+    initial: getInitials(billing.janji.pasien.namaLengkap),
+    type: 'Pelayanan Medis',
+    status: statusMap[billing.status] || billing.status,
+    total: formatCurrency(billing.totalBiaya),
+    billingData: billing,
+  };
+};
 
 export const TransactionList = () => {
   const { setContent } = useRightPanel()
@@ -87,26 +83,22 @@ export const TransactionList = () => {
     statuses: [],
     types: [],
   })
-  const [filteredTransactions, setFilteredTransactions] = useState(transactions)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
-  const handleTransactionClick = (transaction: Transaction) => {
-    const transactionData = {
-      id: transaction.id,
-      amount: parseInt(transaction.total.replace(/\D/g, '')) * 1000,
-      date: `${new Date().toLocaleDateString('id-ID')} - ${transaction.time}`,
-      status: transaction.status === 'Lunas' ? 'success' : 'pending',
-      patientName: transaction.patient,
-      cashierName: 'Andi Pratama',
-      paymentMethod: 'BPJS Kesehatan',
-      items: [
-        { name: 'Konsultasi Dokter', quantity: 1, price: 150000 },
-        { name: 'Obat-obatan (Resep)', quantity: 1, price: 70000 },
-      ],
-      guaranteeAmount: parseInt(transaction.total.replace(/\D/g, '')) * 1000,
-    }
-    
-    setContent('transaction-detail', transactionData)
-  }
+  // Fetch data dengan React Query
+  const { data: billingResponse, isLoading, error } = useQuery({
+    queryKey: ['allBillings'],
+    queryFn: () => billingService.getAllBilling(1, 1000),
+    staleTime: 5 * 60 * 1000, // 5 menit
+    gcTime: 10 * 60 * 1000,   // 10 menit
+  });
+
+  // Map billing data to transactions
+  const transactions = useMemo(() => {
+    if (!billingResponse?.data) return []
+    return billingResponse.data.map(mapBillingToTransaction)
+  }, [billingResponse?.data])
 
   const applyFilters = (newFilters: FilterState, search: string) => {
     let result = transactions
@@ -120,7 +112,7 @@ export const TransactionList = () => {
       )
     }
 
-    // Filter by status - map status text to filter id
+    // Filter by status
     if (newFilters.statuses && newFilters.statuses.length > 0) {
       result = result.filter(trx => {
         const statusId = trx.status.toLowerCase()
@@ -128,7 +120,7 @@ export const TransactionList = () => {
       })
     }
 
-    // Filter by type - map type text to filter id
+    // Filter by type
     if (newFilters.types && newFilters.types.length > 0) {
       result = result.filter(trx => {
         const typeLabel = trx.type
@@ -139,21 +131,69 @@ export const TransactionList = () => {
       })
     }
 
-    setFilteredTransactions(result)
+    return result
+  }
+
+  const filteredTransactions = useMemo(() => {
+    return applyFilters(filters, searchQuery)
+  }, [transactions, filters, searchQuery])
+
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage) || 1
+
+  const handleTransactionClick = (transaction: Transaction) => {
+    const billing = transaction.billingData
+    if (!billing) return
+
+    const transactionData = {
+      id: transaction.id,
+      amount: parseInt(billing.totalBiaya),
+      date: `${new Date(billing.createdAt).toLocaleDateString('id-ID')} - ${transaction.time}`,
+      status: billing.status === 'LUNAS' ? 'success' : 'pending',
+      patientName: billing.janji.pasien.namaLengkap,
+      cashierName: 'Andi Pratama',
+      paymentMethod: billing.metodePembayaran,
+      items: billing.detail.map(item => ({
+        name: item.namaLayanan,
+        quantity: item.jumlah,
+        price: parseInt(item.harga),
+      })),
+      guaranteeAmount: parseInt(billing.totalBiaya),
+    }
+    
+    setContent('transaction-detail', transactionData)
   }
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters)
-    applyFilters(newFilters, searchQuery)
+    setCurrentPage(1)
   }
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value)
-    applyFilters(filters, value)
+    setCurrentPage(1)
   }
 
   const handleDateRangeChange = (dateRange: DateRange) => {
     console.log('Date range selected:', dateRange);
+  }
+
+  const paginatedTransactions = filteredTransactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
+  // SKELETON LOADING UI
+  if (isLoading) {
+    return <TransactionListSkeleton />
+  }
+
+  // ERROR UI
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg border border-red-200 p-8 text-center text-red-600 font-semibold">
+        Gagal memuat data transaksi: {(error as Error).message}
+      </div>
+    )
   }
 
   return (
@@ -191,8 +231,9 @@ export const TransactionList = () => {
               <TableHead className="pr-8 text-right text-gray-700 font-bold h-12 w-[15%]">Total</TableHead>
             </TableRow>
           </TableHeader>
+          
           <TableBody>
-            {filteredTransactions.map((trx) => {
+            {paginatedTransactions.map((trx) => {
               const isActive = trx.highlighted;
               return (
                 <TableRow 
@@ -252,7 +293,7 @@ export const TransactionList = () => {
       {/* PAGINATION FOOTER */}
       <div className="p-4 flex items-center justify-between border-t border-gray-100 bg-white text-sm shrink-0">
         <p className="text-xs font-medium text-gray-400 pl-4">
-          Menampilkan <span className="font-bold text-gray-900">1-{Math.min(5, filteredTransactions.length)}</span> dari <span className="font-bold text-gray-900">{filteredTransactions.length}</span> Transaksi
+          Menampilkan <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredTransactions.length)}</span> dari <span className="font-bold text-gray-900">{filteredTransactions.length}</span> Transaksi
         </p>
         
         <div className="flex items-center gap-1.5 pr-4">
@@ -260,35 +301,33 @@ export const TransactionList = () => {
             variant="outline" 
             size="icon" 
             className="w-8 h-8 rounded-md border-gray-200 text-gray-400 hover:bg-gray-50" 
-            disabled
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
           
-          <Button 
-            className="w-8 h-8 rounded-md bg-green-600 hover:bg-green-700 text-white font-bold text-xs border-none shadow-none"
-          >
-            1
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            className="w-8 h-8 rounded-md text-gray-400 font-bold text-xs hover:bg-gray-50"
-          >
-            2
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            className="w-8 h-8 rounded-md text-gray-400 font-bold text-xs hover:bg-gray-50"
-          >
-            3
-          </Button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            <Button 
+              key={page}
+              className={cn(
+                "w-8 h-8 rounded-md text-xs font-bold border-none shadow-none",
+                currentPage === page 
+                  ? "bg-green-600 hover:bg-green-700 text-white" 
+                  : "text-gray-400 hover:bg-gray-50 variant-ghost"
+              )}
+              onClick={() => setCurrentPage(page)}
+            >
+              {page}
+            </Button>
+          ))}
           
           <Button 
             variant="outline" 
             size="icon" 
             className="w-8 h-8 rounded-md border-gray-200 text-gray-400 hover:bg-gray-50"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
@@ -296,5 +335,5 @@ export const TransactionList = () => {
       </div>
 
     </div>
-  );
+  )
 };

@@ -1,8 +1,14 @@
 import { aiClient, rmeClient } from "@/api";
-import { type RevenueTrendResponse, type CashflowSummaryResponse, type PaymentsAnalyticsResponse, type RevenueChartData, type FinancialSummaryResponse, type PatientAnalyticsResponse } from "../types/analitik.types.ts";
+import { 
+  type RevenueTrendResponse, 
+  type CashflowSummaryResponse, 
+  type PaymentsAnalyticsResponse, 
+  type RevenueChartData, 
+  type FinancialSummaryResponse, 
+  type PatientAnalyticsResponse 
+} from "../types/analitik.types.ts";
 import { type ProductAnalyticsResponse } from "../types/produk.types.ts";
 import { type PendingInvoicesResponse } from "../types/invoices.types.ts";
-import { type VisumGenerateResponse } from "../types/visum.types.ts";
 import { type PatientListResponse } from "../types/patient.types.ts";
 
 export const analitikService = {
@@ -42,66 +48,62 @@ export const analitikService = {
     return response.data;
   },
 
-  // Generate visum report
-  generateVisumReport: async (): Promise<VisumGenerateResponse> => {
-    const response = await aiClient.post<VisumGenerateResponse>("/api/v1/ai/visum/generate");
-    return response.data;
-  },
-
   // Ambil daftar semua pasien dari RME
   getAllPatients: async (): Promise<PatientListResponse> => {
-  try {
-    const response = await rmeClient.get<PatientListResponse>("/api/v1/patients", {
-      params: {
-        page: 1,
-        limit: 1000
+    try {
+      const response = await rmeClient.get<PatientListResponse>("/api/v1/patients", {
+        params: {
+          page: 1,
+          limit: 1000
+        }
+      });
+      console.log("✅ Pasien berhasil diambil dari RME");
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Gagal mengambil data pasien dari RME");
+      if (error.response?.status === 401) {
+        console.error("🔐 Kesalahan Autentikasi: Token tidak valid atau expired");
+      } else if (error.response?.data) {
+        console.error("📋 Detail error:", error.response.data);
+      } else if (error.message) {
+        console.error("⚠️ Error:", error.message);
       }
-    });
-    console.log("✅ Pasien berhasil diambil dari RME");
-    return response.data;
-  } catch (error: any) {
-    console.error("❌ Gagal mengambil data pasien dari RME");
-    if (error.response?.status === 401) {
-      console.error("🔐 Kesalahan Autentikasi: Token tidak valid atau expired");
-    } else if (error.response?.data) {
-      console.error("📋 Detail error:", error.response.data);
-    } else if (error.message) {
-      console.error("⚠️ Error:", error.message);
+      throw error;
     }
-    throw error;
-  }
-},
+  },
 
-// Ambil ringkasan statistik total pasien dari database RME
-getPatientStats: async (): Promise<{ total_pasien_rme: number; pasien_aktif: number; pasien_tidak_aktif: number }> => {
-  try {
-    const response = await rmeClient.get<PatientListResponse>("/api/v1/patients", {
-      params: { page: 1, limit: 1 }
-    });
+  // Ambil ringkasan statistik total pasien dari database RME
+  getPatientStats: async (): Promise<{ total_pasien_rme: number; pasien_aktif: number; pasien_tidak_aktif: number }> => {
+    try {
+      const response = await rmeClient.get<PatientListResponse>("/api/v1/patients", {
+        params: { page: 1, limit: 1000 }
+      });
 
-    const totalPasien = response.data?.data?.meta?.total || 0;
-    const arrayPasien = response.data?.data?.data || [];
-    
-    const pasienAktif = arrayPasien.filter(p => p.isActive).length;
-    console.log(`✅ Statistik pasien berhasil diambil: Total=${totalPasien}, Aktif=${pasienAktif}`);
+      const totalPasien = response.data?.data?.meta?.total || 0;
+      const arrayPasien = response.data?.data?.data || [];
+      
+      const pasienAktif = arrayPasien.filter(p => p.isActive === true).length;
+      const pasienTidakAktif = arrayPasien.filter(p => p.isActive === false).length;
+      
+      console.log(`✅ Statistik pasien berhasil diambil: Total=${totalPasien}, Aktif=${pasienAktif}, Tidak Aktif=${pasienTidakAktif}`);
 
-    return {
-      total_pasien_rme: totalPasien,
-      pasien_aktif: pasienAktif,
-      pasien_tidak_aktif: totalPasien - pasienAktif
-    };
-  } catch (error: any) {
-    console.error("❌ Gagal memuat statistik pasien dari RME");
-    if (error.response?.status === 401) {
-      console.error("🔐 Kesalahan Autentikasi: Token tidak valid atau expired");
-    } else if (error.message) {
-      console.error("⚠️ Error:", error.message);
+      return {
+        total_pasien_rme: totalPasien,
+        pasien_aktif: pasienAktif,
+        pasien_tidak_aktif: pasienTidakAktif
+      };
+    } catch (error: any) {
+      console.error("❌ Gagal memuat statistik pasien dari RME");
+      if (error.response?.status === 401) {
+        console.error("🔐 Kesalahan Autentikasi: Token tidak valid atau expired");
+      } else if (error.message) {
+        console.error("⚠️ Error:", error.message);
+      }
+      return { total_pasien_rme: 0, pasien_aktif: 0, pasien_tidak_aktif: 0 };
     }
-    return { total_pasien_rme: 0, pasien_aktif: 0, pasien_tidak_aktif: 0 };
-  }
-},
+  },
 
-  // Contoh: Ambil data tren pendapatan bulanan/mingguan (fallback)
+  // Ambil data tren pendapatan bulanan/mingguan (fallback)
   getRevenueChartData: async (period: string): Promise<RevenueChartData[]> => {
     const response = await aiClient.get<RevenueChartData[]>("/analytics/revenue-trend", {
       params: { period },
@@ -109,7 +111,7 @@ getPatientStats: async (): Promise<{ total_pasien_rme: number; pasien_aktif: num
     return response.data;
   },
 
-  // Contoh: Ambil ringkasan kartu KPI finansial (fallback)
+  // Ambil ringkasan kartu KPI finansial (fallback)
   getFinancialSummary: async (monthYear: string): Promise<FinancialSummaryResponse> => {
     const response = await aiClient.get<FinancialSummaryResponse>("/analytics/summary", {
       params: { period: monthYear },
