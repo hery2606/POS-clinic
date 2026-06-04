@@ -9,3 +9,14 @@ export interface VisumGenerateResponse {
   status: string;
   data: VisumReport;
 }
+
+// src/features/analitik/types/visum.types.ts
+
+export interface VisumReportData {
+  raw_markdown: string;
+}
+
+export interface VisumReport {
+  status: string;
+  data: VisumReportData;
+}
