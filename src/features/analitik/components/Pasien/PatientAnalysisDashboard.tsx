@@ -98,7 +98,7 @@ export function PatientAnalysisDashboard() {
           <CardContent className="p-6 flex items-center justify-between">
             <div className="space-y-1">
               <span className="text-xs font-bold text-[#67737C] tracking-wide block">
-                Total Pasien Unik (AI Analytics)
+                Total Pasien (AI Analytics)
               </span>
               <span className="text-3xl font-bold text-[#13222D] tracking-tight block">
                 {analytics.total_pasien_unik_periode_ini.toLocaleString()}

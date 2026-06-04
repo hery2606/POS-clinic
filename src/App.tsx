@@ -1,4 +1,5 @@
 import "./App.css";
+import { useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,6 +10,7 @@ import { DashboardLayout } from "@/features/kasir/layout/dashboard-layout";
 import { AnalitikLayout } from "@/features/analitik/layout/Analitik-layout";
 import { LoginPage } from "@/features/auth/page/login";
 import { AuthProvider } from "@/features/auth/context/auth-context";
+import { initializeRmeAuth } from "@/api/rmeClient";
 {/* KASIR*/}
 import { KasirPage } from "@/features/kasir/pages/Kasir";
 import { RiwayatTransaksi } from "./features/kasir/pages/RiwayatTransaksi";
@@ -23,6 +25,12 @@ import { PasienPage } from "@/features/analitik/pages/Pasien";
 import { ROUTES } from "@/routes/routeConfig";
 
 function App() {
+  useEffect(() => {
+    // Initialize auth untuk RME saat app pertama kali load
+    initializeRmeAuth();
+    // Warehouse login dilakukan lazy ketika StokObat page dibuka
+  }, []);
+
   return (
     <AuthProvider>
       <Router>
