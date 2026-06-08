@@ -1,0 +1,286 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { LogOut, MoreVertical, Shield, Smartphone, Monitor, AlertCircle, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+
+interface Session {
+  id: string;
+  device: string;
+  browser: string;
+  ipAddress: string;
+  location: string;
+  lastActive: string;
+  loginTime: string;
+  status: 'active' | 'inactive';
+  isCurrent: boolean;
+}
+
+const getDeviceIcon = (device: string) => {
+  if (device.toLowerCase().includes('mobile') || device.toLowerCase().includes('iphone') || device.toLowerCase().includes('android')) {
+    return <Smartphone className="w-4 h-4" />;
+  }
+  return <Monitor className="w-4 h-4" />;
+};
+
+export const SessionManagementSection = () => {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [showMore, setShowMore] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Simulasi data session
+    const mockSessions: Session[] = [
+      {
+        id: '1',
+        device: 'Windows PC',
+        browser: 'Chrome 126.0',
+        ipAddress: '192.168.1.105',
+        location: 'Jakarta, Indonesia',
+        lastActive: '08 Juni 2026 - 16:45',
+        loginTime: '08 Juni 2026 - 08:00',
+        status: 'active',
+        isCurrent: true
+      },
+      {
+        id: '2',
+        device: 'MacBook Pro',
+        browser: 'Safari 17.5',
+        ipAddress: '192.168.1.108',
+        location: 'Jakarta, Indonesia',
+        lastActive: '07 Juni 2026 - 18:30',
+        loginTime: '07 Juni 2026 - 09:15',
+        status: 'inactive',
+        isCurrent: false
+      },
+      {
+        id: '3',
+        device: 'iPhone 15',
+        browser: 'Safari Mobile',
+        ipAddress: '203.195.123.45',
+        location: 'Bandung, Indonesia',
+        lastActive: '06 Juni 2026 - 14:20',
+        loginTime: '05 Juni 2026 - 19:00',
+        status: 'inactive',
+        isCurrent: false
+      },
+      {
+        id: '4',
+        device: 'Android Phone',
+        browser: 'Chrome Mobile',
+        ipAddress: '203.195.128.92',
+        location: 'Surabaya, Indonesia',
+        lastActive: '04 Juni 2026 - 10:45',
+        loginTime: '02 Juni 2026 - 15:30',
+        status: 'inactive',
+        isCurrent: false
+      }
+    ];
+
+    setSessions(mockSessions);
+  }, []);
+
+  const handleLogoutSession = (id: string) => {
+    setSessions(prev => prev.filter(s => s.id !== id));
+    setShowMore(null);
+  };
+
+  const handleLogoutOtherSessions = () => {
+    if (confirm('Apakah Anda yakin ingin logout semua sesi lain? Anda hanya akan tetap login di perangkat ini.')) {
+      setSessions(prev => prev.filter(s => s.isCurrent));
+      setShowMore(null);
+    }
+  };
+
+  const activeSessions = sessions.filter(s => s.status === 'active').length;
+  const inactiveSessions = sessions.filter(s => s.status === 'inactive').length;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold text-[#13222D] mb-2">Session Management</h2>
+        <p className="text-sm text-[#67737C]">Kelola sesi login Anda di berbagai perangkat</p>
+      </div>
+
+      {/* Session Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200 p-4 rounded-lg">
+          <div className="flex items-start justify-between mb-3">
+            <h3 className="text-sm font-medium text-blue-900">Total Sesi</h3>
+            <Shield className="w-4 h-4 text-blue-600" />
+          </div>
+          <div className="text-2xl font-bold text-blue-900">{sessions.length}</div>
+          <p className="text-xs text-blue-700 mt-2">Sesi aktif di berbagai perangkat</p>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-50 to-green-100/50 border border-green-200 p-4 rounded-lg">
+          <div className="flex items-start justify-between mb-3">
+            <h3 className="text-sm font-medium text-green-900">Sesi Aktif</h3>
+            <CheckCircle className="w-4 h-4 text-green-600" />
+          </div>
+          <div className="text-2xl font-bold text-green-900">{activeSessions}</div>
+          <p className="text-xs text-green-700 mt-2">Perangkat sedang aktif</p>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-200 p-4 rounded-lg">
+          <div className="flex items-start justify-between mb-3">
+            <h3 className="text-sm font-medium text-orange-900">Sesi Tidak Aktif</h3>
+            <AlertCircle className="w-4 h-4 text-orange-600" />
+          </div>
+          <div className="text-2xl font-bold text-orange-900">{inactiveSessions}</div>
+          <p className="text-xs text-orange-700 mt-2">Perangkat sudah tidak aktif</p>
+        </Card>
+      </div>
+
+      {/* Current Session Alert */}
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-green-900 mb-1">Sesi Aktif</h3>
+            <p className="text-sm text-green-800">Anda sedang login di sesi ini. Logout akan membuat Anda keluar dari akun admin.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Sessions List */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-medium text-[#13222D] text-sm">Perangkat & Sesi</h3>
+          {sessions.length > 1 && (
+            <Button
+              onClick={handleLogoutOtherSessions}
+              variant="outline"
+              size="sm"
+              className="text-orange-600 border-orange-200 hover:bg-orange-50"
+            >
+              <LogOut className="w-3 h-3 mr-1" />
+              Logout Sesi Lain
+            </Button>
+          )}
+        </div>
+
+        <div className="space-y-2 max-h-[500px] overflow-y-auto">
+          {sessions.map((session) => (
+            <div
+              key={session.id}
+              className={`p-4 border rounded-lg transition-all ${
+                session.isCurrent
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-white border-[#DFE6EB] hover:border-[#1B9C90]/30'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className={`p-2 rounded-lg flex-shrink-0 ${
+                    session.status === 'active'
+                      ? 'bg-blue-100'
+                      : 'bg-gray-100'
+                  }`}>
+                    {getDeviceIcon(session.device)}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h4 className="font-semibold text-[#13222D] text-sm">
+                        {session.device}
+                      </h4>
+                      {session.isCurrent && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded">
+                          <CheckCircle className="w-3 h-3" />
+                          Sesi Ini
+                        </span>
+                      )}
+                      <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
+                        session.status === 'active'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {session.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-[#67737C] mb-2">
+                      Browser: <span className="font-medium">{session.browser}</span>
+                    </p>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                      <div>
+                        <span className="text-[#67737C]">IP Address</span>
+                        <p className="font-mono text-[#13222D] font-semibold">{session.ipAddress}</p>
+                      </div>
+                      <div>
+                        <span className="text-[#67737C]">Lokasi</span>
+                        <p className="text-[#13222D] font-semibold">{session.location}</p>
+                      </div>
+                      <div>
+                        <span className="text-[#67737C]">Login</span>
+                        <p className="text-[#13222D] font-semibold">{session.loginTime}</p>
+                      </div>
+                      <div>
+                        <span className="text-[#67737C]">Aktivitas Terakhir</span>
+                        <p className="text-[#13222D] font-semibold">{session.lastActive}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* More Options Menu */}
+                <div className="relative flex-shrink-0">
+                  <button
+                    onClick={() => setShowMore(showMore === session.id ? null : session.id)}
+                    className="p-1.5 hover:bg-[#DFE6EB] rounded-lg transition-colors"
+                  >
+                    <MoreVertical className="w-4 h-4 text-[#67737C]" />
+                  </button>
+
+                  {showMore === session.id && (
+                    <div className="absolute right-0 top-8 bg-white border border-[#DFE6EB] rounded-lg shadow-lg z-10 min-w-[200px] overflow-hidden">
+                      <button
+                        onClick={() => handleLogoutSession(session.id)}
+                        disabled={session.isCurrent}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout Sesi Ini
+                      </button>
+                      <div className="border-t border-[#DFE6EB]" />
+                      <button
+                        onClick={() => {
+                          if (confirm('Apakah Anda yakin ingin menghapus sesi ini?')) {
+                            handleLogoutSession(session.id);
+                          }
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                        Hapus Sesi
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Security Tips */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-blue-900 mb-2">Tips Keamanan Sesi</h3>
+            <ul className="text-sm text-blue-800 space-y-2 list-disc list-inside">
+              <li>Logout dari perangkat yang tidak digunakan secara teratur</li>
+              <li>Periksa lokasi IP yang tidak dikenal dan segera logout jika mencurigakan</li>
+              <li>Gunakan password yang kuat untuk mencegah akses tidak sah</li>
+              <li>Aktifkan verifikasi dua faktor untuk keamanan tambahan</li>
+              <li>Logout semua sesi jika Anda mencurigai akun Anda telah dikompromikan</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

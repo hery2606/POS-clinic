@@ -1,14 +1,12 @@
 "use client";
 
 import { TransactionFilterBar } from "@/features/analitik/components/transaksi/TransactionFilterBar";
-import { TransactionHeader } from "@/features/analitik/components/transaksi/TransactionHeader";
 import { TransactionTable } from "@/features/analitik/components/transaksi/TransactionTable";
 import { TransactionDetailPanel } from "@/features/analitik/components/transaksi/TransactionDetailPanel";
 
 export const TransaksiPage = () => {
   return (
     <div className="min-h-screen  p-4 sm:p-6 lg:p-8 space-y-6 ">
-      <TransactionHeader />
       <TransactionFilterBar />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">

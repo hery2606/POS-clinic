@@ -6,8 +6,7 @@ import {
   Calendar, 
   Receipt, 
   Users, 
-  Clock, 
-  AlertCircle 
+  Clock 
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,18 +30,17 @@ const formatCurrency = (value: number): string => {
   }).format(value);
 };
 
+// Pasang isi skeleton pas 5 buah agar simetris saat loading screen berjalan
 const KPISkeleton = () => (
-  <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-5 shadow-sm flex flex-col justify-between">
+  <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-5 shadow-xs flex flex-col justify-between h-[130px]">
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Skeleton className="w-4 h-4 rounded-full" />
-        <Skeleton className="h-3 w-24" />
+        <Skeleton className="w-4 h-4 rounded-md" />
+        <Skeleton className="h-3 w-20" />
       </div>
-      <Skeleton className="h-8 w-32" />
+      <Skeleton className="h-7 w-28 rounded-md" />
     </div>
-    <div className="mt-2">
-      <Skeleton className="h-3 w-20" />
-    </div>
+    <Skeleton className="h-3 w-24 rounded-md mt-2" />
   </Card>
 );
 
@@ -87,26 +85,25 @@ export const KpiCards = () => {
             },
             {
               title: "Total Transaksi",
-              value: data.grafik_tren_harian.length.toString(),
-              trend: `Periode: ${data.grafik_tren_harian[0]?.tanggal} - ${data.grafik_tren_harian[data.grafik_tren_harian.length - 1]?.tanggal}`,
+              value: `${data.grafik_tren_harian.length.toString()} Nota`,
+              trend: `Periode riwayat berjalan aktif`,
               isPositive: true,
               icon: Users
             },
             {
-              title: "Bulan Lalu",
+              title: "Target Bulan Lalu",
               value: formatCurrency(comparison.bulan_lalu),
-              trend: `${comparison.status}`,
+              trend: `Status Grafik: ${comparison.status}`,
               isPositive: comparison.status === 'Naik',
               icon: Clock
-            },
-            
+            }
           ];
           
           setKpiData(kpiItems);
         }
       } catch (err) {
         console.error('Error fetching KPI data:', err);
-        setError('Gagal memuat data KPI');
+        setError('Gagal memuat ringkasan kartu KPI keuangan.');
       } finally {
         setIsLoading(false);
       }
@@ -116,42 +113,43 @@ export const KpiCards = () => {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 w-full">
+    /* 🟢 KUNCI UTAMA: Mengunci grid di ukuran 5 kolom pas berdampingan */
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 w-full">
       {isLoading ? (
-        // Skeleton loading state
-        Array.from({ length: 6 }).map((_, index) => (
+        Array.from({ length: 5 }).map((_, index) => (
           <KPISkeleton key={index} />
         ))
       ) : error ? (
-        // Error state
-        <div className="col-span-full text-center py-8 text-red-500">
-          {error}
+        <div className="col-span-full text-center py-6 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-xs font-bold">
+          ⚠️ {error}
         </div>
       ) : (
-        // Loaded state
         kpiData.map((data, index) => {
           const Icon = data.icon;
           return (
             <Card 
               key={index} 
-              className="bg-white rounded-[24px] border border-[#DFE6EB] p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-all"
+              className="bg-white rounded-[24px] border border-[#DFE6EB] p-5 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-[#1B9C90]/20 transition-all duration-200 h-[130px]"
             >
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Icon className="w-4 h-4 text-[#67737C]" />
-                  <span className="text-xs font-semibold text-[#67737C] tracking-tight">
+                  {/* Mewarnai ikon dengan warna toska khas tema klinik agar seirama */}
+                  <Icon className="w-4 h-4 text-[#1B9C90] bg-[#F4FBF9] p-0.5 rounded-md" />
+                  <span className="text-[11px] font-black text-[#67737C] tracking-tight uppercase">
                     {data.title}
                   </span>
                 </div>
-                <h3 className="text-2xl font-bold text-[#13222D] tracking-tight">
+                <h3 className="text-xl font-black text-[#13222D] tracking-tight">
                   {data.value}
                 </h3>
               </div>
               
-              <div className="mt-2">
+              <div className="mt-1">
                 <span className={cn(
-                  "text-xs font-bold",
-                  data.isPositive ? "text-[#3EB268]" : "text-[#E62C2C]"
+                  "text-[10px] font-black px-2 py-0.5 rounded-md border shadow-none uppercase tracking-wide",
+                  data.isPositive 
+                    ? "text-[#137333] bg-[#E6F4EA] border-[#CCECD5]" 
+                    : "text-[#C5221F] bg-[#FCE8E6] border-[#FAD2CF]"
                 )}>
                   {data.trend}
                 </span>
