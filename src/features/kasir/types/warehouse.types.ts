@@ -46,3 +46,6 @@ export interface WarehouseMedicineStats {
   menipis: number;
   kritis: number;
 }
+
+// Re-export billing types
+export * from "./billing.types";

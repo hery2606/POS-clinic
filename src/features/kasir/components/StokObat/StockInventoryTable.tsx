@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   Search, 
   Pill, 
@@ -28,6 +28,7 @@ import type { FilterState } from "./InventoryFilter";
 // IMPORT WAREHOUSE SERVICE & REACT QUERY
 import { useQuery } from '@tanstack/react-query';
 import { warehouseService } from '../../services/warehouse.service';
+import { initializeWarehouseAuth } from '@/api/warehouseClient';
 
 export const StockInventoryTable = () => {
   const { setContent } = useRightPanel();
@@ -40,6 +41,11 @@ export const StockInventoryTable = () => {
     statuses: [],
     types: [],
   });
+
+  // Initialize warehouse auth ketika component di-mount
+  useEffect(() => {
+    initializeWarehouseAuth();
+  }, []);
 
   // FETCH DATA DARI WAREHOUSE SERVICE DENGAN REACT QUERY
   const { data: medicinesResponse, isLoading, error } = useQuery({

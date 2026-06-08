@@ -1,4 +1,3 @@
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { CheckCircle2, Calendar, Phone, Stethoscope, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -20,57 +19,74 @@ export function PatientCard({
   registrationNo = 'RM-001',
   age = 45
 }: PatientCardProps) {
-  // Determine badge styling based on insurance type
+  
   const isBPJS = insurance.toLowerCase().includes('bpjs');
   const badgeColor = isBPJS 
-    ? 'bg-blue-100 text-blue-700 border border-blue-200'
-    : 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+    ? 'bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-50'
+    : 'bg-emerald-50 text-[#1B9C90] border border-emerald-100 hover:bg-emerald-50';
 
   return (
-    <Card className="border border-slate-200 shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-white to-slate-50/50">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex gap-4 flex-1">
-            <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-[#29B5A8] to-emerald-600 flex items-center justify-center font-medium text-white text-lg shadow-md flex-shrink-0">
-              {initials}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-gray-900 text-base">{name}</h3>
-              <div className="flex items-center gap-4 mt-2 flex-wrap">
-                <div className="flex items-center gap-1 text-sm text-gray-600">
-                  <Stethoscope className="h-4 w-4 text-slate-400" />
-                  <span className="font-medium">{registrationNo}</span>
-                </div>
-                <div className="flex items-center gap-1 text-sm text-gray-600">
-                  <Calendar className="h-4 w-4 text-slate-400" />
-                  <span>{age} tahun</span>
-                </div>
-                <div className="flex items-center gap-1 text-sm text-gray-600">
-                  <Phone className="h-4 w-4 text-slate-400" />
-                  <span>{phone}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="w-full h-full bg-white border border-[#DFE6EB] rounded-[24px] p-6 flex flex-col justify-between shadow-sm transition-all duration-200">
+      
+      {/* SECTION ATAS: AVATAR & INFORMASI UTAMA (CENTERED VERTICAL) */}
+      <div className="flex flex-col items-center text-center space-y-3 mt-2">
+        {/* Avatar Besar Lingkaran/Kotak Melengkung */}
+        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#1B9C90] to-[#127067] text-white flex items-center justify-center font-black text-xl shadow-md shadow-[#1B9C90]/10 shrink-0">
+          {initials}
+        </div>
+        
+        {/* Nama & Badge Penjamin */}
+        <div className="space-y-1.5 flex flex-col items-center w-full">
+          <h3 className="font-black text-slate-800 text-base md:text-lg tracking-tight max-w-full truncate px-1">
+            {name}
+          </h3>
           <Badge className={cn(
-            "flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 text-xs font-bold",
+            "flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[9px] font-black tracking-wider uppercase border shadow-none w-fit",
             badgeColor
           )}>
-            <Shield className="h-3.5 w-3.5" />
+            <Shield className="h-3 w-3 shrink-0 opacity-80" />
             {isBPJS ? (
               <>
-                <CheckCircle2 className="h-3 w-3" />
-                <span>BPJS</span>
+                <CheckCircle2 className="h-2.5 w-2.5 shrink-0" />
+                <span>BPJS Kesehatan</span>
               </>
             ) : (
               <>
-                <CheckCircle2 className="h-3 w-3" />
-                <span>Pribadi</span>
+                <CheckCircle2 className="h-2.5 w-2.5 shrink-0" />
+                <span>Pasien Pribadi</span>
               </>
             )}
           </Badge>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* SECTION BAWAH: DATA REKAM MEDIS & KONTAK (GRID LIST) */}
+      <div className="bg-[#FAFCFD] border border-slate-100 rounded-xl p-3.5 space-y-2.5 text-xs font-semibold text-slate-600 mb-2">
+        <div className="flex items-center justify-between border-b border-slate-200/40 pb-2">
+          <div className="flex items-center gap-2">
+            <Stethoscope className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+            <span>No. Rekam Medis</span>
+          </div>
+          <span className="font-black text-slate-800">{registrationNo}</span>
+        </div>
+
+        <div className="flex items-center justify-between border-b border-slate-200/40 pb-2">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+            <span>Usia Pasien</span>
+          </div>
+          <span className="text-slate-700 font-bold">{age} tahun</span>
+        </div>
+
+        <div className="flex items-center justify-between pt-0.5">
+          <div className="flex items-center gap-2">
+            <Phone className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+            <span>No. WhatsApp</span>
+          </div>
+          <span className="text-slate-700 font-medium font-mono text-[11px]">{phone}</span>
+        </div>
+      </div>
+
+    </div>
   )
 }
