@@ -99,13 +99,7 @@ export const KpiCards = () => {
               isPositive: comparison.status === 'Naik',
               icon: Clock
             },
-            {
-              title: "Bulan Ini",
-              value: formatCurrency(comparison.bulan_ini),
-              trend: `vs Rp ${(comparison.bulan_ini - comparison.bulan_lalu >= 0 ? '+' : '')} ${formatCurrency(comparison.bulan_ini - comparison.bulan_lalu)}`,
-              isPositive: comparison.bulan_ini >= comparison.bulan_lalu,
-              icon: AlertCircle
-            }
+            
           ];
           
           setKpiData(kpiItems);

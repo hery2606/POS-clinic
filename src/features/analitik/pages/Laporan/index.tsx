@@ -3,11 +3,8 @@
 import { useState, type JSX } from "react";
 import { FinancialReportHeader } from "@/features/analitik/components/laporan/FinancialReportHeader";
 import { FinancialSummaryCards } from "@/features/analitik/components/laporan/FinancialSummaryCards";
-import { BalanceSheetChart } from "@/features/analitik/components/laporan/chart/BalanceSheetChart";
 import { RevenueTrendChart } from "@/features/analitik/components/laporan/chart/RevenueTrendChart";
-import { CashFlowChart } from "@/features/analitik/components/laporan/chart/CashFlowChart";
-import { ExpenseTrendChart } from "@/features/analitik/components/laporan/chart/ExpenseTrendChart";
-import { ProfitLossChart } from "@/features/analitik/components/laporan/chart/ProfitLossChart";
+
 import {
   FinancialBreakdownCard,
   type BreakdownTabType,
@@ -15,14 +12,11 @@ import {
 import { FinancialDetailTable } from "@/features/analitik/components/laporan/FinancialDetailTable";
 import { cn } from "@/lib/utils";
 
-const tabs = ["Pendapatan", "Pengeluaran", "Laba Rugi", "Neraca", "Arus Kas"];
+const tabs = ["Pendapatan", ];
 
 const chartComponents: Record<string, JSX.Element> = {
   Pendapatan: <RevenueTrendChart />,
-  Pengeluaran: <ExpenseTrendChart />,
-  "Laba Rugi": <ProfitLossChart />,
-  Neraca: <BalanceSheetChart />,
-  "Arus Kas": <CashFlowChart />,
+ 
 };
 
 export const LaporanPage = () => {
