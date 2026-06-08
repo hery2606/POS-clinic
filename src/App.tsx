@@ -23,6 +23,9 @@ import { TransaksiPage } from "@/features/analitik/pages/Transaksi";
 import { LaporanPage } from "@/features/analitik/pages/Laporan";
 import { PasienPage } from "@/features/analitik/pages/Pasien";
 import { ROUTES } from "@/routes/routeConfig";
+import { PengaturanPage } from '@/features/analitik/pages/pengaturan';
+
+
 
 function App() {
   useEffect(() => {
@@ -51,8 +54,7 @@ function App() {
             <Route path={ROUTES.ADMIN.TRANSAKSI} element={<TransaksiPage />} />
             <Route path={ROUTES.ADMIN.LAPORAN} element={<LaporanPage />} />
             <Route path={ROUTES.ADMIN.PASIEN} element={<PasienPage />} />
-            <Route path={ROUTES.ADMIN.SETTINGS} element={<div className="p-6"><p>Halaman Pengaturan</p></div>} />
-            <Route path={ROUTES.ADMIN.SETTINGS} element={<div className="p-6"><p>Halaman Pengaturan</p></div>} />
+            <Route path={ROUTES.ADMIN.SETTINGS} element={<PengaturanPage />} />
           </Route>
 
 
