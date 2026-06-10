@@ -42,10 +42,10 @@ function App() {
           <Route path="/" element={<Navigate to={ROUTES.AUTH.LOGIN} replace />} />
           <Route path={ROUTES.AUTH.LOGIN} element={<LoginPage />} />
 
-          {/* ADMIN ROUTES */}
+          {/* ADMIN & SUPER_ADMIN ROUTES - Analitik Dashboard */}
           <Route
             element={
-              <ProtectedRoute allowedRoles={["admin"]}>
+              <ProtectedRoute allowedRoles={["admin", "SUPER_ADMIN"]}>
                 <AnalitikLayout />
               </ProtectedRoute>
             }
@@ -57,11 +57,10 @@ function App() {
             <Route path={ROUTES.ADMIN.SETTINGS} element={<PengaturanPage />} />
           </Route>
 
-
           {/* KASIR ROUTES */}
           <Route
             element={
-              <ProtectedRoute allowedRoles={["kasir", "admin"]}>
+              <ProtectedRoute allowedRoles={["kasir", "KASIR"]}>
                 <DashboardLayout />
               </ProtectedRoute>
             }
@@ -71,6 +70,7 @@ function App() {
             <Route path={ROUTES.KASIR.STOK} element={<Stok />} />
             <Route path={ROUTES.KASIR.PENGATURAN} element={<SettingsPage/>} />
           </Route>
+          
           <Route path="*" element={<Navigate to={ROUTES.AUTH.LOGIN} replace />} />
         </Routes>
       </Router>

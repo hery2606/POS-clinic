@@ -26,11 +26,13 @@ export const ROUTES = {
   },
 } as const;
 
-export const getRoleRedirectPath = (role: 'admin' | 'kasir' | 'dokter'): string => {
-  const roleRoutes = {
+export const getRoleRedirectPath = (role: string): string => {
+  const roleRoutes: Record<string, string> = {
+    SUPER_ADMIN: ROUTES.ADMIN.DASHBOARD,
     admin: ROUTES.ADMIN.DASHBOARD,
+    KASIR: ROUTES.KASIR.DASHBOARD,
     kasir: ROUTES.KASIR.DASHBOARD,
     dokter: ROUTES.DOKTER.DASHBOARD,
   };
-  return roleRoutes[role];
+  return roleRoutes[role] || ROUTES.AUTH.LOGIN;
 };

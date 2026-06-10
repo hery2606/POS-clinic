@@ -226,8 +226,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             
             {/* Demo Button Container */}
             <div className="mt-6 flex flex-wrap justify-center gap-2">
-               <button onClick={() => handleDemoCredentialClick('admin@klinik.com', 'admin123')} className="text-[10px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tighter border border-[#DFE6EB]">Login Admin</button>
-               <button onClick={() => handleDemoCredentialClick('kasir@klinik.com', 'kasir123')} className="text-[10px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tighter border border-[#DFE6EB]">Login Kasir</button>
+               <button onClick={() => handleDemoCredentialClick('admin@klinik.com', 'password123')} className="text-[10px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tighter border border-[#DFE6EB]">Admin / Super Admin</button>
+               <button onClick={() => handleDemoCredentialClick('kasir@klinik.com', 'password123')} className="text-[10px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tighter border border-[#DFE6EB]">Kasir</button>
             </div>
           </div>
         </div>
