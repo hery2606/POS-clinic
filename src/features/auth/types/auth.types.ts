@@ -5,7 +5,8 @@ export interface LoginCredentials {
 }
 
 export interface AuthResponse {
-  token: string;
+  message: string;
+  access_token: string;
   user: User;
 }
 
@@ -13,7 +14,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'kasir' | 'dokter';
+  role: 'KASIR' | 'SUPER_ADMIN' | 'admin' | 'kasir' | 'dokter';
 }
 
 export interface AuthContextType {

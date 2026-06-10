@@ -3,7 +3,7 @@ import type { LoginCredentials, AuthResponse, User } from '../types/auth.types';
 // Demo users untuk development
 const DEMO_USERS: Record<string, { password: string; user: User }> = {
   'admin@klinik.com': {
-    password: 'admin123',
+    password: 'password123',
     user: {
       id: '1',
       email: 'admin@klinik.com',
@@ -12,28 +12,19 @@ const DEMO_USERS: Record<string, { password: string; user: User }> = {
     },
   },
   'kasir@klinik.com': {
-    password: 'kasir123',
+    password: 'password123',
     user: {
       id: '2',
       email: 'kasir@klinik.com',
-      name: 'Kasir ',
-      role: 'kasir',
-    },
-  },
-  'dokter@klinik.com': {
-    password: 'dokter123',
-    user: {
-      id: '3',
-      email: 'dokter@klinik.com',
-      name: 'Dr. Banani',
-      role: 'dokter',
+      name: 'Kasir Satu',
+      role: 'KASIR',
     },
   },
 };
 
 class AuthService {
-  private static readonly API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-  private static readonly USE_DEMO = true; // Toggle untuk demo mode
+  private static readonly API_INTERNAL_URL = import.meta.env.VITE_API_INTERNAL_URL || 'http://localhost:3000';
+  private static readonly USE_DEMO = false; // Toggle untuk demo mode (false = gunakan API real)
 
   static async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
@@ -47,12 +38,13 @@ class AuthService {
         response = await this.apiLogin(credentials);
       }
 
-      // Store token
+      // Store token - gunakan access_token dari API response
+      const token = response.access_token;
       if (credentials.remember) {
-        localStorage.setItem('authToken', response.token);
+        localStorage.setItem('authToken', token);
         localStorage.setItem('user', JSON.stringify(response.user));
       } else {
-        sessionStorage.setItem('authToken', response.token);
+        sessionStorage.setItem('authToken', token);
         sessionStorage.setItem('user', JSON.stringify(response.user));
       }
 
@@ -78,16 +70,17 @@ class AuthService {
     }
 
     // Generate demo token
-    const token = `demo_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const access_token = `demo_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     return {
-      token,
+      message: 'Login berhasil',
+      access_token,
       user: demoUser.user,
     };
   }
 
   private static async apiLogin(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await fetch(`${this.API_URL}/auth/login`, {
+    const response = await fetch(`${this.API_INTERNAL_URL}/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

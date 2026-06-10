@@ -61,38 +61,41 @@ export const KpiCards = () => {
           const data = response.data;
           const comparison = data.perbandingan_bulan_ini_vs_lalu;
           
+          // Guard against undefined/null values in the response
+          const trendHarianLength = data.grafik_tren_harian?.length || 0;
+          
           const kpiItems: KPIData[] = [
             {
               title: "Pendapatan Hari Ini",
-              value: formatCurrency(data.total_pendapatan_hari_ini),
+              value: formatCurrency(data.total_pendapatan_hari_ini || 0),
               trend: `+${((data.total_pendapatan_hari_ini / (data.total_pendapatan_minggu_ini / 7)) * 100 - 100).toFixed(1)}% vs rata-rata`,
               isPositive: true,
               icon: Coins
             },
             {
               title: "Pendapatan Minggu Ini",
-              value: formatCurrency(data.total_pendapatan_minggu_ini),
+              value: formatCurrency(data.total_pendapatan_minggu_ini || 0),
               trend: `+${((data.total_pendapatan_minggu_ini / (data.total_pendapatan_bulan_ini / 4)) * 100 - 100).toFixed(1)}% vs rata-rata`,
               isPositive: true,
               icon: Calendar
             },
             {
               title: "Pendapatan Bulan Ini",
-              value: formatCurrency(data.total_pendapatan_bulan_ini),
+              value: formatCurrency(data.total_pendapatan_bulan_ini || 0),
               trend: `+${comparison.persentase_kenaikan.toFixed(2)}% vs bulan lalu`,
               isPositive: comparison.status === 'Naik',
               icon: Receipt
             },
             {
               title: "Total Transaksi",
-              value: `${data.grafik_tren_harian.length.toString()} Nota`,
+              value: `${trendHarianLength.toString()} Nota`,
               trend: `Periode riwayat berjalan aktif`,
               isPositive: true,
               icon: Users
             },
             {
               title: "Target Bulan Lalu",
-              value: formatCurrency(comparison.bulan_lalu),
+              value: formatCurrency(comparison.bulan_lalu || 0),
               trend: `Status Grafik: ${comparison.status}`,
               isPositive: comparison.status === 'Naik',
               icon: Clock
