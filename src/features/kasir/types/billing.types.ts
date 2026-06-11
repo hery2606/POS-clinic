@@ -98,3 +98,50 @@ export interface BillingPaginatedResponse {
   meta: BillingPaginationMeta;
   timestamp: string;
 }
+
+
+// =========================================================================
+// 📑 TYPES FOR GET /api/billing (BILLING TRANSACTIONS LIST response)
+// =========================================================================
+
+
+export type BillingStatus = 'PENDING_PAYMENT' | 'LUNAS' | 'PARTIAL';
+export type PaymentMethodType = 'CASH' | 'QRIS' | 'DEBIT' | 'TRANSFER';
+export interface BillingPatient {
+  id: string;
+  name: string;
+  medicalRecordNo: string; // Format e.g., "RM-202606-0003"
+  insuranceType: 'UMUM' | 'BPJS' | string; // Mengakomodasi skenario tipe jaminan penjaminan
+}
+
+/**
+ * Struktur objek data pagination meta dari server
+ */
+export interface BillingPaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface BillingTransactionItem {
+  id: string;
+  status: BillingStatus;
+  paymentMethod: PaymentMethodType;
+  subtotal: number;
+  total: number;
+  paidAmount: number;
+  remainingAmount: number;
+  rmeBillingId: string | "";
+  createdAt: string; // Format ISO Date String e.g., "2026-06-11T14:36:03.699Z"
+  paidAt: string | null; // Bernilai null jika status transaksi belum 'LUNAS'
+  patient: BillingPatient;
+  itemCount: number;
+  paidMethods: PaymentMethodType[] | []; // Berisi riwayat kombinasi metode taktis split bill
+}
+
+
+export interface AllTransactionsResponse {
+  data: BillingTransactionItem[];
+  meta: BillingPaginationMeta;
+}

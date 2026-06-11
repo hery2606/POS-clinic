@@ -83,7 +83,7 @@ export function NavUser({
               Konfirmasi Logout
             </DialogTitle>
             <DialogDescription className="text-[#67737C] font-medium mt-2">
-              Apakah Anda yakin ingin keluar dari sistem? Session Anda akan ditutup dan JWT login akan dihapus.
+              Apakah Anda yakin ingin keluar dari sistem?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 pt-6">

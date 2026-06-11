@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { Filter, Download, Clock, User, Shield, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { settingService } from '@/features/analitik/services/setting.service';
+import { type ActivityLogItem, type ActivityLogMetrics } from '@/features/analitik/types/setting.types';
 
 interface ActivityLog {
   id: string;
@@ -38,100 +41,69 @@ const getActivityColor = (type: ActivityLog['type']) => {
   }
 };
 
+const mapApiLogToInternal = (item: ActivityLogItem, index: number): ActivityLog => {
+  const modulLower = (item.modul || '').toLowerCase();
+  const aksiLower = (item.aksi || '').toLowerCase();
+  
+  let type: ActivityLog['type'] = 'system';
+  if (modulLower === 'login') {
+    if (aksiLower.includes('logout')) {
+      type = 'logout';
+    } else {
+      type = 'login';
+    }
+  } else if (aksiLower.includes('password') || aksiLower.includes('keamanan') || (modulLower === 'login' && item.status.toLowerCase() === 'gagal')) {
+    type = 'security';
+  } else if (aksiLower.includes('edit') || aksiLower.includes('ubah') || aksiLower.includes('update')) {
+    type = 'edit';
+  } else if (aksiLower.includes('hapus') || aksiLower.includes('delete') || aksiLower.includes('remove')) {
+    type = 'delete';
+  }
+  
+  return {
+    id: index.toString(),
+    timestamp: item.waktu,
+    user: item.user,
+    action: item.aksi,
+    type,
+    description: `${item.user} melakukan ${item.aksi} pada modul ${item.modul}`,
+    ipAddress: '192.168.1.105', // IP fallback since it's not present in log item
+    status: item.status.toLowerCase() === 'berhasil' ? 'success' : 'failed'
+  };
+};
+
 export const ActivityLogSection = () => {
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [filteredActivities, setFilteredActivities] = useState<ActivityLog[]>([]);
+  const [metrics, setMetrics] = useState<ActivityLogMetrics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  
   const [filterType, setFilterType] = useState<ActivityLog['type'] | 'all'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'success' | 'failed'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    // Simulasi data activity log
-    const mockActivities: ActivityLog[] = [
-      {
-        id: '1',
-        timestamp: '08 Juni 2026 - 16:45:23',
-        user: 'Admin Utama',
-        action: 'Login',
-        type: 'login',
-        description: 'Login ke sistem admin dashboard',
-        ipAddress: '192.168.1.105',
-        status: 'success'
-      },
-      {
-        id: '2',
-        timestamp: '08 Juni 2026 - 16:30:12',
-        user: 'Admin Utama',
-        action: 'Ubah Password',
-        type: 'security',
-        description: 'Mengubah password akun admin',
-        ipAddress: '192.168.1.105',
-        status: 'success'
-      },
-      {
-        id: '3',
-        timestamp: '08 Juni 2026 - 15:45:00',
-        user: 'Admin Utama',
-        action: 'Buat Backup',
-        type: 'system',
-        description: 'Membuat backup penuh data sistem',
-        ipAddress: '192.168.1.105',
-        status: 'success'
-      },
-      {
-        id: '4',
-        timestamp: '08 Juni 2026 - 14:20:45',
-        user: 'Admin Utama',
-        action: 'Edit Data',
-        type: 'edit',
-        description: 'Mengedit data transaksi #TRX-001',
-        ipAddress: '192.168.1.105',
-        status: 'success'
-      },
-      {
-        id: '5',
-        timestamp: '07 Juni 2026 - 18:30:22',
-        user: 'Admin Utama',
-        action: 'Login Gagal',
-        type: 'login',
-        description: 'Percobaan login dengan password salah',
-        ipAddress: '192.168.1.110',
-        status: 'failed'
-      },
-      {
-        id: '6',
-        timestamp: '07 Juni 2026 - 17:15:10',
-        user: 'Admin Utama',
-        action: 'Logout',
-        type: 'logout',
-        description: 'Logout dari sistem',
-        ipAddress: '192.168.1.105',
-        status: 'success'
-      },
-      {
-        id: '7',
-        timestamp: '07 Juni 2026 - 10:45:30',
-        user: 'Admin Utama',
-        action: 'Hapus Data',
-        type: 'delete',
-        description: 'Menghapus data laporan lama',
-        ipAddress: '192.168.1.105',
-        status: 'success'
-      },
-      {
-        id: '8',
-        timestamp: '06 Juni 2026 - 14:00:00',
-        user: 'Admin Utama',
-        action: 'Buat Backup',
-        type: 'system',
-        description: 'Membuat backup incremental data sistem',
-        ipAddress: '192.168.1.105',
-        status: 'success'
+  const fetchLogs = async () => {
+    try {
+      setIsLoading(true);
+      setIsError(false);
+      const res = await settingService.getActivityLogs();
+      if (res.status === 'success' && res.data) {
+        setMetrics(res.data.metrik_aktivitas);
+        const mapped = res.data.riwayat_aktivitas.map(mapApiLogToInternal);
+        setActivities(mapped);
+        setFilteredActivities(mapped);
       }
-    ];
+    } catch (err) {
+      console.error("Gagal mengambil activity logs:", err);
+      setIsError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    setActivities(mockActivities);
-    setFilteredActivities(mockActivities);
+  useEffect(() => {
+    fetchLogs();
   }, []);
 
   // Filter activities
@@ -191,22 +163,33 @@ export const ActivityLogSection = () => {
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-          <div className="text-xs text-blue-600 font-medium mb-1">Total Aktivitas</div>
-          <div className="text-2xl font-bold text-blue-900">{activities.length}</div>
-        </Card>
-        <Card className="bg-green-50 border border-green-200 p-4 rounded-lg">
-          <div className="text-xs text-green-600 font-medium mb-1">Berhasil</div>
-          <div className="text-2xl font-bold text-green-900">{activities.filter(a => a.status === 'success').length}</div>
-        </Card>
-        <Card className="bg-red-50 border border-red-200 p-4 rounded-lg">
-          <div className="text-xs text-red-600 font-medium mb-1">Gagal</div>
-          <div className="text-2xl font-bold text-red-900">{activities.filter(a => a.status === 'failed').length}</div>
-        </Card>
-        <Card className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
-          <div className="text-xs text-purple-600 font-medium mb-1">Keamanan</div>
-          <div className="text-2xl font-bold text-purple-900">{activities.filter(a => a.type === 'security').length}</div>
-        </Card>
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="p-4 rounded-lg bg-slate-50 border border-slate-100">
+              <Skeleton className="h-4 w-24 mb-2 rounded-md" />
+              <Skeleton className="h-8 w-12 rounded-md" />
+            </Card>
+          ))
+        ) : (
+          <>
+            <Card className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+              <div className="text-xs text-blue-600 font-medium mb-1">Total Aktivitas</div>
+              <div className="text-2xl font-bold text-blue-900">{metrics?.total_aktivitas ?? activities.length}</div>
+            </Card>
+            <Card className="bg-green-50 border border-green-200 p-4 rounded-lg">
+              <div className="text-xs text-green-600 font-medium mb-1">Berhasil</div>
+              <div className="text-2xl font-bold text-green-900">{metrics?.aktivitas_berhasil ?? activities.filter(a => a.status === 'success').length}</div>
+            </Card>
+            <Card className="bg-red-50 border border-red-200 p-4 rounded-lg">
+              <div className="text-xs text-red-600 font-medium mb-1">Gagal</div>
+              <div className="text-2xl font-bold text-red-900">{metrics?.aktivitas_gagal ?? activities.filter(a => a.status === 'failed').length}</div>
+            </Card>
+            <Card className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
+              <div className="text-xs text-purple-600 font-medium mb-1">Keamanan</div>
+              <div className="text-2xl font-bold text-purple-900">{activities.filter(a => a.type === 'security').length}</div>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Filters & Search */}
@@ -286,10 +269,33 @@ export const ActivityLogSection = () => {
       {/* Activity List */}
       <div className="space-y-3">
         <div className="text-sm font-medium text-[#13222D]">
-          {filteredActivities.length} aktivitas ditemukan
+          {isLoading ? (
+            <Skeleton className="h-4 w-36 rounded-md" />
+          ) : (
+            `${filteredActivities.length} aktivitas ditemukan`
+          )}
         </div>
         <div className="space-y-2 max-h-[500px] overflow-y-auto">
-          {filteredActivities.length > 0 ? (
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="p-4 border border-slate-100 rounded-lg bg-slate-50/50 flex items-start gap-3">
+                <Skeleton className="h-9 w-9 rounded-lg shrink-0 animate-pulse" />
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-1/4 rounded-md" />
+                    <Skeleton className="h-4 w-12 rounded-full" />
+                  </div>
+                  <Skeleton className="h-3 w-3/4 rounded-md" />
+                  <Skeleton className="h-3 w-1/2 rounded-md" />
+                </div>
+              </div>
+            ))
+          ) : isError ? (
+            <div className="text-center py-8 text-[#67737C]">
+              <p className="text-sm text-red-500 font-semibold mb-2">Gagal memuat log aktivitas.</p>
+              <Button onClick={fetchLogs} size="sm" variant="outline" className="mx-auto cursor-pointer">Coba Lagi</Button>
+            </div>
+          ) : filteredActivities.length > 0 ? (
             filteredActivities.map((activity) => (
               <div
                 key={activity.id}

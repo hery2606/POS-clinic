@@ -4,6 +4,7 @@ export function useRightPanelTitle(contentType: RightPanelContentType): string {
   const titles: Record<Exclude<RightPanelContentType, null>, string> = {
     'payment': 'Pembayaran',
     'transaction-detail': 'Detail Transaksi',
+    'detail': 'Detail Transaksi',
     'patient-detail': 'Detail Pasien',
     'notification': 'Notifikasi',
     'stock-detail': 'Detail Stok Obat',

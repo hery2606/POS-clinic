@@ -2,13 +2,14 @@ import { Badge } from '@/components/ui/badge'
 import { CheckCircle2, Calendar, Phone, Stethoscope, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+
 interface PatientCardProps {
   initials?: string
   name?: string
   phone?: string
   insurance?: string
   registrationNo?: string
-  age?: number
+  age?: number | string
 }
 
 export function PatientCard({ 
@@ -75,7 +76,9 @@ export function PatientCard({
             <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
             <span>Usia Pasien</span>
           </div>
-          <span className="text-slate-700 font-bold">{age} tahun</span>
+          <span className="text-slate-700 font-bold">
+            {age === '-' || age === undefined || age === null ? '-' : `${age} tahun`}
+          </span>
         </div>
 
         <div className="flex items-center justify-between pt-0.5">

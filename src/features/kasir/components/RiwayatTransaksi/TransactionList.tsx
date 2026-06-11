@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useMemo } from 'react';
 import { 
   SearchIcon,
@@ -19,10 +21,10 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useRightPanel } from '../../context/right-panel-context';
 import { FilterTransaction, type FilterState } from './components/FilterTransaction';
-import { DateRangeSelector, type DateRange } from './components/DateRangeSelector';
+import { DateRangeSelector, type DateRange as SelectorDateRange } from './components/DateRangeSelector';
 import { TransactionListSkeleton } from './ui/TransactionListSkeleton';
-import { billingService } from '../../services';
-import { type Billing } from '../../types/billing.types';
+import { billingPosService } from '../../services/billing.pos.service';
+import { type BillingTransactionItem } from '../../types/billing.types';
 
 interface Transaction {
   id: string
@@ -33,7 +35,7 @@ interface Transaction {
   status: string
   total: string
   highlighted?: boolean
-  billingData?: Billing
+  billingData?: BillingTransactionItem
 }
 
 const formatCurrency = (value: string | number) => {
@@ -41,299 +43,292 @@ const formatCurrency = (value: string | number) => {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 0
   }).format(num);
 };
 
-const getInitials = (name: string) => {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map(word => word[0].toUpperCase())
-    .join('')
-    .slice(0, 2);
+const mapStatusLabel = (status: string) => {
+  switch (status) {
+    case 'LUNAS': return 'Sukses';
+    case 'PARTIAL': return 'Partial';
+    default: return 'Pending';
+  }
 };
 
-const mapBillingToTransaction = (billing: Billing): Transaction => {
-  const statusMap: Record<string, string> = {
-    'LUNAS': 'Lunas',
-    'BELUM_LUNAS': 'Menunggu',
-    'SEBAGIAN': 'Sebagian',
-  };
-
-  const tanggal = new Date(billing.createdAt);
-  const time = tanggal.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-  return {
-    id: billing.noInvoice,
-    time,
-    patient: billing.janji.pasien.namaLengkap,
-    initial: getInitials(billing.janji.pasien.namaLengkap),
-    type: 'Pelayanan Medis',
-    status: statusMap[billing.status] || billing.status,
-    total: formatCurrency(billing.totalBiaya),
-    billingData: billing,
-  };
+const mapMethodLabel = (method: string, paidMethods?: string[]) => {
+  if (paidMethods && paidMethods.length > 1) {
+    return paidMethods.join(' + ');
+  }
+  return method || 'TUNAI';
 };
 
-export const TransactionList = () => {
-  const { setContent } = useRightPanel()
-  const [searchQuery, setSearchQuery] = useState('')
+const formatDate = (isoStr: string) => {
+  try {
+    const date = new Date(isoStr);
+    return date.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  } catch {
+    return isoStr;
+  }
+};
+
+export default function TransactionList() {
+  const { setContent, data: panelData } = useRightPanel();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const itemsPerPage = 8;
+
   const [filters, setFilters] = useState<FilterState>({
-    statuses: [],
-    types: [],
-  })
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
-
-  // Fetch data dengan React Query
-  const { data: billingResponse, isLoading, error } = useQuery({
-    queryKey: ['allBillings'],
-    queryFn: () => billingService.getAllBilling(1, 1000),
-    staleTime: 5 * 60 * 1000, // 5 menit
-    gcTime: 10 * 60 * 1000,   // 10 menit
+    status: 'all',
+    type: 'all'
   });
 
-  // Map billing data to transactions
-  const transactions = useMemo(() => {
-    if (!billingResponse?.data) return []
-    return billingResponse.data.map(mapBillingToTransaction)
-  }, [billingResponse?.data])
+  const [timeRange, setTimeRange] = useState<SelectorDateRange>('all');
+  const [customDates, setCustomDates] = useState({ from: '', to: '' });
 
-  const applyFilters = (newFilters: FilterState, search: string) => {
-    let result = transactions
+  // Ambil data seluruh transaksi kasir untuk tabel sebelah kiri
+  const { data: billingResponse, isLoading } = useQuery({
+    queryKey: ['billingTransactionsList'],
+    queryFn: () => billingPosService.getAllTransactions(),
+    staleTime: 1 * 60 * 1000,
+  });
 
-    // Filter by search
-    if (search.trim()) {
-      const query = search.toLowerCase()
-      result = result.filter(trx =>
-        trx.id.toLowerCase().includes(query) ||
-        trx.patient.toLowerCase().includes(query)
-      )
-    }
-
-    // Filter by status
-    if (newFilters.statuses && newFilters.statuses.length > 0) {
-      result = result.filter(trx => {
-        const statusId = trx.status.toLowerCase()
-        return newFilters.statuses.includes(statusId)
-      })
-    }
-
-    // Filter by type
-    if (newFilters.types && newFilters.types.length > 0) {
-      result = result.filter(trx => {
-        const typeLabel = trx.type
-        const typeId = typeLabel === 'Pelayanan Medis' ? 'medis' : 
-                       typeLabel === 'Obat Saja' ? 'obat' : 
-                       typeLabel === 'Laboratorium' ? 'laboratorium' : ''
-        return newFilters.types.includes(typeId)
-      })
-    }
-
-    return result
-  }
+  const transactions: Transaction[] = useMemo(() => {
+    const rawData = billingResponse?.data || [];
+    // Urutkan transaksi terbaru di atas
+    const sortedRaw = [...rawData].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return sortedRaw.map((item: any) => {
+      const dateObj = new Date(item.createdAt);
+      const timeString = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+      
+      return {
+        id: item.id,
+        time: timeString,
+        patient: item.patient?.name || 'Pasien Tanpa Nama',
+        initial: item.patient?.name?.substring(0, 2).toUpperCase() || 'PS',
+        type: item.patient?.insuranceType || 'UMUM',
+        status: item.status,
+        total: item.total.toString(),
+        billingData: item
+      };
+    });
+  }, [billingResponse]);
 
   const filteredTransactions = useMemo(() => {
-    return applyFilters(filters, searchQuery)
-  }, [transactions, filters, searchQuery])
-
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage) || 1
-
-  const handleTransactionClick = (transaction: Transaction) => {
-    const billing = transaction.billingData
-    if (!billing) return
-
-    const transactionData = {
-      id: transaction.id,
-      amount: parseInt(billing.totalBiaya),
-      date: `${new Date(billing.createdAt).toLocaleDateString('id-ID')} - ${transaction.time}`,
-      status: billing.status === 'LUNAS' ? 'success' : 'pending',
-      patientName: billing.janji.pasien.namaLengkap,
-      cashierName: 'Andi Pratama',
-      paymentMethod: billing.metodePembayaran,
-      items: billing.detail.map(item => ({
-        name: item.namaLayanan,
-        quantity: item.jumlah,
-        price: parseInt(item.harga),
-      })),
-      guaranteeAmount: parseInt(billing.totalBiaya),
-    }
+    const sekarang = new Date();
     
-    setContent('transaction-detail', transactionData)
-  }
+    return transactions.filter(tx => {
+      const matchesSearch = tx.patient.toLowerCase().includes(search.toLowerCase()) || 
+                            tx.id.toLowerCase().includes(search.toLowerCase());
+      
+      const matchesStatus = filters.status === 'all' || 
+                            tx.status.toLowerCase() === filters.status.toLowerCase();
+      
+      const matchesType = filters.type === 'all' || 
+                            tx.type.toLowerCase() === filters.type.toLowerCase();
 
-  const handleFilterChange = (newFilters: FilterState) => {
-    setFilters(newFilters)
-    setCurrentPage(1)
-  }
+      let matchesDate = true;
+      if (timeRange !== 'all' && tx.billingData?.createdAt) {
+        const txDate = new Date(tx.billingData.createdAt);
+        const startOfTx = new Date(txDate.getFullYear(), txDate.getMonth(), txDate.getDate()).getTime();
+        const hariIniStart = new Date(sekarang.getFullYear(), sekarang.getMonth(), sekarang.getDate()).getTime();
 
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value)
-    setCurrentPage(1)
-  }
+        if (timeRange === 'today') {
+          if (startOfTx !== hariIniStart) matchesDate = false;
+        } else if (timeRange === 'week') {
+          const tujuhHariLalu = hariIniStart - 7 * 24 * 60 * 60 * 1000;
+          if (startOfTx < tujuhHariLalu) matchesDate = false;
+        } else if (timeRange === 'month') {
+          const awalBulanIni = new Date(sekarang.getFullYear(), sekarang.getMonth(), 1).getTime();
+          if (startOfTx < awalBulanIni) matchesDate = false;
+        } else if (timeRange === 'custom') {
+          if (customDates.from) {
+            const fDate = new Date(customDates.from).setHours(0, 0, 0, 0);
+            if (startOfTx < fDate) matchesDate = false;
+          }
+          if (customDates.to) {
+            const tDate = new Date(customDates.to).setHours(23, 59, 59, 999);
+            if (startOfTx > tDate) matchesDate = false;
+          }
+        }
+      }
 
-  const handleDateRangeChange = (dateRange: DateRange) => {
-    console.log('Date range selected:', dateRange);
-  }
+      return matchesSearch && matchesStatus && matchesType && matchesDate;
+    });
+  }, [transactions, search, filters, timeRange, customDates]);
 
-  const paginatedTransactions = filteredTransactions.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  )
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const paginatedTransactions = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredTransactions.slice(start, start + itemsPerPage);
+  }, [filteredTransactions, currentPage]);
 
-  // SKELETON LOADING UI
   if (isLoading) {
-    return <TransactionListSkeleton />
+    return <TransactionListSkeleton />;
   }
 
-  // ERROR UI
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg border border-red-200 p-8 text-center text-red-600 font-semibold">
-        Gagal memuat data transaksi: {(error as Error).message}
-      </div>
-    )
-  }
+  const totalItems = filteredTransactions.length;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
 
   return (
-    <div className="bg-white rounded-lg border shadow-sm overflow-hidden w-full">
-      {/* HEADER: SEARCH & FILTERS */}
-      <div className="p-6 flex flex-col md:flex-row gap-4 items-center justify-between border-b border-gray-100">
-        <div className="relative w-full md:max-w-md group">
-          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-green-600 transition-colors" />
-          <Input 
-            id="search-invoice"
-            name="searchInvoice"
-            placeholder="Cari No. Invoice atau Nama Pasien..." 
-            className="pl-12 h-11 rounded-md bg-gray-50 border-gray-200 focus-visible:ring-green-600 font-medium text-gray-900"
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-          />
-        </div>
-        
-        <div className="flex gap-3 w-full md:w-auto">
-          <DateRangeSelector onDateRangeChange={handleDateRangeChange} />
-          <FilterTransaction onFilterChange={handleFilterChange} />
-        </div>
-      </div>
-
-      {/* TRANSACTION TABLE */}
-      <div className="overflow-x-auto w-full">
-        <Table className="w-full table-fixed min-w-[850px]">
-          <TableHeader>
-            <TableRow className="bg-gray-50 hover:bg-gray-50 border-none">
-              <TableHead className="pl-8 text-gray-700 font-bold h-12 text-left w-[20%]">No. Invoice</TableHead>
-              <TableHead className="text-gray-700 font-bold h-12 text-left w-[10%]">Waktu</TableHead>
-              <TableHead className="text-gray-700 font-bold h-12 text-left w-[27%]">Pasien / Keterangan</TableHead>
-              <TableHead className="text-gray-700 font-bold h-12 text-left w-[15%]">Jenis</TableHead>
-              <TableHead className="text-center text-gray-700 font-bold h-12 w-[13%]">Status</TableHead>
-              <TableHead className="pr-8 text-right text-gray-700 font-bold h-12 w-[15%]">Total</TableHead>
-            </TableRow>
-          </TableHeader>
+    <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full flex flex-col justify-between h-full min-h-[600px]">
+      <div className="w-full">
+        {/* HEADER & FILTERS */}
+        <div className="p-5 border-b border-[#DFE6EB] flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 bg-white">
+          <div className="flex items-center gap-3 flex-1 max-w-md">
+            <div className="relative w-full">
+              <SearchIcon className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Input 
+                placeholder="Cari nama pasien atau ID Transaksi..." 
+                className="pl-10 h-10 rounded-xl border-gray-200 text-xs focus-visible:ring-[#1B9C90] outline-none"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+            <FilterTransaction filters={filters} onFilterChange={setFilters} />
+          </div>
           
-          <TableBody>
-            {paginatedTransactions.map((trx) => {
-              const isActive = trx.highlighted;
-              return (
-                <TableRow 
-                  key={trx.id} 
-                  className={cn(
-                    "border-b border-gray-100 transition-colors cursor-pointer hover:bg-gray-50/80",
-                    isActive ? "bg-green-50/50 hover:bg-green-50/60" : ""
-                  )}
-                  onClick={() => handleTransactionClick(trx)}
-                >
-                  <TableCell className="pl-8 py-4 font-medium text-gray-900 text-sm text-left">
-                    {trx.id}
-                  </TableCell>
+          <div className="flex items-center gap-3">
+            <DateRangeSelector 
+              onDateRangeChange={(range) => setTimeRange(range)} 
+              onCustomDatesChange={(dates) => setCustomDates(dates)}
+            />
+          </div>
+        </div>
 
-                  <TableCell className="text-gray-500 font-medium text-sm text-left">
-                    {trx.time}
-                  </TableCell>
-
-                  <TableCell className="text-left">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-[10px] font-bold border border-green-100 shrink-0">
-                        {trx.initial}
-                      </div>
-                      <span className="font-medium text-gray-900 truncate">{trx.patient}</span>
-                    </div>
-                  </TableCell>
-
-                  <TableCell className="text-left">
-                    <Badge variant="secondary" className="rounded-full bg-gray-100 text-gray-600 font-bold hover:bg-gray-100 border-none px-3 py-0.5 text-[10px]">
-                      {trx.type}
-                    </Badge>
-                  </TableCell>
-
-                  <TableCell className="text-center">
-                    <Badge 
-                      className={cn(
-                        "rounded-full px-3 py-0.5 text-[10px] font-bold border-none shadow-none inline-flex items-center justify-center",
-                        trx.status === 'Lunas' 
-                          ? "bg-green-50 text-green-700 border-green-100 hover:bg-green-50" 
-                          : "bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-50"
-                      )}
-                    >
-                      {trx.status}
-                    </Badge>
-                  </TableCell>
-
-                  <TableCell className="pr-8 text-right font-bold text-gray-900 text-sm">
-                    {trx.total}
+        {/* TABLE ELEMENT */}
+        <div className="overflow-x-auto w-full">
+          <Table className="w-full min-w-[850px] table-fixed">
+            <TableHeader>
+              <TableRow className="bg-[#F4F7F9] hover:bg-[#F4F7F9] border-none">
+                <TableHead className="pl-6 text-xs font-bold text-[#67737C] h-12 w-[22%] text-left">ID TRANSAKSI</TableHead>
+                <TableHead className="text-xs font-bold text-[#67737C] h-12 w-[25%] text-left">NAMA PASIEN</TableHead>
+                <TableHead className="text-xs font-bold text-[#67737C] h-12 w-[18%] text-left">TANGGAL</TableHead>
+                <TableHead className="text-xs font-bold text-[#67737C] h-12 w-[15%] text-left">TOTAL</TableHead>
+                <TableHead className="text-xs font-bold text-[#67737C] h-12 w-[10%] text-left">METODE</TableHead>
+                <TableHead className="pr-6 text-xs font-bold text-[#67737C] h-12 w-[10%] text-left">STATUS</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedTransactions.length === 0 ? (
+                <TableRow className="hover:bg-transparent">
+                  <TableCell colSpan={6} className="h-40 text-center text-xs font-medium text-gray-400">
+                    Tidak ada data transaksi yang cocok dengan pencarian atau filter.
                   </TableCell>
                 </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
+              ) : (
+                paginatedTransactions.map((tx) => {
+                  const isSelected = panelData?.transactionId === tx.id || panelData?.id === tx.id;
+                  
+                  return (
+                    <TableRow 
+                      key={tx.id}
+                      onClick={() => {
+                        // 🟢 BYPASS STRICT: Memanggil panel 'detail' kwitansi kasir dengan aman menggunakan Type Casting
+                        (setContent as any)('detail', {
+                          source: 'kasir',
+                          id: tx.id,
+                          transactionId: tx.id,
+                          amount: parseFloat(tx.total),
+                          total: parseFloat(tx.total),
+                          patientName: tx.patient,
+                          insurance: tx.type,
+                          paymentMethod: tx.billingData?.paymentMethod,
+                          paidMethods: tx.billingData?.paidMethods
+                        });
+                      }}
+                      className={cn(
+                        "border-b border-[#DFE6EB] last:border-none transition-colors hover:bg-[#F9FEFC] cursor-pointer",
+                        isSelected && "bg-[#F9FEFC] font-semibold border-l-4 border-l-[#1B9C90]"
+                      )}
+                    >
+                      <TableCell className="pl-6 py-4 text-xs font-bold text-[#13222D] text-left truncate" title={tx.id}>
+                        {tx.id.slice(0, 8).toUpperCase()}...
+                      </TableCell>
+                      <TableCell className="py-4 text-sm font-semibold text-[#13222D] text-left truncate">
+                        {tx.patient}
+                      </TableCell>
+                      <TableCell className="py-4 text-xs font-medium text-[#67737C] text-left">
+                        {tx.billingData?.createdAt ? formatDate(tx.billingData.createdAt) : tx.time}
+                      </TableCell>
+                      <TableCell className="py-4 text-sm font-bold text-[#13222D] text-left">
+                        {formatCurrency(tx.total)}
+                      </TableCell>
+                      <TableCell className="py-4 text-xs font-semibold text-[#13222D] text-left uppercase truncate" title={mapMethodLabel(tx.billingData?.paymentMethod || '', tx.billingData?.paidMethods)}>
+                        {mapMethodLabel(tx.billingData?.paymentMethod || '', tx.billingData?.paidMethods)}
+                      </TableCell>
+                      <TableCell className="pr-6 py-4 text-left">
+                        <Badge 
+                          className={cn(
+                            "rounded-full px-2.5 py-0.5 text-[10px] font-bold border-none shadow-none inline-flex items-center justify-center uppercase",
+                            tx.status === 'LUNAS' && "bg-[#DFF6F2] text-[#1B9C90]",
+                            tx.status === 'PENDING_PAYMENT' && "bg-[#FFF9EB] text-[#F2A618]",
+                            tx.status === 'PARTIAL' && "bg-orange-50 text-orange-500"
+                          )}
+                        >
+                          {mapStatusLabel(tx.status)}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
-      {/* PAGINATION FOOTER */}
-      <div className="p-4 flex items-center justify-between border-t border-gray-100 bg-white text-sm shrink-0">
-        <p className="text-xs font-medium text-gray-400 pl-4">
-          Menampilkan <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredTransactions.length)}</span> dari <span className="font-bold text-gray-900">{filteredTransactions.length}</span> Transaksi
-        </p>
+      {/* FOOTER PAGINATION BLOCK */}
+      <div className="px-6 py-4 border-t border-[#DFE6EB] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#F9FEFC]/30">
+        <span className="text-xs font-medium text-[#67737C]">
+          Menampilkan <span className="text-[#13222D] font-bold">{totalItems > 0 ? startIndex + 1 : 0} - {endIndex}</span> dari <span className="text-[#13222D] font-bold">{totalItems}</span> data entri
+        </span>
         
-        <div className="flex items-center gap-1.5 pr-4">
+        <div className="flex items-center gap-1.5">
           <Button 
             variant="outline" 
-            size="icon" 
-            className="w-8 h-8 rounded-md border-gray-200 text-gray-400 hover:bg-gray-50" 
-            disabled={currentPage === 1}
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="h-8 w-8 p-0 rounded-lg border-[#DFE6EB] text-[#67737C] disabled:opacity-40 cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
           
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+          {Array.from({ length: totalPages }).map((_, idx) => (
             <Button 
-              key={page}
+              key={idx}
+              variant="outline" 
+              onClick={() => setCurrentPage(idx + 1)}
               className={cn(
-                "w-8 h-8 rounded-md text-xs font-bold border-none shadow-none",
-                currentPage === page 
-                  ? "bg-green-600 hover:bg-green-700 text-white" 
-                  : "text-gray-400 hover:bg-gray-50 variant-ghost"
+                "h-8 px-3 rounded-lg text-xs font-bold border-none shadow-none cursor-pointer",
+                currentPage === idx + 1 
+                  ? "bg-[#13272F]/5 text-[#1B9C90]" 
+                  : "text-[#67737C] hover:bg-[#F4F7F9]"
               )}
-              onClick={() => setCurrentPage(page)}
             >
-              {page}
+              {idx + 1}
             </Button>
           ))}
           
           <Button 
             variant="outline" 
-            size="icon" 
-            className="w-8 h-8 rounded-md border-gray-200 text-gray-400 hover:bg-gray-50"
-            disabled={currentPage === totalPages}
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages || totalPages === 0}
+            className="h-8 w-8 p-0 rounded-lg border-[#DFE6EB] text-[#67737C] hover:bg-[#F4F7F9] disabled:opacity-40 cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       </div>
-
     </div>
-  )
-};
+  );
+}

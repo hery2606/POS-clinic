@@ -135,12 +135,7 @@ export const StockDetailView: React.FC<StockDetailViewProps> = ({ item }) => {
             <Separator className="bg-[#EFF4F8]" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-5 gap-x-8 text-sm">
-              <div>
-                <span className="text-[11px] font-bold text-[#67737C] uppercase block">Produsen / Supplier Utama</span>
-                <span className="font-bold text-[#13222D] mt-1 block flex items-center gap-1.5">
-                  <Truck className="w-4 h-4 text-[#67737C]" /> PT. Kimia Farma Tbk.
-                </span>
-              </div>
+           
               <div>
                 <span className="text-[11px] font-bold text-[#67737C] uppercase block">Nomor Bets / Batch No</span>
                 <span className="font-mono font-bold text-[#13222D] mt-1 block">BATCH-2026A9X</span>
@@ -192,30 +187,7 @@ export const StockDetailView: React.FC<StockDetailViewProps> = ({ item }) => {
             </div>
           </Card>
 
-          {/* Card Parameter Validitas Tanggal */}
-          <Card className="bg-white p-6 rounded-[24px] border border-[#DFE6EB] shadow-sm space-y-4">
-            <h4 className="text-[10px] font-bold text-[#67737C] uppercase tracking-wider">
-              Masa Kedaluwarsa & Update
-            </h4>
-            
-            <div className="flex items-start gap-3">
-              <Calendar className="w-4 h-4 text-[#E62C2C] mt-0.5 shrink-0" />
-              <div>
-                <p className="text-[10px] font-bold text-[#67737C] uppercase">Tanggal Kedaluwarsa (ED)</p>
-                <p className="text-sm font-bold text-[#E62C2C] mt-0.5">24 Desember 2028</p>
-              </div>
-            </div>
-
-            <Separator className="bg-[#EFF4F8]" />
-
-            <div className="flex items-start gap-3">
-              <Package className="w-4 h-4 text-[#67737C] mt-0.5 shrink-0" />
-              <div>
-                <p className="text-[10px] font-bold text-[#67737C] uppercase">Pembaruan Sistem Terakhir</p>
-                <p className="text-xs font-bold text-[#13222D] mt-0.5">Hari ini, 09:12 WIB</p>
-              </div>
-            </div>
-          </Card>
+          
 
         </div>
       </div>

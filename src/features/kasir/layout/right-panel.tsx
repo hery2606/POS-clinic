@@ -30,9 +30,9 @@ export function RightPanel() {
           </div>
         )}
 
-        {contentType === "transaction-detail" && (
+        {(contentType === "transaction-detail" || contentType === "detail") && (
           <div className="flex-1 p-6 flex flex-col justify-center overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            <TransactionDetail transaction={data} />
+            <TransactionDetail />
           </div>
         )}
 
