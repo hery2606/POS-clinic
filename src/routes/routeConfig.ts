@@ -1,8 +1,3 @@
-/**
- * Route Configuration
- * Menampung semua path dan konfigurasi routing aplikasi
- */
-
 export const ROUTES = {
   AUTH: {
     LOGIN: '/login',
