@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Users, Info, TrendingUp, Award, ActivitySquare, Zap, AlertCircle } from "lucide-react";
+import { Users, Info, TrendingUp, Award, ActivitySquare, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { analitikService } from "../../services/analitik.service";
 

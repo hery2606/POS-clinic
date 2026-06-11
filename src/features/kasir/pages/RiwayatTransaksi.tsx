@@ -1,4 +1,4 @@
-import { TransactionList } from '@/features/kasir/components/RiwayatTransaksi/TransactionList'
+import TransactionList from '@/features/kasir/components/RiwayatTransaksi/TransactionList'
 
 export const RiwayatTransaksi = () => {
   try {

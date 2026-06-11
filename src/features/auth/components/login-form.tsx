@@ -77,10 +77,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           <div className="relative z-10">
             {/* Logo */}
             <div className="flex items-center gap-3 mb-10">
-              <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                <div className="w-6 h-6 border-2 border-[#25323C] rounded-full flex items-center justify-center">
-                  <span className="text-[#25323C] font-bold text-lg">+</span>
-                </div>
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-2">
+                <img 
+                  src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231B9C90' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' /%3E%3Cpath d='M12 8v8M8 12h8' /%3E%3C/svg%3E"
+                  alt="Medical Logo" 
+                  className="w-full h-full animate-pulse"
+                />
               </div>
               <span className="font-bold text-white text-xl tracking-tight">KLINIK PAYMENT</span>
             </div>
@@ -139,7 +141,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               {/* Email Field */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-[#13222D] uppercase tracking-wider ml-1">
-                  Email atau Username
+                  Email 
                 </label>
                 <div className="relative group">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#67737C] group-focus-within:text-[#1B9C90] transition-colors">
@@ -148,7 +150,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   <Input
                     name="email"
                     type="email"
-                    placeholder="admin@klinikbanani.com"
+                    placeholder="admin@klinik.com"
                     value={credentials.email}
                     onChange={handleChange}
                     disabled={isLoading}
@@ -226,8 +228,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             
             {/* Demo Button Container */}
             <div className="mt-6 flex flex-wrap justify-center gap-2">
-               <button onClick={() => handleDemoCredentialClick('admin@klinik.com', 'admin123')} className="text-[10px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tighter border border-[#DFE6EB]">Login Admin</button>
-               <button onClick={() => handleDemoCredentialClick('kasir@klinik.com', 'kasir123')} className="text-[10px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tighter border border-[#DFE6EB]">Login Kasir</button>
+               <button onClick={() => handleDemoCredentialClick('admin@klinik.com', 'password123')} className="text-[10px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tighter border border-[#DFE6EB]">Admin / Super Admin</button>
+               <button onClick={() => handleDemoCredentialClick('kasir@klinik.com', 'password123')} className="text-[10px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tighter border border-[#DFE6EB]">Kasir</button>
             </div>
           </div>
         </div>

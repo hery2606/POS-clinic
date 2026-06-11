@@ -5,7 +5,7 @@ import { ROUTES } from './routeConfig';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: Array<'admin' | 'kasir' | 'dokter'>;
+  allowedRoles?: Array<'admin' | 'kasir' | 'dokter' | 'KASIR' | 'SUPER_ADMIN'>;
 }
 
 /**
@@ -23,7 +23,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to={ROUTES.AUTH.LOGIN} replace />;
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && user && !allowedRoles.includes(user.role as any)) {
     return <Navigate to={ROUTES.AUTH.LOGIN} replace />;
   }
 

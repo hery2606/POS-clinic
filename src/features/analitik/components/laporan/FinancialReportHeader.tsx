@@ -18,7 +18,7 @@ interface FinancialReportHeaderProps {
   onExportExcel?: () => void;
 }
 
-const periodOptions = [
+export const periodOptions = [
   { value: "2026-05", label: "Mei 2026" },
   { value: "2026-04", label: "April 2026" },
   { value: "2026-03", label: "Maret 2026" },
@@ -35,10 +35,8 @@ export function FinancialReportHeader({
   onDownloadPDF,
   onExportExcel,
 }: FinancialReportHeaderProps) {
-  const [period, setPeriod] = useState(selectedPeriod);
 
   const handlePeriodChange = (value: string) => {
-    setPeriod(value);
     onPeriodChange?.(value);
   };
 
@@ -50,12 +48,12 @@ export function FinancialReportHeader({
       const element = document.createElement("a");
       const file = new Blob(
         [
-          `Laporan Keuangan\n\nPeriode: ${period}\nTanggal Export: ${new Date().toLocaleDateString("id-ID")}`,
+          `Laporan Keuangan\n\nPeriode: ${selectedPeriod}\nTanggal Export: ${new Date().toLocaleDateString("id-ID")}`,
         ],
         { type: "text/plain" }
       );
       element.href = URL.createObjectURL(file);
-      element.download = `laporan-keuangan-${period}.txt`;
+      element.download = `laporan-keuangan-${selectedPeriod}.txt`;
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
@@ -67,7 +65,7 @@ export function FinancialReportHeader({
       onExportExcel();
     } else {
       // Default: show alert
-      alert(`Export Excel untuk periode ${period} akan segera dikembangkan`);
+      alert(`Export Excel untuk periode ${selectedPeriod} akan segera dikembangkan`);
     }
   };
 
@@ -79,13 +77,13 @@ export function FinancialReportHeader({
         </h2>
         <p className="text-sm font-medium text-[#67737C]">
           Analisa Pendapatan, Pengeluaran, dan Arus Kas - Periode: {
-            periodOptions.find((p) => p.value === period)?.label || period
+            periodOptions.find((p) => p.value === selectedPeriod)?.label || selectedPeriod
           }
         </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-        <Select value={period} onValueChange={handlePeriodChange}>
+        <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
           <SelectTrigger className="w-full sm:w-auto h-11 bg-[#F4F7F9] border-none text-xs font-medium text-[#13222D] rounded-xl focus:ring-1 focus:ring-[#1B9C90] shadow-none px-4 flex items-center gap-2">
             <Calendar className="w-4 h-4 text-[#67737C]" />
             <SelectValue placeholder="Pilih Periode" />

@@ -22,7 +22,7 @@ interface FinancialDetailTableProps {
   onViewAllClick?: () => void;
 }
 
-const tableConfigs: Record<BreakdownTabType, { title: string; headers: string[]; widths: string[] }> = {
+export const tableConfigs: Record<BreakdownTabType, { title: string; headers: string[]; widths: string[] }> = {
   Pendapatan: {
     title: "Rincian Pendapatan Harian",
     headers: ["TANGGAL", "TOTAL TRANSAKSI", "PENDAPATAN LAYANAN", "PENDAPATAN OBAT", "TOTAL PENDAPATAN"],
@@ -50,7 +50,7 @@ const tableConfigs: Record<BreakdownTabType, { title: string; headers: string[];
   }
 };
 
-const dummyTableData: Record<BreakdownTabType, any[]> = {
+export const dummyTableData: Record<BreakdownTabType, any[]> = {
   Pendapatan: [
     { col1: "15 Nov 2023", col2: 42, col3: "Rp 2.800.000", col4: "Rp 1.450.000", col5: "Rp 4.250.000", isHighlight: true },
     { col1: "14 Nov 2023", col2: 38, col3: "Rp 2.500.000", col4: "Rp 1.200.000", col5: "Rp 3.700.000" },

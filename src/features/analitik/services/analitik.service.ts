@@ -5,13 +5,20 @@ import {
   type PaymentsAnalyticsResponse, 
   type RevenueChartData, 
   type FinancialSummaryResponse, 
-  type PatientAnalyticsResponse 
+  type PatientAnalyticsResponse
 } from "../types/analitik.types.ts";
+import { type AiInsightsResponse } from "../types/ai-insight.types";
 import { type ProductAnalyticsResponse } from "../types/produk.types.ts";
 import { type PendingInvoicesResponse } from "../types/invoices.types.ts";
 import { type PatientListResponse } from "../types/patient.types.ts";
+import { aiInsightService } from "./ai-insight.service.ts";
 
 export const analitikService = {
+  // Ambil data insight AI (Diwariskan ke aiInsightService yang baru)
+getAiInsights: async (): Promise<AiInsightsResponse> => {
+  return aiInsightService.getInsights();
+},
+
   // Ambil data tren pendapatan (revenue trend)
   getRevenueTrend: async (): Promise<RevenueTrendResponse> => {
     const response = await aiClient.get<RevenueTrendResponse>("/api/v1/ai/revenue/trend");

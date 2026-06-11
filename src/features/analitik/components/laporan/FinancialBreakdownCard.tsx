@@ -12,7 +12,7 @@ interface FinancialBreakdownCardProps {
   activeTab: BreakdownTabType;
 }
 
-interface BreakdownData {
+export interface BreakdownData {
   title: string;
   subtitle: string;
   categories: { name: string; percentage: number; color: string }[];
@@ -20,7 +20,7 @@ interface BreakdownData {
   contributors: { name: string; amount: string }[];
 }
 
-const staticBreakdownConfigs: Record<BreakdownTabType, BreakdownData> = {
+export const staticBreakdownConfigs: Record<BreakdownTabType, BreakdownData> = {
   Pendapatan: {
     title: "Breakdown Pendapatan",
     subtitle: "Berdasarkan Kategori",
