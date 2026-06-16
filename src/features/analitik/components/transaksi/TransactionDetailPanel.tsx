@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Calendar, 
@@ -8,7 +9,9 @@ import {
   Send, 
   FileText, 
   QrCode,
-  Clock
+  Clock,
+  ArrowRightLeft,
+  CornerDownRight
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -96,6 +99,32 @@ export function TransactionDetailPanel({
   const items = billing?.detail || [];
   const payments = paymentHistory?.payments || [];
 
+  // 🟢 LOGIKA PRO MUTASI TERMIN: Membagi list payment berdasarkan status pending
+  const { initialPayments, supplementalPayments } = useMemo(() => {
+    if (!payments || payments.length === 0) {
+      return { initialPayments: [], supplementalPayments: [] };
+    }
+
+    // Cari index pertama di mana ada metode pembayaran yang statusnya PENDING
+    const pendingIndex = payments.findIndex(
+      (pm: any) => pm.status?.toUpperCase() === 'PENDING' || pm.status?.toUpperCase() === 'PENDING_PAYMENT'
+    );
+
+    // Jika ditemukan status PENDING dan ada transaksi pelunasan baru di bawahnya
+    if (pendingIndex !== -1 && pendingIndex < payments.length - 1) {
+      return {
+        initialPayments: payments.slice(0, pendingIndex + 1),
+        supplementalPayments: payments.slice(pendingIndex + 1)
+      };
+    }
+
+    // Jika berjalan normal/langsung lunas tanpa pending menggantung
+    return {
+      initialPayments: payments,
+      supplementalPayments: []
+    };
+  }, [payments]);
+
   const mapStatusLabel = (status: string) => {
     switch (status) {
       case 'LUNAS': return 'LUNAS';
@@ -182,7 +211,7 @@ export function TransactionDetailPanel({
               </div>
             ))
           ) : (
-            <p className="text-xs text-[#67737C] text-left">Tidak ada rincian layanan & produk.</p>
+            <p className="text-xs text-[#67737C] text-left">Tidak ada rincian layanan &amp; produk.</p>
           )}
         </div>
       </div>
@@ -212,34 +241,40 @@ export function TransactionDetailPanel({
         </span>
       </div>
 
-      {/* PAYMENT METHOD BLOCK */}
-      <div className="bg-[#F4F7F9] rounded-xl p-4 space-y-2 border border-[#DFE6EB]/40">
+      {/* PAYMENT METHOD BLOCK WITH SPLIT BILL TERMS GROUPING */}
+      <div className="bg-[#F4F7F9] rounded-xl p-4 space-y-4 border border-[#DFE6EB]/40">
         <span className="text-[11px] font-semibold text-[#67737C] block text-left uppercase tracking-wider">
-          Metode & Histori Pembayaran
+          Metode &amp; Histori Pembayaran
         </span>
-        {payments.length > 0 ? (
+        
+        {/* TIER 1: Render Transaksi Utama (Sebelum / Sampai Status Pending Pertama) */}
+        {initialPayments.length > 0 ? (
           <div className="space-y-2">
-            {payments.map((pm: any, idx: number) => (
-              <div key={pm.id || idx} className="flex justify-between items-center text-xs text-[#13222D]">
-                <div className="flex items-center gap-1.5 font-bold">
-                  <QrCode className="w-3.5 h-3.5 text-[#1B9C90]" />
-                  <span className="uppercase">{pm.method}</span>
-                  {pm.isBpjsCoverage && (
-                    <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold uppercase">
-                      BPJS
+            {initialPayments.map((pm: any, idx: number) => {
+              const isItemPending = pm.status === 'PENDING' || pm.status === 'PENDING_PAYMENT';
+              return (
+                <div key={pm.id || idx} className="flex justify-between items-center text-xs text-[#13222D] bg-white p-2.5 rounded-lg border border-slate-100">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <QrCode className="w-3.5 h-3.5 text-[#1B9C90]" />
+                    <span className="uppercase">{pm.method}</span>
+                    {pm.isBpjsCoverage && (
+                      <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold uppercase">
+                        BPJS
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold block">Rp {pm.amount.toLocaleString("id-ID")}</span>
+                    <span className={cn(
+                      "block text-[9px] font-black uppercase tracking-wider",
+                      isItemPending ? "text-orange-500" : "text-[#1B9C90]"
+                    )}>
+                      {isItemPending ? 'PENDING' : 'LUNAS'}
                     </span>
-                  )}
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="font-bold">Rp {pm.amount.toLocaleString("id-ID")}</span>
-                  <span className={`block text-[9px] font-semibold uppercase ${
-                    pm.status === 'PAID' ? 'text-[#1B9C90]' : 'text-orange-500'
-                  }`}>
-                    {pm.status === 'PAID' ? 'LUNAS' : 'PENDING'}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="flex items-center gap-2 text-sm font-bold text-[#13222D] justify-start">
@@ -247,18 +282,38 @@ export function TransactionDetailPanel({
             <span className="uppercase">{billing?.metodePembayaran || "TUNAI"}</span>
           </div>
         )}
+
+        {/* 🟢 TIER 2: BLOK KETERANGAN TAGIHAN PELUNASAN (OTOMATIS TEMPEL DI BAWAH JIKA ADA STRUKTUR BARU) */}
+        {supplementalPayments.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-dashed border-slate-300 space-y-2 animate-in fade-in duration-300">
+            <div className="flex items-center gap-1.5 text-[9px] font-black text-orange-600 uppercase tracking-widest pl-1 bg-orange-50 py-1 px-2.5 rounded-lg w-fit border border-orange-100/70">
+              <ArrowRightLeft className="w-3 h-3" /> Keterangan Tagihan Pelunasan
+            </div>
+
+            <div className="space-y-2.5 pl-2 border-l-2 border-dashed border-orange-200">
+              {supplementalPayments.map((pm: any, idx: number) => (
+                <div key={pm.id || idx} className="flex justify-between items-center text-xs text-[#13222D] animate-in slide-in-from-left-2 duration-200">
+                  <div className="flex items-center gap-1 font-medium text-slate-600">
+                    <CornerDownRight className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                    <span>Pelunasan via </span>
+                    <span className="font-black text-slate-800 uppercase tracking-wide">{pm.method}</span>
+                  </div>
+                  <div className="text-right flex items-center gap-2">
+                    <Badge className="bg-emerald-50 text-emerald-700 font-extrabold text-[8px] h-4 rounded px-1 border border-emerald-200/50 shadow-none uppercase">
+                      LUNAS
+                    </Badge>
+                    <span className="font-black text-slate-800">Rp {pm.amount.toLocaleString("id-ID")}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ACTION BUTTONS */}
       <div className="space-y-2.5 pt-2">
-        <Button
-          onClick={onDownloadPDF}
-          disabled={!billing?.pdfPath}
-          className="w-full bg-[#1B9C90] hover:bg-[#157A71] text-white font-bold h-11 px-4 rounded-xl flex items-center justify-center gap-2 border-none shadow-none transition-colors cursor-pointer disabled:opacity-40"
-        >
-          <FileText className="w-4 h-4" />
-          <span>Unduh Invoice (PDF)</span>
-        </Button>
+       
         
         <div className="grid grid-cols-2 gap-3">
           <Button

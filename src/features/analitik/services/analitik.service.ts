@@ -15,9 +15,21 @@ import { aiInsightService } from "./ai-insight.service.ts";
 
 export const analitikService = {
   // Ambil data insight AI (Diwariskan ke aiInsightService yang baru)
-getAiInsights: async (): Promise<AiInsightsResponse> => {
-  return aiInsightService.getInsights();
-},
+  getAiInsights: async (): Promise<AiInsightsResponse> => {
+    return aiInsightService.getInsights();
+  },
+
+  // Kirim pengingat pembayaran via WhatsApp CRM
+  sendWaReminder: async (payload: {
+    target: string;
+    nama_pasien: string;
+    attachment_url: string;
+    filename: string;
+    status_pembayaran: string;
+  }): Promise<any> => {
+    const response = await aiClient.post("/api/v1/ai/invoice/send-wa", payload);
+    return response.data;
+  },
 
   // Ambil data tren pendapatan (revenue trend)
   getRevenueTrend: async (): Promise<RevenueTrendResponse> => {
@@ -56,15 +68,26 @@ getAiInsights: async (): Promise<AiInsightsResponse> => {
   },
 
   // Ambil daftar semua pasien dari RME
-  getAllPatients: async (): Promise<PatientListResponse> => {
+  getAllPatients: async (params?: { 
+    page?: number; 
+    limit?: number; 
+    search?: string; 
+    status?: string; 
+    gender?: string; 
+    hasBpjs?: string; 
+  }): Promise<PatientListResponse> => {
     try {
       const response = await rmeClient.get<PatientListResponse>("/api/v1/patients", {
         params: {
-          page: 1,
-          limit: 1000
+          page: params?.page ?? 1,
+          limit: params?.limit ?? 10,
+          search: params?.search,
+          status: params?.status,
+          gender: params?.gender,
+          hasBpjs: params?.hasBpjs,
         }
       });
-      console.log("✅ Pasien berhasil diambil dari RME");
+      console.log("✅ Pasien berhasil diambil dari RME dengan params:", params);
       return response.data;
     } catch (error: any) {
       console.error("❌ Gagal mengambil data pasien dari RME");

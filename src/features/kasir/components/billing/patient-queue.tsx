@@ -92,7 +92,7 @@ export function PatientQueue({
         </Button>
       </div>
 
-      <ScrollArea className="flex-1 w-full min-h-0 bg-transparent">
+      <ScrollArea className="w-full max-h-[280px] bg-transparent">
         <div className="space-y-2 pr-1 py-1">
           {patients.map((item, index) => {
             const isActive = selectedPatientId === item.id;

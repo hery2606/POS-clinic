@@ -3,8 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { analitikService } from "../../services/analitik.service";
-import { dummyTableData, tableConfigs } from "../laporan/FinancialDetailTable";
-import { staticBreakdownConfigs, type BreakdownData, type BreakdownTabType } from "../laporan/FinancialBreakdownCard";
+import { dummyTableData, tableConfigs } from "../laporan/pendapatan/FinancialDetailTable";
+import { staticBreakdownConfigs, type BreakdownData, type BreakdownTabType } from "../laporan/pendapatan/FinancialBreakdownCard";
 
 interface PrintFormalReportTemplateProps {
   periodLabel: string;
@@ -18,11 +18,11 @@ interface PrintFormalReportTemplateProps {
   };
 }
 
-export const PrintFormalReportTemplate = ({ 
-  periodLabel, 
-  isLaporanPage, 
-  activeTab = "Pendapatan", 
-  kpiData 
+export const PrintFormalReportTemplate = ({
+  periodLabel,
+  isLaporanPage,
+  activeTab = "Pendapatan",
+  kpiData
 }: PrintFormalReportTemplateProps) => {
   // Fetch cashflow and product data
   const cashflowQuery = useQuery({
@@ -135,7 +135,7 @@ export const PrintFormalReportTemplate = ({
     const cashflow = cashflowQuery.data.data;
     const today = getTodayDate();
     const kasKeluar = Math.max(0, cashflow.kas_masuk_harian * 0.4);
-    
+
     return [
       {
         col1: today,
@@ -162,7 +162,8 @@ export const PrintFormalReportTemplate = ({
   return (
     <>
       {/* 🔒 INJEKSI STYLE MEDIA PRINT SAKTI (HANYA AKTIF SAAT WINDOW.PRINT() DIPICU) */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         /* Sembunyikan elemen pada layar monitor normal */
         @media screen {
           #print-formal-report-template {
@@ -205,7 +206,7 @@ export const PrintFormalReportTemplate = ({
 
       {/* ELEMENT TERSEMBUNYI PADA MODE LAYAR MONITOR NORMAL */}
       <div id="print-formal-report-template" className="w-full bg-white text-slate-800 p-2">
-        
+
         {/* KOP SURAT RESMI KLINIK */}
         <div className="flex items-center justify-between border-b-4 border-[#1B9C90] pb-4 mb-6">
           <div className="flex items-center gap-3">
@@ -240,7 +241,7 @@ export const PrintFormalReportTemplate = ({
               {isLaporanPage ? "Rata-rata Pendapatan Harian" : "Pendapatan Hari Ini"}
             </span>
             <h3 className="text-lg font-black text-slate-900 mt-1.5 mb-0">
-              {kpiData?.dailyAvg 
+              {kpiData?.dailyAvg
                 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(kpiData.dailyAvg)
                 : "Rp 4.950.000"}
             </h3>
@@ -251,7 +252,7 @@ export const PrintFormalReportTemplate = ({
           <div className="border border-slate-200 p-4 rounded-xl bg-slate-50/50">
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Pendapatan Minggu Ini</span>
             <h3 className="text-lg font-black text-slate-900 mt-1.5 mb-0">
-              {kpiData?.weeklyRevenue 
+              {kpiData?.weeklyRevenue
                 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(kpiData.weeklyRevenue)
                 : "Rp 34.500.000"}
             </h3>
@@ -260,7 +261,7 @@ export const PrintFormalReportTemplate = ({
           <div className="border border-slate-200 p-4 rounded-xl bg-slate-50/50">
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Pendapatan Bulanan</span>
             <h3 className="text-lg font-black text-slate-900 mt-1.5 mb-0">
-              {kpiData?.totalRevenue 
+              {kpiData?.totalRevenue
                 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(kpiData.totalRevenue)
                 : "Rp 148.500.000"}
             </h3>

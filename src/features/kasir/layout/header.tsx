@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import { useBreadcrumb } from '@/hooks/useBreadcrumb'
 import { useRightPanel } from '../context/right-panel-context'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { warehouseService } from '../services/warehouse.service'
 import type { WarehouseMedicine } from '../types/warehouse.types'
@@ -20,6 +20,23 @@ import type { WarehouseMedicine } from '../types/warehouse.types'
 export function Header() {
   const breadcrumbs = useBreadcrumb()
   const { setContent } = useRightPanel()
+  const location = useLocation()
+
+  const activeTitle = useMemo(() => {
+    switch (location.pathname) {
+      case '/kasir':
+        return 'Kasir'
+      case '/riwayat':
+        return 'Riwayat Transaksi'
+      case '/stok':
+        return 'Stok Obat'
+      case '/pengaturan':
+        return 'Pengaturan'
+      default:
+        return breadcrumbs[breadcrumbs.length - 1]?.label || 'Kasir'
+    }
+  }, [location.pathname, breadcrumbs])
+
 
   // Fetch medicines to count critical/low stock items
   const { data: medicinesData } = useQuery<{ data: WarehouseMedicine[] }>({
@@ -74,7 +91,7 @@ export function Header() {
           </Breadcrumb>
           
           <h1 className="text-xl font-bold text-[#13222D] tracking-wide">
-            {breadcrumbs[breadcrumbs.length - 1]?.label || 'Kasir & Tagihan'}
+            {activeTitle}
           </h1>
         </div>
 

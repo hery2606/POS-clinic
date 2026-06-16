@@ -55,8 +55,8 @@ export function RevenueTrendChart() {
     return monthlyTrends.map((item: any, index: number) => ({
       week: item.bulan || `M${index + 1}`,
       current: item.total || 0,
-      previous: index === monthlyTrends.length - 1 
-        ? comparison?.bulan_lalu || 0 
+      previous: index === monthlyTrends.length - 1
+        ? comparison?.bulan_lalu || 0
         : (monthlyTrends[index - 1]?.total || 0),
     }));
   }, [revenueQuery.data]);

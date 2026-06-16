@@ -1,4 +1,5 @@
 export interface DaftarTransaksiBelumLunas {
+  wa_number: string;
   no_invoice: string;
   pasien: string;
   total_tagihan: number;

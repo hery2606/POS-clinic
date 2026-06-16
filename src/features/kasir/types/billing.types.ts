@@ -105,7 +105,7 @@ export interface BillingPaginatedResponse {
 // =========================================================================
 
 
-export type BillingStatus = 'PENDING_PAYMENT' | 'LUNAS' | 'PARTIAL';
+export type BillingStatus = 'PENDING_PAYMENT' | 'LUNAS' | 'PARTIAL' | 'CANCELLED' | 'CANCELED' | 'DIBATALKAN';
 export type PaymentMethodType = 'CASH' | 'QRIS' | 'DEBIT' | 'TRANSFER';
 export interface BillingPatient {
   id: string;

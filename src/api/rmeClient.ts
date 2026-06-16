@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "@/features/auth/store/authStore";
 
 // ==========================================
 // 1. INSTANCE UNTUK REKAM MEDIS (RME)
@@ -10,14 +11,14 @@ export const rmeClient = axios.create({
   },
 });
 
-// Interceptor khusus RME: Menyisipkan token admin RME
+// Interceptor khusus RME: Menyisipkan token admin RME dari Zustand Store
 rmeClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("rme_auth_token"); 
+    const token = useAuthStore.getState().rmeToken; 
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     } else if (!token) {
-      console.warn("⚠️ RME token tidak ditemukan di localStorage, request akan dikirim tanpa auth");
+      console.warn("⚠️ RME token tidak ditemukan di store, request akan dikirim tanpa auth");
     }
     return config;
   },
@@ -29,8 +30,8 @@ rmeClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.warn("⚠️ RME Token expired atau invalid, menghapus dari storage");
-      localStorage.removeItem("rme_auth_token");
+      console.warn("⚠️ RME Token expired atau invalid, menghapus dari store");
+      useAuthStore.getState().setRmeToken(null);
       // Jangan redirect ke login, cukup clear token
       // Component akan trigger ulang initializeRmeAuth saat melakukan request berikutnya
     }
@@ -40,17 +41,16 @@ rmeClient.interceptors.response.use(
 
 // Fungsi Otomatisasi Login Sistem/Admin ke RME
 export const initializeRmeAuth = async () => {
-  const existingToken = localStorage.getItem("rme_auth_token");
+  const existingToken = useAuthStore.getState().rmeToken;
   
-  // Jika sudah ada token di browser, tidak perlu hit API login lagi
+  // Jika sudah ada token di store, tidak perlu hit API login lagi
   if (existingToken) {
-    console.log("✅ Token RME sudah ada di localStorage, skip login");
+    console.log("✅ Token RME sudah ada di store, skip login");
     return;
   }
 
   try {
     console.log("🔄 Mencoba mengautentikasi Admin ke RME...");
-    
     
     // PERBAIKAN UTAMA: Mengubah properti 'email' menjadi 'identifier' sesuai request backend
     const response = await axios.post(`${import.meta.env.VITE_API_RME_URL}/api/v1/auth/login`, {
@@ -62,8 +62,8 @@ export const initializeRmeAuth = async () => {
     const token = response.data?.data?.accessToken;
     
     if (token) {
-      localStorage.setItem("rme_auth_token", token);
-      console.log("✅ Autentikasi RME Berhasil! Token disimpan di localStorage.");
+      useAuthStore.getState().setRmeToken(token);
+      console.log("✅ Autentikasi RME Berhasil! Token disimpan di store.");
     } else {
       console.warn("⚠️ Respon login sukses, tetapi accessToken tidak ditemukan pada struktur data.");
       console.warn("📋 Response:", response.data);

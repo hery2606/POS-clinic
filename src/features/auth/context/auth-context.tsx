@@ -1,6 +1,7 @@
 import type { AuthContextType, LoginCredentials, User } from '../types/auth.types';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AuthService from '../service/auth.service';
+import { initializeRmeAuth } from '@/api';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -14,6 +15,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedUser = AuthService.getUser();
     if (storedUser) {
       setUser(storedUser);
+      
+      // Auto login to RME if already logged in as Admin / Super Admin
+      const role = storedUser.role?.toUpperCase();
+      if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
+        initializeRmeAuth().catch((err) => {
+          console.error('Auto RME login on reload failed:', err);
+        });
+      }
     }
   }, []);
 
@@ -23,6 +32,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await AuthService.login(credentials);
       setUser(response.user);
+      
+      // Auto login to RME if logged in as Admin / Super Admin
+      const role = response.user.role?.toUpperCase();
+      if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
+        initializeRmeAuth().catch((err) => {
+          console.error('Auto RME login failed:', err);
+        });
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login gagal';
       setError(errorMessage);

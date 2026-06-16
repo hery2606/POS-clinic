@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState, useMemo } from 'react';
-import { Search, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Search, Phone, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { 
   Table, 
   TableBody, 
@@ -18,6 +18,7 @@ import { analitikService } from '../../services/analitik.service';
 import { useQuery } from '@tanstack/react-query';
 import { PatientDetailModal } from './PatientDetailModal';
 import { PatientFilter, type FilterState } from './PatientFilter';
+import { type PatientData } from '../../types/patient.types';
 
 export const PatientListTable = () => {
   const [search, setSearch] = useState('');
@@ -31,80 +32,47 @@ export const PatientListTable = () => {
   });
   const itemsPerPage = 10;
 
-  // 1. INTEGRASI TANSTACK QUERY: Menggantikan useEffect & useState fetching manual
-  const { data: rawPatients = [], isLoading, error } = useQuery({
-    queryKey: ['patients'], 
+  // 🟢 PERBAIKAN 1: Masukkan state page, search, dan filter ke queryKey agar otomatis re-fetch saat berubah
+  const { data: apiResponse, isLoading, error, isFetching } = useQuery({
+    queryKey: ['patients', currentPage, search, filters], 
     queryFn: async () => {
-      const response = await analitikService.getAllPatients();
-      return response.data?.data || [];
+      // Menyiapkan query params terstruktur untuk dikirim ke backend Railway kamu
+      const params = {
+        page: currentPage,
+        limit: itemsPerPage,
+        search: search.trim() || undefined,
+        // Kirim nilai join string jika array filter memiliki isi pilihan
+        status: filters.status.length > 0 ? filters.status.join(',') : undefined,
+        gender: filters.gender.length > 0 ? filters.gender.join(',') : undefined,
+        hasBpjs: filters.hasBpjs.length > 0 ? filters.hasBpjs.join(',') : undefined,
+      };
+
+      const response = await analitikService.getAllPatients(params);
+      return response.data; // Mengambil full data payload beserta metadata pagination dari server
     },
-    staleTime: 5 * 60 * 1000, // Cache selama 5 menit
-    gcTime: 10 * 60 * 1000, // Keep cache selama 10 menit
+    staleTime: 30 * 1000, // Durasi cache pendek untuk analitik real-time
   });
 
-  // 2. USEMEMO UNTUK DATA TRANSFORM & FILTERING (Mencegah re-render berat)
-  const filteredPatients = useMemo(() => {
-    // Jalankan transformasi data dasar
-    const transformed = rawPatients.map(patient => {
+  // 🟢 PERBAIKAN 2: Data & Metadata langsung diambil dari response server paginated
+  // Fallback ke array kosong jika data awal belum termuat
+  const patientsData = apiResponse?.data || []; 
+  
+  // Ekstraksi info pagination dari backend (sesuaikan dengan key objek meta dari backend kamu)
+  const totalPages = apiResponse?.meta?.totalPages || 1;
+  const totalItems = apiResponse?.meta?.total || patientsData.length;
+  
+  // Transformasi ringan visual (Initial & Phone formatting) per 10 item aktif saja
+  const currentPatients = useMemo(() => {
+    return patientsData.map((patient: PatientData) => {
       const safeName = patient.namaLengkap || "Pasien Tanpa Nama";
-      const initialLetter = safeName.split(' ')[0]?.charAt(0).toUpperCase() || 'P';
-
       return {
         ...patient,
         namaLengkap: safeName,
-        initial: initialLetter,
+        initial: safeName.split(' ')[0]?.charAt(0).toUpperCase() || 'P',
         phone: patient.telepon || '-',
       };
     });
-
-    let result = transformed;
-
-    // Jalankan filter berdasarkan keyword pencarian
-    if (search.trim()) {
-      const query = search.toLowerCase();
-      result = result.filter(patient => 
-        patient.namaLengkap.toLowerCase().includes(query) || 
-        patient.noRm.toLowerCase().includes(query)
-      );
-    }
-
-    // Filter Status (Aktif/Tidak Aktif)
-    if (filters.status.length > 0) {
-      result = result.filter(patient => {
-        const status = patient.isActive ? 'AKTIF' : 'TIDAK AKTIF';
-        return filters.status.includes(status);
-      });
-    }
-
-    // Filter Gender (Laki-laki/Perempuan)
-    if (filters.gender.length > 0) {
-      result = result.filter(patient => {
-        const gender = patient.jenisKelamin === 'LAKI_LAKI' ? 'LAKI_LAKI' : 'PEREMPUAN';
-        return filters.gender.includes(gender);
-      });
-    }
-
-    // Filter BPJS (Ada/Tidak Ada)
-    if (filters.hasBpjs.length > 0) {
-      result = result.filter(patient => {
-        const hasBpjs = patient.noBpjs && patient.noBpjs !== 'null' ? 'ADA' : 'TIDAK_ADA';
-        return filters.hasBpjs.includes(hasBpjs);
-      });
-    }
-
-    return result;
-  }, [rawPatients, search, filters]);
-
-  // RESET PAGE KE 1 JIKA USER MENGETIK PENCARIAN BARU
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [search]);
-
-  // 3. PAGINATION LOGIC
-  const totalPages = Math.ceil(filteredPatients.length / itemsPerPage) || 1;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentPatients = filteredPatients.slice(startIndex, endIndex);
+  }, [patientsData]);
 
   const handlePreviousPage = () => {
     if (currentPage > 1) setCurrentPage(currentPage - 1);
@@ -127,7 +95,7 @@ export const PatientListTable = () => {
         : [...current, value];
       return { ...prev, [type]: updated };
     });
-    setCurrentPage(1);
+    setCurrentPage(1); // Balik ke halaman pertama jika filter diganti
   };
 
   const clearAllFilters = () => {
@@ -135,7 +103,6 @@ export const PatientListTable = () => {
     setCurrentPage(1);
   };
 
-  // 4. SCREEN HANDLING: ERROR STATE
   if (error) {
     return (
       <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full">
@@ -146,21 +113,8 @@ export const PatientListTable = () => {
     );
   }
 
-  // 5. SCREEN HANDLING: LOADING ANIMATION SKELETON
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full">
-        <div className="p-8 space-y-4">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-12 bg-slate-50 border border-slate-100 rounded-xl animate-pulse"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full">
+    <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full relative">
       {/* SEARCH & FILTER BAR */}
       <div className="p-6 flex flex-col gap-4 border-b border-[#DFE6EB]">
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
@@ -169,7 +123,10 @@ export const PatientListTable = () => {
             <Input 
               placeholder="Cari nama pasien atau nomor RM..." 
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1); // Reset ke halaman 1 saat mengetik kata kunci baru
+              }}
               className="pl-12 h-11 rounded-xl bg-[#F4F7F9] border-none focus-visible:ring-1 focus-visible:ring-[#1B9C90] text-sm font-medium text-[#13222D]"
             />
           </div>
@@ -182,7 +139,14 @@ export const PatientListTable = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto min-h-[200px] relative">
+        {/* Loading overlay halus untuk menandakan re-fetching background server-side */}
+        {(isLoading || isFetching) && (
+          <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] flex items-center justify-center z-10 transition-all">
+            <Loader2 className="w-8 h-8 text-[#1B9C90] animate-spin" />
+          </div>
+        )}
+
         <Table>
           <TableHeader>
             <TableRow className="bg-[#EFF4F8] hover:bg-[#EFF4F8] border-none">
@@ -194,7 +158,7 @@ export const PatientListTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentPatients.length === 0 ? (
+            {currentPatients.length === 0 && !isLoading ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-10 text-xs font-bold text-[#67737C]">
                   Tidak ada data pasien ditemukan.
@@ -244,7 +208,7 @@ export const PatientListTable = () => {
                   <TableCell className="pr-8 text-center py-4">
                     <Button 
                       onClick={() => handleViewPatient(patient)}
-                      className="h-8 rounded-xl px-5 text-xs font-bold bg-[#1B9C90] hover:bg-[#157A71] text-white border-none transition-colors"
+                      className="h-8 rounded-xl px-5 text-xs font-bold bg-[#1B9C90] hover:bg-[#157A71] text-white border-none transition-colors outline-none shadow-none cursor-pointer"
                     >
                       Lihat 
                     </Button>
@@ -256,9 +220,12 @@ export const PatientListTable = () => {
         </Table>
       </div>
 
+      {/* FOOTER PAGINATION CONTROL */}
       <div className="px-6 py-4 border-t border-[#DFE6EB] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#F9FEFC]/30">
         <span className="text-xs font-medium text-[#67737C]">
-          Menampilkan <span className="text-[#13222D] font-bold">{filteredPatients.length === 0 ? 0 : startIndex + 1} - {Math.min(endIndex, filteredPatients.length)}</span> dari <span className="text-[#13222D] font-bold">{filteredPatients.length}</span> data entri
+          Menampilkan <span className="text-[#13222D] font-bold">
+            {totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - {Math.min(currentPage * itemsPerPage, totalItems)}
+          </span> dari <span className="text-[#13222D] font-bold">{totalItems}</span> data entri
         </span>
         
         <div className="flex items-center gap-1.5">
@@ -266,10 +233,11 @@ export const PatientListTable = () => {
             variant="outline" 
             disabled={currentPage === 1}
             onClick={handlePreviousPage}
-            className="h-8 w-8 p-0 rounded-lg border-[#DFE6EB] text-[#67737C] disabled:opacity-40"
+            className="h-8 w-8 p-0 rounded-lg border-[#DFE6EB] text-[#67737C] disabled:opacity-40 shadow-none hover:bg-slate-50 cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
+          
           {Array.from({ length: totalPages }, (_, i) => {
             const pageNum = i + 1;
             return (
@@ -278,7 +246,7 @@ export const PatientListTable = () => {
                 variant="outline" 
                 onClick={() => setCurrentPage(pageNum)}
                 className={cn(
-                  "h-8 px-3 rounded-lg text-xs font-bold border-none shadow-none transition-colors",
+                  "h-8 px-3 rounded-lg text-xs font-bold border-none shadow-none transition-colors cursor-pointer",
                   currentPage === pageNum
                     ? "bg-[#13272F]/5 text-[#1B9C90]"
                     : "text-[#67737C] hover:bg-[#F4F7F9]"
@@ -288,11 +256,12 @@ export const PatientListTable = () => {
               </Button>
             );
           })}
+          
           <Button 
             variant="outline" 
-            disabled={currentPage === totalPages || filteredPatients.length === 0}
+            disabled={currentPage === totalPages || currentPatients.length === 0}
             onClick={handleNextPage}
-            className="h-8 w-8 p-0 rounded-lg border-[#DFE6EB] text-[#67737C] disabled:opacity-40 hover:bg-[#F4F7F9]"
+            className="h-8 w-8 p-0 rounded-lg border-[#DFE6EB] text-[#67737C] disabled:opacity-40 hover:bg-[#F4F7F9] shadow-none cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
