@@ -31,16 +31,31 @@ interface PaymentMethodChartProps {
   className?: string;
 }
 
-const colorMap: { [key: string]: string } = {
-  'QRIS': '#1B9C90',
-  'Debit': '#F2A618',
-  'Cash': '#DFF6F2',
+const colorPalette = [
+  '#1B9C90', // Teal (QRIS)
+  '#F2A618', // Orange/Amber (Debit)
+  '#2297eb', // Blue (Cash)
+  '#8E59FF', // Purple (Transfer)
+  '#E62C2C', // Red (Lainnya)
+  '#E62C9C', // Pink
+  '#13222D', // Slate
+  '#84DFD4', // Light Teal
+];
+
+const getColorForMethod = (method: string, index: number): string => {
+  const norm = method.trim().toUpperCase();
+  if (norm === 'QRIS') return '#1B9C90';
+  if (norm === 'DEBIT') return '#F2A618';
+  if (norm === 'CASH' || norm === 'TUNAI') return '#2297eb';
+  if (norm === 'TRANSFER') return '#8E59FF';
+  
+  return colorPalette[index % colorPalette.length];
 };
 
 const defaultPaymentData: PaymentData[] = [
   { name: 'QRIS', value: 55, amount: 'Rp 68M', color: '#1B9C90', count: 1100 },
   { name: 'Debit', value: 25, amount: 'Rp 31M', color: '#F2A618', count: 500 },
-  { name: 'Cash', value: 20, amount: 'Rp 25M', color: '#DFF6F2', count: 400 },
+  { name: 'Cash', value: 20, amount: 'Rp 25M', color: '#2297eb', count: 400 },
 ];
 
 const defaultPatientData: PatientData[] = [
@@ -105,11 +120,11 @@ export const PaymentMethodChart: React.FC<PaymentMethodChartProps> = ({ classNam
           const data = response.data;
           
           // Map API data to PaymentData
-          const mappedPaymentData: PaymentData[] = data.persentase_metode.map((item) => ({
+          const mappedPaymentData: PaymentData[] = data.persentase_metode.map((item, index) => ({
             name: item.metode,
             value: item.persentase,
             amount: formatCurrency(item.total_nominal),
-            color: colorMap[item.metode] || '#999999',
+            color: getColorForMethod(item.metode, index),
             count: Math.round(item.total_nominal / 10000) // Estimasi count dari nominal
           }));
           

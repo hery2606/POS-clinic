@@ -1,38 +1,46 @@
 "use client";
 
-import { useState, type JSX } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FinancialReportHeader, periodOptions } from "@/features/analitik/components/laporan/FinancialReportHeader";
-import { FinancialSummaryCards } from "@/features/analitik/components/laporan/FinancialSummaryCards";
+import { FinancialSummaryCards } from "@/features/analitik/components/laporan/pendapatan/FinancialSummaryCards";
 import { RevenueTrendChart } from "@/features/analitik/components/laporan/chart/RevenueTrendChart";
-
-import {
-  FinancialBreakdownCard,
-  type BreakdownTabType,
-} from "@/features/analitik/components/laporan/FinancialBreakdownCard";
-import { FinancialDetailTable, dummyTableData } from "@/features/analitik/components/laporan/FinancialDetailTable";
-import { cn } from "@/lib/utils";
-import { analitikService } from "../../services/analitik.service";
+import { FinancialBreakdownCard } from "@/features/analitik/components/laporan/pendapatan/FinancialBreakdownCard";
+import { FinancialDetailTable, dummyTableData } from "@/features/analitik/components/laporan/pendapatan/FinancialDetailTable";
+import { PiutangReportSection } from "@/features/analitik/components/laporan/PiutangReportSection";
 import { PrintFormalReportTemplate } from "@/features/analitik/components/print/print-formal-report-template";
+import { analitikService } from "../../services/analitik.service";
+import { cn } from "@/lib/utils";
 
-const tabs = ["Pendapatan", ];
+interface LocalDaftarTransaksiBelumLunas {
+  no_invoice: string;
+  pasien: string;
+  total_tagihan: number;
+  hari_belum_lunas: number;
+  status_reminder: string;
+  wa_number: string;
+}
 
-const chartComponents: Record<string, JSX.Element> = {
-  Pendapatan: <RevenueTrendChart />,
-};
+const tabs = ["Pendapatan", "Piutang"];
 
 export const LaporanPage = () => {
-  const [selectedChart, setSelectedChart] = useState<string>("Pendapatan");
+  const [selectedTab, setSelectedTab] = useState<string>("Pendapatan");
   const [selectedPeriod, setSelectedPeriod] = useState<string>("2026-05");
 
-  // Fetch trend data via React Query so it's cached and accessible for printing
-  const { data: trendResponse } = useQuery({
-    queryKey: ['revenueTrendData'],
+  // Fetch pending invoices & revenue trend
+  const { data: pendingResponse } = useQuery({
+    queryKey: ["pendingInvoices"],
+    queryFn: () => analitikService.getPendingInvoices(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: revenueResponse } = useQuery({
+    queryKey: ["revenueTrendData"],
     queryFn: () => analitikService.getRevenueTrend(),
     staleTime: 5 * 60 * 1000,
   });
 
-  const trendData = trendResponse?.data;
+  const trendData = revenueResponse?.data;
   const totalRevenue = trendData?.total_pendapatan_bulan_ini || 148500000;
   const dailyAvg = totalRevenue / 30;
   const weeklyRevenue = trendData?.total_pendapatan_minggu_ini || 34500000;
@@ -43,22 +51,6 @@ export const LaporanPage = () => {
   };
 
   const handleExportExcel = async () => {
-    let trendData = null;
-    try {
-      const trendResponse = await analitikService.getRevenueTrend();
-      trendData = trendResponse?.data;
-    } catch (e) {
-      console.warn("Gagal mengambil tren pendapatan dari server, menggunakan data fallback:", e);
-    }
-
-    let cashflowData = null;
-    try {
-      const cashflowResponse = await analitikService.getCashflowSummary();
-      cashflowData = cashflowResponse?.data;
-    } catch (e) {
-      console.warn("Gagal mengambil ringkasan arus kas dari server, menggunakan data fallback:", e);
-    }
-
     const periodLabel = periodOptions.find(p => p.value === selectedPeriod)?.label || selectedPeriod;
     const todayStr = new Date().toLocaleDateString("id-ID", {
       day: "numeric",
@@ -68,13 +60,23 @@ export const LaporanPage = () => {
       minute: "2-digit"
     });
 
-    const totalRevenue = trendData?.total_pendapatan_bulan_ini || 148500000;
-    const comparison = trendData?.perbandingan_bulan_ini_vs_lalu || {
-      persentase_kenaikan: 12.5,
-      bulan_lalu: 132000000
-    };
-    const dailyAvg = totalRevenue / 30;
-    const weeklyRevenue = trendData?.total_pendapatan_minggu_ini || 34500000;
+    if (selectedTab === "Pendapatan") {
+      // original excel export for revenue
+      let trendExportData = null;
+      try {
+        const trendResponse = await analitikService.getRevenueTrend();
+        trendExportData = trendResponse?.data;
+      } catch (e) {
+        console.warn("Gagal mengambil tren pendapatan dari server, menggunakan data fallback:", e);
+      }
+
+      const revTotal = trendExportData?.total_pendapatan_bulan_ini || 148500000;
+      const comparison = trendExportData?.perbandingan_bulan_ini_vs_lalu || {
+        persentase_kenaikan: 12.5,
+        bulan_lalu: 132000000
+      };
+      const dailyAverage = revTotal / 30;
+      const weeklyRevenueAmount = trendExportData?.total_pendapatan_minggu_ini || 34500000;
 
       let html = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -124,17 +126,17 @@ export const LaporanPage = () => {
             <tbody>
               <tr>
                 <td>Total Pendapatan Bulan Ini</td>
-                <td class="currency" style="font-weight: bold;">Rp ${totalRevenue.toLocaleString("id-ID")}</td>
+                <td class="currency" style="font-weight: bold;">Rp ${revTotal.toLocaleString("id-ID")}</td>
                 <td>Kenaikan ${(comparison?.persentase_kenaikan || 0).toFixed(1)}% vs Bulan Lalu (Rp ${(comparison?.bulan_lalu || 0).toLocaleString("id-ID")})</td>
               </tr>
               <tr>
                 <td>Rata-rata Pendapatan Harian</td>
-                <td class="currency">Rp ${Math.round(dailyAvg).toLocaleString("id-ID")}</td>
+                <td class="currency">Rp ${Math.round(dailyAverage).toLocaleString("id-ID")}</td>
                 <td>Rata-rata estimasi harian bulan ini</td>
               </tr>
               <tr>
                 <td>Total Pendapatan Minggu Ini</td>
-                <td class="currency">Rp ${weeklyRevenue.toLocaleString("id-ID")}</td>
+                <td class="currency">Rp ${weeklyRevenueAmount.toLocaleString("id-ID")}</td>
                 <td>Pendapatan berjalan minggu ini</td>
               </tr>
             </tbody>
@@ -167,30 +169,129 @@ export const LaporanPage = () => {
             </tbody>
           </table>
           <br/>
+        </body>
+        </html>
+      `;
 
+      try {
+        const element = document.createElement("a");
+        const file = new Blob([html], { type: "application/vnd.ms-excel" });
+        element.href = URL.createObjectURL(file);
+        element.download = `Laporan_Keuangan_Klinik_${selectedPeriod}.xls`;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      } catch (err) {
+        console.error("Gagal melakukan export excel:", err);
+        alert("Gagal melakukan export excel. Silakan periksa koneksi Anda.");
+      }
+
+    } else {
+      // export for Piutang
+      const apiData = pendingResponse?.data;
+      const totalPiutang = apiData?.nilai_total_piutang || 440000;
+      const ratioPercentage = ((totalPiutang / totalRevenue) * 100).toFixed(2);
+
+      const fallbackTransactions: LocalDaftarTransaksiBelumLunas[] = [
+        { no_invoice: "INV-2026-001", pasien: "Budi Santoso", total_tagihan: 120000, hari_belum_lunas: 1, status_reminder: "Belum Dikirim", wa_number: "081234567890" },
+        { no_invoice: "INV-2026-002", pasien: "Siti Aminah", total_tagihan: 100000, hari_belum_lunas: 2, status_reminder: "Belum Dikirim", wa_number: "082345678901" },
+        { no_invoice: "INV-2026-003", pasien: "Ahmad Dahlan", total_tagihan: 60000, hari_belum_lunas: 3, status_reminder: "Belum Dikirim", wa_number: "083456789012" },
+        { no_invoice: "INV-2026-004", pasien: "Dewi Lestari", total_tagihan: 40000, hari_belum_lunas: 5, status_reminder: "Belum Dikirim", wa_number: "084567890123" },
+        { no_invoice: "INV-2026-005", pasien: "Eko Prasetyo", total_tagihan: 50000, hari_belum_lunas: 8, status_reminder: "Belum Dikirim", wa_number: "085678901234" },
+        { no_invoice: "INV-2026-006", pasien: "Farhan Hakim", total_tagihan: 40000, hari_belum_lunas: 9, status_reminder: "Belum Dikirim", wa_number: "086789012345" },
+        { no_invoice: "INV-2026-007", pasien: "Gita Gutawa", total_tagihan: 20000, hari_belum_lunas: 10, status_reminder: "Belum Dikirim", wa_number: "087890123456" },
+        { no_invoice: "INV-2026-008", pasien: "Hendra Wijaya", total_tagihan: 10000, hari_belum_lunas: 12, status_reminder: "Belum Dikirim", wa_number: "088901234567" },
+      ];
+
+      let transactionsToExport = fallbackTransactions;
+      if (apiData?.daftar_transaksi_belum_lunas && apiData.daftar_transaksi_belum_lunas.length > 0) {
+        transactionsToExport = apiData.daftar_transaksi_belum_lunas.map(item => ({
+          no_invoice: item.no_invoice,
+          pasien: item.pasien,
+          total_tagihan: item.total_tagihan,
+          hari_belum_lunas: item.hari_belum_lunas,
+          status_reminder: item.status_reminder || "Belum Dikirim",
+          wa_number: "081234567890"
+        }));
+      }
+
+      const getFormattedDate = (daysAgo: number) => {
+        const date = new Date();
+        date.setDate(date.getDate() - daysAgo);
+        const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+        return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+      };
+
+      let age1_2 = 0;
+      let age3_5 = 0;
+      let ageMore7 = 0;
+      transactionsToExport.forEach(t => {
+        if (t.hari_belum_lunas <= 2) age1_2 += t.total_tagihan;
+        else if (t.hari_belum_lunas <= 5) age3_5 += t.total_tagihan;
+        else ageMore7 += t.total_tagihan;
+      });
+
+      let html = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <!--[if gte mso 9]>
+          <xml>
+            <x:ExcelWorkbook>
+              <x:ExcelWorksheets>
+                <x:ExcelWorksheet>
+                  <x:Name>Analisis Piutang Klinik</x:Name>
+                  <x:WorksheetOptions>
+                    <x:DisplayGridlines/>
+                  </x:WorksheetOptions>
+                </x:ExcelWorksheet>
+              </x:ExcelWorkbook>
+            </xml>
+            <![endif]-->
+          <style>
+            body { font-family: Arial, sans-serif; }
+            .title { font-size: 16pt; font-weight: bold; color: #13222D; }
+            .subtitle { font-size: 11pt; color: #67737C; margin-bottom: 20px; }
+            .section-header { font-size: 12pt; font-weight: bold; background-color: #1B9C90; color: white; padding: 6px; }
+            table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
+            th { background-color: #F4F7F9; color: #67737C; font-weight: bold; font-size: 10pt; border: 1px solid #DFE6EB; padding: 8px; text-align: left; }
+            td { border: 1px solid #DFE6EB; padding: 8px; font-size: 10pt; color: #13222D; }
+            .highlight { background-color: #F9FEFC; font-weight: bold; color: #1B9C90; }
+            .currency { text-align: right; }
+            .warning-text { color: #E62C2C; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="title">Klinik Utama Arda Medical Center</div>
+          <div class="subtitle">Laporan Analisis Piutang Klinik Terpadu<br/>Periode: ${periodLabel}<br/>Tanggal Ekspor: ${todayStr} WIB</div>
+          <br/>
+          
           <table>
             <thead>
               <tr>
-                <th colspan="5" class="section-header" style="text-align: center;">3. RINCIAN PENGELUARAN KLINIS</th>
+                <th colspan="3" class="section-header" style="text-align: center;">1. RINGKASAN EKSEKUTIF PIUTANG TERTAHAN</th>
               </tr>
               <tr>
-                <th>TANGGAL</th>
-                <th>KATEGORI</th>
-                <th>KETERANGAN</th>
-                <th>METODE</th>
-                <th style="text-align: right;">TOTAL PENGELUARAN</th>
+                <th>METRIK ANALISIS</th>
+                <th style="text-align: right;">NILAI</th>
+                <th>STATUS / KETERANGAN</th>
               </tr>
             </thead>
             <tbody>
-              ${(dummyTableData.Pengeluaran || []).map(row => `
-                <tr>
-                  <td>${row.col1}</td>
-                  <td>${row.col2}</td>
-                  <td>${row.col3}</td>
-                  <td>${row.col4}</td>
-                  <td class="currency" style="font-weight: bold; color: #C5221F;">${row.col5}</td>
-                </tr>
-              `).join('')}
+              <tr>
+                <td>Total Piutang (Bulan Ini)</td>
+                <td class="currency" style="font-weight: bold;">Rp ${totalPiutang.toLocaleString("id-ID")}</td>
+                <td>Porsi: ${ratioPercentage}% dari Pendapatan Bulanan (Rp ${totalRevenue.toLocaleString("id-ID")})</td>
+              </tr>
+              <tr>
+                <td>Transaksi Pending Belum Lunas</td>
+                <td class="currency" style="font-weight: bold;">${transactionsToExport.length} Transaksi</td>
+                <td>Menunggu tindakan penagihan/WA Reminder</td>
+              </tr>
+              <tr>
+                <td>Rata-rata Keterlambatan</td>
+                <td class="currency" style="font-weight: bold;">2 Hari</td>
+                <td class="highlight">Batas toleransi: 3 Hari (Status: AMAN)</td>
+              </tr>
             </tbody>
           </table>
           <br/>
@@ -198,26 +299,30 @@ export const LaporanPage = () => {
           <table>
             <thead>
               <tr>
-                <th colspan="5" class="section-header" style="text-align: center;">4. IKHTISAR PERFORMA LABA RUGI</th>
+                <th colspan="3" class="section-header" style="text-align: center;">2. AGING SCHEDULE (DISTRUBUSI UMUR PIUTANG)</th>
               </tr>
               <tr>
-                <th>PERIODE</th>
-                <th>TOTAL PENDAPATAN</th>
-                <th>TOTAL PENGELUARAN</th>
-                <th>LABA BERSIH</th>
-                <th style="text-align: right;">MARGIN</th>
+                <th>KELOMPOK UMUR TUNGGAKAN</th>
+                <th style="text-align: right;">NOMINAL TERTAHAN</th>
+                <th>PROPORSI ESTIMASI</th>
               </tr>
             </thead>
             <tbody>
-              ${(dummyTableData["Laba Rugi"] || []).map(row => `
-                <tr>
-                  <td>${row.col1}</td>
-                  <td>${row.col2}</td>
-                  <td>${row.col3}</td>
-                  <td style="font-weight: bold; color: #1B9C90;">${row.col4}</td>
-                  <td class="currency" style="font-weight: bold; color: #1B9C90;">${row.col5}</td>
-                </tr>
-              `).join('')}
+              <tr>
+                <td>1-2 Hari (Keterlambatan Awal)</td>
+                <td class="currency">Rp ${age1_2.toLocaleString("id-ID")}</td>
+                <td>${((age1_2 / totalPiutang) * 100).toFixed(0)}% dari total piutang</td>
+              </tr>
+              <tr>
+                <td>3-5 Hari (Perhatian Khusus)</td>
+                <td class="currency">Rp ${age3_5.toLocaleString("id-ID")}</td>
+                <td>${((age3_5 / totalPiutang) * 100).toFixed(0)}% dari total piutang</td>
+              </tr>
+              <tr>
+                <td>&gt; 7 Hari (Tindakan Kritis)</td>
+                <td class="currency" style="color: #E62C2C;">Rp ${ageMore7.toLocaleString("id-ID")}</td>
+                <td class="warning-text">${((ageMore7 / totalPiutang) * 100).toFixed(0)}% - Prioritas WhatsApp CRM</td>
+              </tr>
             </tbody>
           </table>
           <br/>
@@ -225,152 +330,181 @@ export const LaporanPage = () => {
           <table>
             <thead>
               <tr>
-                <th colspan="5" class="section-header" style="text-align: center;">5. DAFTAR SALDO AKUN NERACA</th>
+                <th colspan="7" class="section-header" style="text-align: center;">3. DAFTAR INVOICE & PIUTANG TERTAHAN DETAIL</th>
               </tr>
               <tr>
-                <th>KODE AKUN</th>
-                <th>NAMA AKUN</th>
-                <th>KATEGORI</th>
-                <th>SALDO AWAL</th>
-                <th style="text-align: right;">SALDO AKHIR</th>
+                <th>TANGGAL INVOICE</th>
+                <th>NO. INVOICE</th>
+                <th>NAMA PASIEN</th>
+                <th>NOMOR WHATSAPP</th>
+                <th style="text-align: right;">SISA TAGIHAN</th>
+                <th>LAMA TERTUNDA</th>
+                <th>STATUS REMINDER</th>
               </tr>
             </thead>
             <tbody>
-              ${(dummyTableData.Neraca || []).map(row => `
+              ${transactionsToExport.map(row => `
                 <tr>
-                  <td>${row.col1}</td>
-                  <td>${row.col2}</td>
-                  <td>${row.col3}</td>
-                  <td>${row.col4}</td>
-                  <td class="currency" style="font-weight: bold;">${row.col5}</td>
+                  <td>${getFormattedDate(row.hari_belum_lunas)}</td>
+                  <td style="font-family: monospace;">${row.no_invoice}</td>
+                  <td>${row.pasien}</td>
+                  <td>${row.wa_number}</td>
+                  <td class="currency" style="font-weight: bold; color: #1B9C90;">Rp ${row.total_tagihan.toLocaleString("id-ID")}</td>
+                  <td>${row.hari_belum_lunas} Hari</td>
+                  <td>${row.status_reminder}</td>
                 </tr>
               `).join('')}
-            </tbody>
-          </table>
-          <br/>
-
-          <table>
-            <thead>
-              <tr>
-                <th colspan="5" class="section-header" style="text-align: center;">6. BUKU JURNAL ARUS KAS (CASH FLOW)</th>
-              </tr>
-              <tr>
-                <th>TANGGAL</th>
-                <th>KETERANGAN</th>
-                <th>KAS MASUK</th>
-                <th>KAS KELUAR</th>
-                <th style="text-align: right;">SALDO AKHIR</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="highlight">
-                <td>${todayStr.split(',')[0]}</td>
-                <td>${cashflowData?.total_transaksi_lunas_hari_ini || 0} Transaksi Lunas</td>
-                <td style="color: #1B9C90;">Rp ${(cashflowData?.kas_masuk_harian || 0).toLocaleString("id-ID")}</td>
-                <td style="color: #C5221F;">Rp ${Math.max(0, (cashflowData?.kas_masuk_harian || 0) * 0.4).toLocaleString("id-ID")}</td>
-                <td class="currency" style="font-weight: bold; color: #1B9C90;">Rp ${((cashflowData?.kas_masuk_harian || 0) + (cashflowData?.nilai_total_invoice_belum_lunas || 0)).toLocaleString("id-ID")}</td>
-              </tr>
-              <tr>
-                <td>${todayStr.split(',')[0]}</td>
-                <td>${cashflowData?.total_transaksi_pending_hari_ini || 0} Transaksi Pending</td>
-                <td>Rp 0</td>
-                <td style="color: #C5221F;">Rp ${(cashflowData?.nilai_total_invoice_belum_lunas || 0).toLocaleString("id-ID")}</td>
-                <td class="currency">Rp ${(cashflowData?.nilai_total_invoice_belum_lunas || 0).toLocaleString("id-ID")}</td>
-              </tr>
-              ${(dummyTableData["Arus Kas"] || []).slice(1).map(row => `
-                <tr>
-                  <td>${row.col1}</td>
-                  <td>${row.col2}</td>
-                  <td style="color: #1B9C90;">${row.col3}</td>
-                  <td style="color: #C5221F;">${row.col4}</td>
-                  <td class="currency" style="font-weight: bold;">${row.col5}</td>
-                </tr>
-              `).join('')}
-            </tbody>
+          </tbody>
           </table>
         </body>
         </html>
       `;
 
-    try {
-      const element = document.createElement("a");
-      const file = new Blob([html], { type: "application/vnd.ms-excel" });
-      element.href = URL.createObjectURL(file);
-      element.download = `Laporan_Keuangan_Klinik_${selectedPeriod}.xls`;
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-    } catch (err) {
-      console.error("Gagal melakukan export excel:", err);
-      alert("Gagal melakukan export excel. Silakan periksa koneksi Anda.");
+      try {
+        const element = document.createElement("a");
+        const file = new Blob([html], { type: "application/vnd.ms-excel" });
+        element.href = URL.createObjectURL(file);
+        element.download = `Laporan_Analisis_Piutang_Klinik_${selectedPeriod}.xls`;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      } catch (err) {
+        console.error("Gagal melakukan export excel:", err);
+        alert("Gagal melakukan export excel. Silakan periksa koneksi Anda.");
+      }
     }
   };
 
   return (
-    <div className="min-h-screen  p-4 sm:p-6 lg:p-8 space-y-6  animate-in fade-in duration-300">
-      <FinancialReportHeader 
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 space-y-6 animate-in fade-in duration-300">
+
+      {/* 🔒 PRINT STYLES - CONDITIONAL TO PIUTANG TAB TO AVOID INTERFERING WITH PENDAPATAN PRINT TEMPLATE */}
+      {selectedTab === "Piutang" && (
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          @media print {
+            aside, nav, header, footer, button, input, .no-print, [role="navigation"], select, .bg-[#F4F7F9] input {
+              display: none !important;
+            }
+            
+            body, html, #root, main, .min-h-screen {
+              background: white !important;
+              color: #13222D !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow: visible !important;
+            }
+            
+            .card, .border, [role="table"] {
+              border: 1px solid #DFE6EB !important;
+              box-shadow: none !important;
+              background: white !important;
+              page-break-inside: avoid;
+            }
+
+            .grid {
+              display: grid !important;
+            }
+
+            .grid-cols-3 {
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            }
+
+            .lg\\:grid-cols-12 {
+              grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+            }
+
+            .lg\\:col-span-8 {
+              grid-column: span 8 / span 8 !important;
+            }
+
+            .lg\\:col-span-4 {
+              grid-column: span 4 / span 4 !important;
+            }
+            
+            tr {
+              page-break-inside: avoid !important;
+            }
+          }
+        ` }} />
+      )}
+
+      <FinancialReportHeader
         selectedPeriod={selectedPeriod}
         onPeriodChange={setSelectedPeriod}
         onExportExcel={handleExportExcel}
         onDownloadPDF={handleDownloadPDF}
       />
 
+      {/* TABS SELECTION BAR */}
       <div className="flex items-center gap-6 border-b border-[#DFE6EB] pb-px overflow-x-auto scrollbar-none">
         {tabs.map((tab) => (
           <button
             key={tab}
-            onClick={() => setSelectedChart(tab)}
+            onClick={() => setSelectedTab(tab)}
             className={cn(
               "text-sm font-semibold pb-3 transition-all relative whitespace-nowrap",
-              selectedChart === tab
+              selectedTab === tab
                 ? "text-[#1B9C90]"
                 : "text-[#67737C] hover:text-[#13222D]",
             )}
           >
             {tab}
-            {selectedChart === tab && (
+            {selectedTab === tab && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1B9C90]" />
             )}
           </button>
         ))}
       </div>
 
-      <FinancialSummaryCards period={selectedPeriod} />
+      {/* CONDITIONAL CONTENT RENDERING */}
+      {selectedTab === "Pendapatan" ? (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <FinancialSummaryCards period={selectedPeriod} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* Left Column: Active Chart */}
-        <div className="lg:col-span-8 flex w-full">
-          <div className="w-full flex *:w-full *:h-full">
-            {chartComponents[selectedChart]}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            {/* Left Column: Active Chart */}
+            <div className="lg:col-span-8 flex w-full">
+              <div className="w-full flex *:w-full *:h-full">
+                <RevenueTrendChart />
+              </div>
+            </div>
+
+            {/* Right Column: Breakdown Card */}
+            <div className="lg:col-span-4 flex w-full">
+              <div className="w-full flex *:w-full *:h-full *:max-w-none">
+                <FinancialBreakdownCard activeTab="Pendapatan" />
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full pt-2">
+            <FinancialDetailTable activeTab="Pendapatan" />
           </div>
         </div>
-
-        {/* Right Column: Breakdown Card */}
-        <div className="lg:col-span-4 flex w-full">
-          <div className="w-full flex *:w-full *:h-full *:max-w-none">
-            <FinancialBreakdownCard
-              activeTab={selectedChart as BreakdownTabType}
-            />
-          </div>
+      ) : (
+        <div className="animate-in fade-in duration-300">
+          <PiutangReportSection />
         </div>
-      </div>
+      )}
 
-      <div className="w-full pt-2">
-        <FinancialDetailTable activeTab={selectedChart as BreakdownTabType} />
-      </div>
+      {/* Printable template for Pendapatan */}
+      {selectedTab === "Pendapatan" && (
+        <PrintFormalReportTemplate
+          periodLabel={periodOptions.find(p => p.value === selectedPeriod)?.label || selectedPeriod}
+          isLaporanPage={true}
+          activeTab="Pendapatan"
+          kpiData={{
+            totalRevenue,
+            weeklyRevenue,
+            dailyAvg,
+            percentageUp
+          }}
+        />
+      )}
 
-      {/* Printable template containing all formal styling and dynamic data */}
-      <PrintFormalReportTemplate 
-        periodLabel={periodOptions.find(p => p.value === selectedPeriod)?.label || selectedPeriod} 
-        isLaporanPage={true} 
-        activeTab={selectedChart as BreakdownTabType}
-        kpiData={{
-          totalRevenue,
-          weeklyRevenue,
-          dailyAvg,
-          percentageUp
-        }}
-      />
     </div>
   );
 };

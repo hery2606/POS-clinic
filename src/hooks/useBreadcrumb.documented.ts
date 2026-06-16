@@ -34,15 +34,17 @@ export function useBreadcrumb(): BreadcrumbItem[] {
     ]
 
     const pathMap: Record<string, string> = {
-      '/kasir': 'Kasir & Tagihan',
-      '/riwayat': 'Riwayat Transaksi',
-      '/pasien': 'Data Pasien',
-      '/stok': 'Stok Obat',
-      '/pengaturan': 'Pengaturan',
+      'kasir': 'Kasir',
+      'riwayat': 'Riwayat Transaksi',
+      'pasien': 'Data Pasien',
+      'stok': 'Stok Obat',
+      'pengaturan': 'Pengaturan',
     }
 
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+
     if (path !== '/kasir') {
-      const label = pathMap[path] || path
+      const label = pathMap[cleanPath] || cleanPath
       breadcrumbs.push({
         label,
         isActive: true,

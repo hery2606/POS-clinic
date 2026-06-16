@@ -1,6 +1,5 @@
-"use client";
-
 import { posClient } from "@/api/posClient";
+import { paymentService } from "./payment.service";
 import { type AllTransactionsResponse } from "../types/billing.types";
 
 export interface CreateTransactionPayload {
@@ -13,8 +12,9 @@ export interface CreateTransactionPayload {
 
 export interface SplitPayPayload {
     amount: number;
-    paymentMethod: 'tunai' | 'qris' | 'debit' | 'transfer';
-    vendorName?: string; // e.g., 'Bank Mandiri', 'Gopay'
+    method: 'CASH' | 'QRIS' | 'DEBIT' | 'TRANSFER';
+    reference: string;
+    isBpjsCoverage: boolean;
 }
 
 export const billingPosService = {
@@ -39,6 +39,18 @@ export const billingPosService = {
 
     
     addPaymentSplit: async (id: string, payload: SplitPayPayload): Promise<any> => {
+        if (paymentService.USE_SIMULATION) {
+            await new Promise((resolve) => setTimeout(resolve, 600));
+            if (payload.method === 'QRIS') {
+                return {
+                    snapToken: "mock-snap-token-xyz-123",
+                    qrisImageUrl: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=SmartClinic-POS-${id}`
+                };
+            }
+            return {
+                message: "Success (Simulation)"
+            };
+        }
         const response = await posClient.post(`/api/billing/${id}/pay`, payload);
         return response.data;
     },

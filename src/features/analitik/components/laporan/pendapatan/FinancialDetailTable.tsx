@@ -2,20 +2,20 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { BreakdownTabType } from "./FinancialBreakdownCard";
-import { analitikService } from "../../services/analitik.service";
+import type { BreakdownTabType } from "../../laporan/pendapatan/FinancialBreakdownCard";
+import { analitikService } from "../../../services/analitik.service";
 
 interface FinancialDetailTableProps {
   activeTab: BreakdownTabType;
@@ -110,7 +110,7 @@ export function FinancialDetailTable({ activeTab, onViewAllClick }: FinancialDet
     const cashflow = cashflowQuery.data.data;
     const today = getTodayDate();
     const kasKeluar = Math.max(0, cashflow.kas_masuk_harian * 0.4);
-    
+
     return [
       {
         col1: today,
@@ -136,7 +136,7 @@ export function FinancialDetailTable({ activeTab, onViewAllClick }: FinancialDet
 
   return (
     <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full flex flex-col justify-between">
-      
+
       {/* HEADER TABLE */}
       <div className="p-6 border-b border-[#DFE6EB] flex items-center justify-between">
         <h3 className="text-base font-bold text-[#13222D]">
@@ -157,8 +157,8 @@ export function FinancialDetailTable({ activeTab, onViewAllClick }: FinancialDet
           <TableHeader>
             <TableRow className="bg-[#F4F7F9] hover:bg-[#F4F7F9] border-none">
               {config.headers.map((header, idx) => (
-                <TableHead 
-                  key={idx} 
+                <TableHead
+                  key={idx}
                   className={cn(
                     "text-xs font-bold text-[#67737C] h-12 text-left",
                     idx === 0 && "pl-6",
@@ -173,8 +173,8 @@ export function FinancialDetailTable({ activeTab, onViewAllClick }: FinancialDet
           </TableHeader>
           <TableBody>
             {rows.map((row, index) => (
-              <TableRow 
-                key={index} 
+              <TableRow
+                key={index}
                 className="border-b border-[#DFE6EB] last:border-none transition-colors hover:bg-[#F9FEFC]"
               >
                 <TableCell className="pl-6 py-4 text-xs font-bold text-[#13222D] text-left">
@@ -196,7 +196,7 @@ export function FinancialDetailTable({ activeTab, onViewAllClick }: FinancialDet
                     </Badge>
                   ) : (
                     <span className={cn(
-                      "font-bold", 
+                      "font-bold",
                       row.isHighlight || activeTab === "Pendapatan" || activeTab === "Laba Rugi" ? "text-[#1B9C90]" : "text-[#13222D]"
                     )}>
                       {row.col5}
@@ -214,35 +214,35 @@ export function FinancialDetailTable({ activeTab, onViewAllClick }: FinancialDet
         <span className="text-xs font-medium text-[#67737C]">
           Menampilkan <span className="text-[#13222D] font-bold">1 - 5</span> dari <span className="text-[#13222D] font-bold">48</span> data entri
         </span>
-        
+
         <div className="flex items-center gap-1.5">
-          <Button 
-            variant="outline" 
-            disabled 
+          <Button
+            variant="outline"
+            disabled
             className="h-8 w-8 p-0 rounded-lg border-[#DFE6EB] text-[#67737C] disabled:opacity-40"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="h-8 px-3 rounded-lg text-xs font-bold bg-[#13272F]/5 border-none text-[#1B9C90] shadow-none"
           >
             1
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="h-8 px-3 rounded-lg text-xs font-bold border-none text-[#67737C] hover:bg-[#F4F7F9] shadow-none"
           >
             2
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="h-8 px-3 rounded-lg text-xs font-bold border-none text-[#67737C] hover:bg-[#F4F7F9] shadow-none"
           >
             3
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="h-8 w-8 p-0 rounded-lg border-[#DFE6EB] text-[#67737C] hover:bg-[#F4F7F9]"
           >
             <ChevronRight className="w-4 h-4" />

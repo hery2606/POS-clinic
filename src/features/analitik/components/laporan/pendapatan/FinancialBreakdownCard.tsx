@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { analitikService } from "../../services/analitik.service";
+import { analitikService } from "../../../services/analitik.service";
 
 export type BreakdownTabType = "Pendapatan" | "Pengeluaran" | "Laba Rugi" | "Neraca" | "Arus Kas";
 
@@ -194,7 +194,7 @@ export function FinancialBreakdownCard({ activeTab }: FinancialBreakdownCardProp
 
   return (
     <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm w-full max-w-md space-y-5 h-full flex flex-col justify-between">
-      
+
       {/* HEADER SECTION */}
       <div>
         <CardTitle className="text-base font-bold text-[#13222D]">
@@ -217,9 +217,9 @@ export function FinancialBreakdownCard({ activeTab }: FinancialBreakdownCardProp
               <span className="font-bold text-[#13222D]">{cat.percentage}%</span>
             </div>
             <div className="w-full h-2 bg-[#EFF4F8] rounded-full overflow-hidden">
-              <div 
-                className="h-full rounded-full transition-all duration-500 ease-out" 
-                style={{ width: `${cat.percentage}%`, backgroundColor: cat.color }} 
+              <div
+                className="h-full rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${cat.percentage}%`, backgroundColor: cat.color }}
               />
             </div>
           </div>
@@ -233,10 +233,10 @@ export function FinancialBreakdownCard({ activeTab }: FinancialBreakdownCardProp
         <h3 className="text-xs font-bold text-[#67737C] uppercase tracking-wide">
           {data.contributorsTitle}
         </h3>
-        
+
         <div className="space-y-2">
           {data.contributors.map((item, index) => (
-            <div 
+            <div
               key={index}
               className="flex items-center justify-between p-3 rounded-xl bg-[#F4F7F9] border border-[#DFE6EB]/30"
             >

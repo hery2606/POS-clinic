@@ -1,17 +1,23 @@
 import axios from "axios";
-import AuthService from "@/features/auth/service/auth.service";
+import { initializeRmeAuth } from "./rmeClient";
+import { useAuthStore } from "@/features/auth/store/authStore";
+
+const getAiBaseUrl = () => {
+  const url = import.meta.env.VITE_API_AI_URL || "";
+  return url.replace(/\/docs\/?$/, "");
+};
 
 export const aiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_AI_URL,
+  baseURL: getAiBaseUrl(),
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Add JWT token from auth to request headers
+// Add RME token from Zustand store to request headers
 aiClient.interceptors.request.use(
   (config) => {
-    const token = AuthService.getToken();
+    const token = useAuthStore.getState().rmeToken;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -25,11 +31,26 @@ aiClient.interceptors.request.use(
 // Handle response errors
 aiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid
-      AuthService.logout();
-      window.location.href = "/login";
+      console.warn("⚠️ AI Token (RME) expired atau invalid, melakukan re-login...");
+      useAuthStore.getState().setRmeToken(null);
+      
+      try {
+        await initializeRmeAuth();
+        // Retry request original dengan token baru
+        const originalRequest = error.config;
+        const token = useAuthStore.getState().rmeToken;
+        if (token) {
+          if (!originalRequest.headers) {
+            originalRequest.headers = {};
+          }
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return aiClient(originalRequest);
+        }
+      } catch (loginError) {
+        console.error("❌ Gagal melakukan re-autentikasi RME untuk AI:", loginError);
+      }
     }
     return Promise.reject(error);
   }

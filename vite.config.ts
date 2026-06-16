@@ -6,9 +6,9 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [
+    babel({ presets: [reactCompilerPreset()] }),
     react(),
     tailwindcss(),
-    babel({ presets: [reactCompilerPreset()] }),
   ],
   resolve: {
     alias: {
