@@ -7,12 +7,13 @@ import { PaymentFooter } from './payment-footer';
 import { PaymentHeader } from './payment-header';
 import { Button } from "@/components/ui/button";
 import { useRightPanel } from '@/features/kasir/context/right-panel-context';
-import { Banknote, CreditCard, ArrowLeftRight, QrCode, Shield } from "lucide-react";
-import { paymentService, billingPosService } from '../../services';
+import { Banknote, CreditCard, ArrowLeftRight, QrCode, Shield, AlertCircle } from "lucide-react";
+import { billingPosService } from '../../services';
 
 import { QrisPaymentModal } from './components/qris-payment-modal';
 import { PaymentStatusDialog } from './components/payment-status-dialog';
 import { SplitPaymentConfirmModal } from './components/split-payment-confirm-modal';
+import { CashPaymentModal } from './components/cash-payment-modal';
 
 type PaymentCategory = "penjaminan" | "mandiri";
 
@@ -28,13 +29,15 @@ export const PaymentPanel = () => {
   const insuranceCoverage = isBPJS ? Math.floor(totalTagihan * BPJS_COVERAGE_RATE) : 0;
   const remainingAmount = totalTagihan - insuranceCoverage;
 
-  const [payType, setPayType] = useState<PaymentCategory>('mandiri');
+  const payType: PaymentCategory = 'mandiri';
+  const isPartial = data?.status === 'PARTIAL' || data?.status === 'SEBAGIAN';
   const [nonTunaiMethod, setNonTunaiMethod] = useState('qris');
   const [selectedSubMethod, setSelectedSubMethod] = useState<string | undefined>(undefined);
   
   const [amounts, setAmounts] = useState({ tunai: '', nontunai: '' });
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSplitConfirmOpen, setIsSplitConfirmOpen] = useState(false);
+  const [isCashPaymentModalOpen, setIsCashPaymentModalOpen] = useState(false);
   const [pendingSplitFlow, setPendingSplitFlow] = useState<{
     choice: 'cash_first' | 'nontunai_first' | 'both';
     txId: string;
@@ -58,10 +61,16 @@ export const PaymentPanel = () => {
     paymentMethod: string;
     patientName: string;
     invoiceId: string;
+    cashReceived?: number;
+    changeAmount?: number;
   } | null>(null);
 
   useEffect(() => {
-    const targetAmount = isBPJS ? remainingAmount : totalTagihan;
+    const isPartial = data?.status === 'PARTIAL' || data?.status === 'SEBAGIAN';
+    const targetAmount = isPartial 
+      ? (data?.remainingAmount ?? (isBPJS ? remainingAmount : totalTagihan)) 
+      : (isBPJS ? remainingAmount : totalTagihan);
+
     if (targetAmount > 0) {
       if (nonTunaiMethod === 'qris') {
         setAmounts({ tunai: '', nontunai: targetAmount.toString() });
@@ -71,7 +80,7 @@ export const PaymentPanel = () => {
     } else {
       setAmounts({ tunai: '', nontunai: '' });
     }
-  }, [data?.id, nonTunaiMethod, isBPJS, totalTagihan, remainingAmount]);
+  }, [data?.id, data?.status, data?.remainingAmount, nonTunaiMethod, isBPJS, totalTagihan, remainingAmount]);
 
   const nonTunaiIcon = useMemo(() => {
     switch (nonTunaiMethod) {
@@ -92,14 +101,19 @@ export const PaymentPanel = () => {
   const { totalBayar, sisaTagihan, isPaymentValid } = useMemo(() => {
     const nominalTunai = parseFloat(amounts.tunai) || 0;
     const nominalNontunai = parseFloat(amounts.nontunai) || 0;
-    const target = isBPJS ? remainingAmount : totalTagihan;
-    const total = nominalTunai + nominalNontunai;
-    return {
-      totalBayar: total,
+    
+    const isPartial = data?.status === 'PARTIAL' || data?.status === 'SEBAGIAN';
+    const target = isPartial 
+      ? (data?.remainingAmount ?? (isBPJS ? remainingAmount : totalTagihan)) 
+      : (isBPJS ? remainingAmount : totalTagihan);
+
+      const total = nominalTunai + nominalNontunai;
+      return {
+        totalBayar: total,
       sisaTagihan: target - total,
       isPaymentValid: total === target && total > 0
-    };
-  }, [amounts, isBPJS, totalTagihan, remainingAmount]);
+      };
+  }, [amounts, data?.status, data?.remainingAmount, isBPJS, totalTagihan, remainingAmount]);
 
   const handleFillRemaining = (field: 'tunai' | 'nontunai') => {
     if (sisaTagihan <= 0) return;
@@ -129,7 +143,9 @@ export const PaymentPanel = () => {
       if (choice === 'cash_first') {
         await billingPosService.addPaymentSplit(txId, {
           amount: nominalTunai,
-          paymentMethod: 'tunai'
+          method: 'CASH',
+          reference: '',
+          isBpjsCoverage: false
         });
 
         queryClient.invalidateQueries({ queryKey: ['billingTransactions'] });
@@ -148,7 +164,12 @@ export const PaymentPanel = () => {
       }
       else if (choice === 'nontunai_first') {
         if (nonTunaiMethod === 'qris') {
-          const response = await paymentService.generateSnapToken(txId);
+          const response = await billingPosService.addPaymentSplit(txId, {
+            amount: nominalNontunai,
+            method: 'QRIS',
+            reference: '',
+            isBpjsCoverage: false
+          });
           setPendingSplitFlow({
             choice: 'nontunai_first',
             txId,
@@ -158,15 +179,17 @@ export const PaymentPanel = () => {
           setQrisPaymentData({
             transactionId: txId,
             amount: nominalNontunai,
-            token: response?.data?.snapToken || response?.snapToken,
-            qrUrl: response?.data?.snapRedirectUrl || response?.data?.snapRedirectUrl,
-            qrContent: response?.data?.snapToken || response?.data?.snapToken,
+            token: response?.snapToken || response?.data?.snapToken || '',
+            qrUrl: response?.qrisImageUrl || response?.data?.qrisImageUrl || '',
+            qrContent: response?.snapToken || response?.data?.snapToken || '',
           });
         } else {
+          const mappedMethod = nonTunaiMethod === 'debit' ? 'DEBIT' : 'TRANSFER';
           await billingPosService.addPaymentSplit(txId, {
             amount: nominalNontunai,
-            paymentMethod: nonTunaiMethod as any,
-            vendorName: selectedSubMethod
+            method: mappedMethod,
+            reference: selectedSubMethod || '',
+            isBpjsCoverage: false
           });
 
           queryClient.invalidateQueries({ queryKey: ['billingTransactions'] });
@@ -185,13 +208,22 @@ export const PaymentPanel = () => {
         }
       }
       else if (choice === 'both') {
+        // Step 1: CASH / Tunai First (Tunggu Response 200)
         await billingPosService.addPaymentSplit(txId, {
           amount: nominalTunai,
-          paymentMethod: 'tunai'
+          method: 'CASH',
+          reference: '',
+          isBpjsCoverage: false
         });
 
+        // Step 2: Non-Tunai / QRIS
         if (nonTunaiMethod === 'qris') {
-          const response = await paymentService.generateSnapToken(txId);
+          const response = await billingPosService.addPaymentSplit(txId, {
+            amount: nominalNontunai,
+            method: 'QRIS',
+            reference: '',
+            isBpjsCoverage: false
+          });
           setPendingSplitFlow({
             choice: 'both',
             txId,
@@ -201,15 +233,17 @@ export const PaymentPanel = () => {
           setQrisPaymentData({
             transactionId: txId,
             amount: nominalNontunai,
-            token: response?.data?.snapToken || response?.snapToken,
-            qrUrl: response?.data?.snapRedirectUrl || response?.data?.snapRedirectUrl,
-            qrContent: response?.data?.snapToken || response?.data?.snapToken,
+            token: response?.snapToken || response?.data?.snapToken || '',
+            qrUrl: response?.qrisImageUrl || response?.data?.qrisImageUrl || '',
+            qrContent: response?.snapToken || response?.data?.snapToken || '',
           });
         } else {
+          const mappedMethod = nonTunaiMethod === 'debit' ? 'DEBIT' : 'TRANSFER';
           await billingPosService.addPaymentSplit(txId, {
             amount: nominalNontunai,
-            paymentMethod: nonTunaiMethod as any,
-            vendorName: selectedSubMethod
+            method: mappedMethod,
+            reference: selectedSubMethod || '',
+            isBpjsCoverage: false
           });
 
           queryClient.invalidateQueries({ queryKey: ['billingTransactions'] });
@@ -217,11 +251,11 @@ export const PaymentPanel = () => {
           queryClient.invalidateQueries({ queryKey: ['paymentHistoryDetail', txId] });
 
           setSuccessDialogData({
-            title: "Pembayaran Split Berhasil",
-            message: `Pembayaran tunai Rp ${nominalTunai.toLocaleString('id-ID')} dan ${nonTunaiLabel} Rp ${nominalNontunai.toLocaleString('id-ID')} berhasil dilunasi sekaligus.`,
+            title: "Pembayaran Lunas (Split Bill)",
+            message: `Pembayaran tunai Rp ${nominalTunai.toLocaleString('id-ID')} dan ${nonTunaiLabel} Rp ${nominalNontunai.toLocaleString('id-ID')} telah sukses dilunasi sepenuhnya.`,
             amount: nominalTunai + nominalNontunai,
             type: 'success',
-            paymentMethod: `Tunai & ${nonTunaiLabel}`,
+            paymentMethod: `Tunai & ${nonTunaiLabel} (Lunas)`,
             patientName: data?.patientName || "Pasien Umum",
             invoiceId: txId,
           });
@@ -232,6 +266,67 @@ export const PaymentPanel = () => {
       setSuccessDialogData({
         title: "Pembayaran Gagal",
         message: "Terjadi kesalahan saat memproses pembayaran pecahan.",
+        amount: 0,
+        type: 'error',
+        paymentMethod: "RME System Error",
+        patientName: data?.patientName || "Pasien Umum",
+        invoiceId: txId,
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const processCashOnlyPayment = async (cashReceived: number) => {
+    const nominalTunai = parseFloat(amounts.tunai) || 0;
+    const txId = data?.id || data?.transactionId || data?.invoiceId || data?.data?.id || "";
+    
+    setIsProcessing(true);
+    try {
+      if (txId) {
+        await billingPosService.addPaymentSplit(txId, {
+          amount: nominalTunai,
+          method: 'CASH',
+          reference: '',
+          isBpjsCoverage: false
+        });
+        
+        queryClient.invalidateQueries({ queryKey: ['billingTransactions'] });
+        queryClient.invalidateQueries({ queryKey: ['billingTransactionsList'] });
+        queryClient.invalidateQueries({ queryKey: ['paymentHistoryDetail', txId] });
+      }
+
+      const isPartial = data?.status === 'PARTIAL' || data?.status === 'SEBAGIAN';
+      const remainingToPay = data?.remainingAmount || 0;
+      const isFullyPaidNow = isPartial 
+        ? (nominalTunai >= remainingToPay) 
+        : true;
+
+      const change = cashReceived - nominalTunai;
+      let successMessage = isFullyPaidNow 
+        ? "Data pembayaran berhasil diproses. Seluruh tagihan telah lunas sepenuhnya." 
+        : `Pembayaran sebesar Rp ${nominalTunai.toLocaleString('id-ID')} berhasil dicatat. Sisa tagihan ditunda.`;
+
+      if (isFullyPaidNow && change > 0) {
+        successMessage += ` Kembalian: Rp ${change.toLocaleString('id-ID')}.`;
+      }
+
+      setSuccessDialogData({
+        title: isFullyPaidNow ? "Pembayaran Lunas" : "Pembayaran Sebagian Berhasil",
+        message: successMessage,
+        amount: nominalTunai,
+        type: 'success',
+        paymentMethod: isFullyPaidNow ? "Tunai (Lunas)" : "Tunai (Sebagian)",
+        patientName: data?.patientName || "Pasien Umum",
+        invoiceId: txId,
+        cashReceived: cashReceived,
+        changeAmount: change,
+      });
+    } catch (err) {
+      console.error("Gagal melakukan pelunasan tunai:", err);
+      setSuccessDialogData({
+        title: "Pembayaran Gagal",
+        message: "Terjadi kesalahan saat menyimpan data pembayaran langsung ke database.",
         amount: 0,
         type: 'error',
         paymentMethod: "RME System Error",
@@ -265,6 +360,12 @@ export const PaymentPanel = () => {
       return;
     }
 
+    // Intersepsi pembayaran tunai saja / cash only
+    if (nominalTunai > 0 && nominalNontunai === 0) {
+      setIsCashPaymentModalOpen(true);
+      return;
+    }
+
     if (nominalTunai > 0 && nominalNontunai > 0) {
       setIsSplitConfirmOpen(true);
       return;
@@ -274,14 +375,19 @@ export const PaymentPanel = () => {
 
     if (nonTunaiMethod === 'qris' && nominalNontunai > 0) {
       try {
-        const response = await paymentService.generateSnapToken(txId);
+        const response = await billingPosService.addPaymentSplit(txId, {
+          amount: nominalNontunai,
+          method: 'QRIS',
+          reference: '',
+          isBpjsCoverage: false
+        });
         
         setQrisPaymentData({
           transactionId: txId,
           amount: nominalNontunai,
-          token: response?.data?.snapToken || response?.snapToken,
-          qrUrl: response?.data?.snapRedirectUrl || response?.data?.snapRedirectUrl,
-          qrContent: response?.data?.snapToken || response?.data?.snapToken,
+          token: response?.snapToken || response?.data?.snapToken || '',
+          qrUrl: response?.qrisImageUrl || response?.data?.qrisImageUrl || '',
+          qrContent: response?.snapToken || response?.data?.snapToken || '',
         });
       } catch (error) {
         console.error("Gagal memproses token QRIS:", error);
@@ -303,14 +409,18 @@ export const PaymentPanel = () => {
           if (nominalTunai > 0) {
             await billingPosService.addPaymentSplit(txId, {
               amount: nominalTunai,
-              paymentMethod: 'tunai'
+              method: 'CASH',
+              reference: '',
+              isBpjsCoverage: false
             });
           }
           if (nominalNontunai > 0) {
+            const mappedMethod = nonTunaiMethod === 'debit' ? 'DEBIT' : 'TRANSFER';
             await billingPosService.addPaymentSplit(txId, {
               amount: nominalNontunai,
-              paymentMethod: nonTunaiMethod as any,
-              vendorName: selectedSubMethod
+              method: mappedMethod,
+              reference: selectedSubMethod || '',
+              isBpjsCoverage: false
             });
           }
           queryClient.invalidateQueries({ queryKey: ['billingTransactions'] });
@@ -325,12 +435,21 @@ export const PaymentPanel = () => {
           methodString = `${nonTunaiLabel} ${selectedSubMethod ? `(${selectedSubMethod})` : ''}`;
         }
 
+        const isPartial = data?.status === 'PARTIAL' || data?.status === 'SEBAGIAN';
+        const currentPaid = nominalTunai + nominalNontunai;
+        const remainingToPay = data?.remainingAmount || 0;
+        const isFullyPaidNow = isPartial 
+          ? (currentPaid >= remainingToPay) 
+          : true; // If not partial, a single full payment makes it lunas
+
         setSuccessDialogData({
-          title: "Pembayaran Berhasil",
-          message: "Data pecahan pembayaran berhasil diproses dan disinkronkan ke database RME.",
-          amount: totalTagihan,
+          title: isFullyPaidNow ? "Pembayaran Lunas" : "Pembayaran Sebagian Berhasil",
+          message: isFullyPaidNow 
+            ? "Data pembayaran berhasil diproses. Seluruh tagihan telah lunas sepenuhnya." 
+            : `Pembayaran sebesar Rp ${currentPaid.toLocaleString('id-ID')} berhasil dicatat. Sisa tagihan ditunda.`,
+          amount: currentPaid,
           type: 'success',
-          paymentMethod: methodString,
+          paymentMethod: isFullyPaidNow ? `${methodString} (Lunas)` : `${methodString} (Sebagian)`,
           patientName: data?.patientName || "Pasien Umum",
           invoiceId: txId,
         });
@@ -368,7 +487,7 @@ export const PaymentPanel = () => {
 
           {payType === 'mandiri' ? (
             <div className="mt-6 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {isBPJS && (
+              {isBPJS && !isPartial && (
                 <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 flex gap-3">
                   <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm">
@@ -377,6 +496,23 @@ export const PaymentPanel = () => {
                       <p>• Total Tagihan: Rp {totalTagihan.toLocaleString('id-ID')}</p>
                       <p>• BPJS Menanggung (70%): Rp {insuranceCoverage.toLocaleString('id-ID')}</p>
                       <p className="font-bold text-blue-900">• Pasien Bayar: Rp {remainingAmount.toLocaleString('id-ID')}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isPartial && (
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex gap-3 animate-in fade-in duration-300">
+                  <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-left">
+                    <p className="font-bold text-amber-900">Lanjutan Pembayaran (Partial Bill)</p>
+                    <div className="text-xs text-amber-700 mt-1 space-y-0.5">
+                      <p>• Total Tagihan: Rp {totalTagihan.toLocaleString('id-ID')}</p>
+                      <p>• Sudah Dibayar: Rp {(data?.paidAmount || 0).toLocaleString('id-ID')}</p>
+                      {data?.paidMethods && data.paidMethods.length > 0 && (
+                        <p>• Metode Terpakai: <span className="uppercase font-bold">{data.paidMethods.join(', ')}</span></p>
+                      )}
+                      <p className="font-bold text-amber-900">• Sisa Tagihan Baru: Rp {(data?.remainingAmount || 0).toLocaleString('id-ID')}</p>
                     </div>
                   </div>
                 </div>
@@ -395,38 +531,38 @@ export const PaymentPanel = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 px-1 uppercase tracking-wider">
-                  <Banknote className="w-4 h-4 text-slate-400" /> Alokasi Tunai / Cash
-                </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
-                    <input type="number" placeholder="0" value={amounts.tunai} onChange={(e) => setAmounts(prev => ({ ...prev, tunai: e.target.value }))} className="pl-10 pr-4 w-full h-11 border border-slate-200 bg-slate-50/50 rounded-xl text-sm focus:outline-none focus:border-[#1B9C90] transition-colors" />
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 px-1 uppercase tracking-wider">
+                    <Banknote className="w-4 h-4 text-slate-400" /> Alokasi Tunai / Cash
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
+                      <input type="number" placeholder="0" value={amounts.tunai} onChange={(e) => setAmounts(prev => ({ ...prev, tunai: e.target.value }))} className="pl-10 pr-4 w-full h-11 border border-slate-200 bg-slate-50/50 rounded-xl text-sm focus:outline-none focus:border-[#1B9C90] transition-colors" />
+                    </div>
+                    {sisaTagihan > 0 && (
+                      <Button type="button" variant="outline" onClick={() => handleFillRemaining('tunai')} className="h-11 px-3 text-xs font-bold border-slate-200 text-[#1B9C90] hover:bg-emerald-50/20 rounded-xl shadow-none">Gunakan Sisa</Button>
+                    )}
                   </div>
-                  {sisaTagihan > 0 && (
-                    <Button type="button" variant="outline" onClick={() => handleFillRemaining('tunai')} className="h-11 px-3 text-xs font-bold border-slate-200 text-[#1B9C90] hover:bg-emerald-50/20 rounded-xl shadow-none">Gunakan Sisa</Button>
-                  )}
                 </div>
-              </div>
 
               <div className="space-y-2 pt-2 border-t border-dashed border-slate-100">
                 <p className="text-xs font-bold text-slate-500 px-1 uppercase tracking-widest">Opsi Metode Non-Tunai / Patungan</p>
                 <MethodSelector selected={nonTunaiMethod} onSelect={handleMethodSelect} />
               </div>
 
-              <div className="space-y-2 animate-in fade-in duration-200">
+                <div className="space-y-2 animate-in fade-in duration-200">
                 <label className="text-xs font-bold text-slate-600 flex items-center gap-1.5 px-1 uppercase tracking-wider">{nonTunaiIcon} {nonTunaiLabel}</label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
-                    <input type="number" placeholder="0" value={amounts.nontunai} onChange={(e) => setAmounts(prev => ({ ...prev, nontunai: e.target.value }))} className="pl-10 pr-4 w-full h-11 border border-slate-200 bg-slate-50/50 rounded-xl text-sm focus:outline-none focus:border-[#1B9C90] transition-colors" />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
+                      <input type="number" placeholder="0" value={amounts.nontunai} onChange={(e) => setAmounts(prev => ({ ...prev, nontunai: e.target.value }))} className="pl-10 pr-4 w-full h-11 border border-slate-200 bg-slate-50/50 rounded-xl text-sm focus:outline-none focus:border-[#1B9C90] transition-colors" />
+                    </div>
+                    {sisaTagihan > 0 && (
+                      <Button type="button" variant="outline" onClick={() => handleFillRemaining('nontunai')} className="h-11 px-3 text-xs font-bold border-slate-200 text-[#1B9C90] hover:bg-emerald-50/20 rounded-xl shadow-none">Gunakan Sisa</Button>
+                    )}
                   </div>
-                  {sisaTagihan > 0 && (
-                    <Button type="button" variant="outline" onClick={() => handleFillRemaining('nontunai')} className="h-11 px-3 text-xs font-bold border-slate-200 text-[#1B9C90] hover:bg-emerald-50/20 rounded-xl shadow-none">Gunakan Sisa</Button>
-                  )}
                 </div>
-              </div>
             </div>
           ) : (
             <div className="mt-6 p-6 bg-emerald-50/50 border border-emerald-100 rounded-[32px] animate-in zoom-in-95 duration-300">
@@ -460,13 +596,15 @@ export const PaymentPanel = () => {
           let finalAmount = amount;
           let methodString = "QRIS (Midtrans)";
 
+          const isPartial = data?.status === 'PARTIAL' || data?.status === 'SEBAGIAN';
+
           if (pendingSplitFlow) {
             const { choice, nominalTunai, nominalNontunai } = pendingSplitFlow;
             if (choice === 'both') {
-              title = "Pembayaran Split Berhasil";
+              title = "Pembayaran Lunas (Split Bill)";
               message = `Pembayaran tunai Rp ${nominalTunai.toLocaleString('id-ID')} dan QRIS Rp ${nominalNontunai.toLocaleString('id-ID')} telah sukses dilunasi sepenuhnya.`;
               finalAmount = nominalTunai + nominalNontunai;
-              methodString = "Tunai & QRIS";
+              methodString = "Tunai & QRIS (Lunas)";
             } else if (choice === 'nontunai_first') {
               title = "Pembayaran QRIS Berhasil (Sebagian)";
               message = `Bagian pembayaran QRIS sebesar Rp ${nominalNontunai.toLocaleString('id-ID')} berhasil divalidasi. Sisa tagihan tunai ditunda ke status pending.`;
@@ -474,6 +612,17 @@ export const PaymentPanel = () => {
               methodString = "QRIS (Sebagian)";
             }
             setPendingSplitFlow(null);
+          } else if (isPartial && amount >= (data?.remainingAmount || 0)) {
+            title = "Pembayaran Lunas (Pelunasan)";
+            message = `Pembayaran QRIS pelunasan sebesar Rp ${amount.toLocaleString('id-ID')} berhasil divalidasi. Seluruh tagihan telah lunas sepenuhnya.`;
+            finalAmount = amount;
+            methodString = `QRIS (Pelunasan Lunas)`;
+          } else {
+            // Default single payment makes it lunas
+            title = "Pembayaran Lunas";
+            message = `Pembayaran QRIS sebesar Rp ${amount.toLocaleString('id-ID')} berhasil divalidasi. Seluruh tagihan telah lunas sepenuhnya.`;
+            finalAmount = amount;
+            methodString = `QRIS (Lunas)`;
           }
 
           setSuccessDialogData({
@@ -497,6 +646,13 @@ export const PaymentPanel = () => {
         nonCashLabel={nonTunaiLabel}
       />
 
+      <CashPaymentModal
+        isOpen={isCashPaymentModalOpen}
+        onClose={() => setIsCashPaymentModalOpen(false)}
+        onConfirm={processCashOnlyPayment}
+        totalBill={parseFloat(amounts.tunai) || 0}
+      />
+
       <PaymentStatusDialog
         isOpen={successDialogData !== null}
         onClose={() => {
@@ -510,6 +666,8 @@ export const PaymentPanel = () => {
         paymentMethod={successDialogData?.paymentMethod || ""}
         patientName={successDialogData?.patientName || ""}
         invoiceId={successDialogData?.invoiceId || ""}
+        cashReceived={successDialogData?.cashReceived}
+        changeAmount={successDialogData?.changeAmount}
       />
     </div>
   );

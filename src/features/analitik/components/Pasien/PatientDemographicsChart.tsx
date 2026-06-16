@@ -102,7 +102,7 @@ export const PatientDemographicsChart = () => {
   const { data: patients = [], isLoading, error } = useQuery({
     queryKey: ['patients'],
     queryFn: async () => {
-      const response = await analitikService.getAllPatients();
+      const response = await analitikService.getAllPatients({ page: 1, limit: 1000 });
       return response.data?.data || [];
     },
     staleTime: 5 * 60 * 1000, // Cache selama 5 menit

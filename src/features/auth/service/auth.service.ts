@@ -1,4 +1,5 @@
 import type { LoginCredentials, AuthResponse, User } from '../types/auth.types';
+import { secureStorage, useAuthStore } from '../store/authStore';
 
 // Demo users untuk development
 const DEMO_USERS: Record<string, { password: string; user: User }> = {
@@ -41,12 +42,15 @@ class AuthService {
       // Store token - gunakan access_token dari API response
       const token = response.access_token;
       if (credentials.remember) {
-        localStorage.setItem('authToken', token);
+        secureStorage.setItem('authToken', token, false);
         localStorage.setItem('user', JSON.stringify(response.user));
       } else {
-        sessionStorage.setItem('authToken', token);
+        secureStorage.setItem('authToken', token, true);
         sessionStorage.setItem('user', JSON.stringify(response.user));
       }
+
+      // Sync to Zustand store
+      useAuthStore.getState().setAuthToken(token);
 
       return response;
     } catch (error) {
@@ -101,14 +105,14 @@ class AuthService {
   }
 
   static logout(): void {
-    localStorage.removeItem('authToken');
+    secureStorage.removeItem('authToken');
     localStorage.removeItem('user');
-    sessionStorage.removeItem('authToken');
     sessionStorage.removeItem('user');
+    useAuthStore.getState().clearTokens();
   }
 
   static getToken(): string | null {
-    return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    return useAuthStore.getState().authToken || secureStorage.getItem('authToken');
   }
 
   static getUser() {

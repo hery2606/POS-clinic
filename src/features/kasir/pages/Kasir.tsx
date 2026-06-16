@@ -25,7 +25,12 @@ export const KasirPage = () => {
 
   const queuePatients = useMemo(() => {
     const transactions = billingResponse?.data || [];
-    return transactions.filter((item) => item.status !== 'LUNAS');
+    return transactions.filter((item) => 
+      item.status !== 'LUNAS' && 
+      item.status !== 'CANCELLED' && 
+      item.status !== 'CANCELED' &&
+      item.status !== 'DIBATALKAN'
+    );
   }, [billingResponse]);
 
   useEffect(() => {
@@ -41,10 +46,14 @@ export const KasirPage = () => {
         source: 'kasir',
         id: selectedPatient.id,
         transactionId: selectedPatient.id,
-        amount: selectedPatient.total,
+        amount: selectedPatient.status === 'PARTIAL' ? selectedPatient.remainingAmount : selectedPatient.total,
         total: selectedPatient.total,
         patientName: selectedPatient.patient?.name || 'Pasien',
-        insurance: selectedPatient.patient?.insuranceType || 'UMUM'
+        insurance: selectedPatient.patient?.insuranceType || 'UMUM',
+        status: selectedPatient.status,
+        paidAmount: selectedPatient.paidAmount,
+        remainingAmount: selectedPatient.remainingAmount,
+        paidMethods: selectedPatient.paidMethods
       });
     }
   }, [selectedPatient, setContent]);
@@ -108,10 +117,14 @@ export const KasirPage = () => {
                 source: 'kasir',
                 id: selectedPatient?.id,
                 transactionId: selectedPatient?.id,
-                amount: total,
-                total: total,
+                amount: selectedPatient?.status === 'PARTIAL' ? selectedPatient?.remainingAmount : selectedPatient?.total,
+                total: selectedPatient?.total,
                 patientName: selectedPatient?.patient?.name || 'Pasien',
-                insurance: selectedPatient?.patient?.insuranceType || 'UMUM'
+                insurance: selectedPatient?.patient?.insuranceType || 'UMUM',
+                status: selectedPatient?.status,
+                paidAmount: selectedPatient?.paidAmount,
+                remainingAmount: selectedPatient?.remainingAmount,
+                paidMethods: selectedPatient?.paidMethods
               })
             }
             disabled={!selectedPatient || total === 0}

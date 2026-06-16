@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PaymentStatusDialogProps {
   isOpen: boolean;
@@ -14,6 +15,8 @@ interface PaymentStatusDialogProps {
   paymentMethod: string;
   patientName: string;
   invoiceId: string;
+  cashReceived?: number;
+  changeAmount?: number;
 }
 
 export const PaymentStatusDialog = ({
@@ -26,6 +29,8 @@ export const PaymentStatusDialog = ({
   paymentMethod,
   patientName,
   invoiceId,
+  cashReceived,
+  changeAmount,
 }: PaymentStatusDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -62,8 +67,29 @@ export const PaymentStatusDialog = ({
             <span className="text-slate-500 font-medium">Metode Pembayaran</span>
             <span className="font-bold text-[#1B9C90]">{paymentMethod}</span>
           </div>
+          {cashReceived !== undefined && cashReceived > 0 && (
+            <>
+              <div className="flex justify-between border-t border-slate-200/60 pt-2.5 mt-2">
+                <span className="text-slate-500 font-medium">Uang Diterima</span>
+                <span className="font-bold text-slate-900">
+                  Rp {cashReceived.toLocaleString("id-ID")}
+                </span>
+              </div>
+              {changeAmount !== undefined && changeAmount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-slate-500 font-medium">Kembalian</span>
+                  <span className="font-bold text-emerald-600">
+                    Rp {changeAmount.toLocaleString("id-ID")}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
           {amount > 0 && (
-            <div className="flex justify-between border-t border-slate-200/60 pt-2.5 mt-2">
+            <div className={cn(
+              "flex justify-between border-t border-slate-200/60 pt-2.5 mt-2",
+              cashReceived !== undefined && "border-t-0 pt-0 mt-0"
+            )}>
               <span className="text-slate-900 font-bold">Total Terbayar</span>
               <span className="font-black text-slate-900 text-sm">
                 Rp {amount.toLocaleString("id-ID")}

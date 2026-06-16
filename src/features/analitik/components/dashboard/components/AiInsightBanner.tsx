@@ -56,7 +56,6 @@ export const AiInsightBanner = () => {
   // 🛠️ FIX UTAMA DI SINI: Ekstraksi array yang super robust dan antisipasi casing property
   const insights = useMemo(() => {
     const res = extractInsights(insightsResponse);
-    console.log("DEBUG BANNER - insightsResponse:", insightsResponse, "extracted insights:", res);
     return res;
   }, [insightsResponse]);
 

@@ -3,9 +3,7 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { initializeRmeAuth } from "@/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-// Eksekusi fungsi login otomatis ke server RME sebelum React merender UI aplikasi
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,14 +14,12 @@ const queryClient = new QueryClient({
   },
 });
 
-initializeRmeAuth().then(() => {
-  createRoot(document.getElementById("root")!).render(
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <App />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </StrictMode>,
-  );
-});
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <App />
+      </TooltipProvider>
+    </QueryClientProvider>
+  </StrictMode>,
+);

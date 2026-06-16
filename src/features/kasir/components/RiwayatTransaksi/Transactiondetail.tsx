@@ -11,7 +11,9 @@ import {
   CreditCard,
   FileText,
   Activity,
-  Loader2
+  Loader2,
+  ArrowRightLeft,
+  CornerDownRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +21,9 @@ import { Separator } from '@/components/ui/separator';
 import { useRightPanel } from '../../context/right-panel-context';
 import { paymentService } from '../../services/payment.service';
 import { billingPosService } from '../../services/billing.pos.service';
+import { cn } from '@/lib/utils';
+import { TransactionDetailSkeleton } from './ui/TransactionDetailSkeleton';
+
 
 interface TransactionItem {
   name: string;
@@ -76,22 +81,43 @@ export const TransactionDetail = () => {
       }));
     }
     return (serverData as any)?.items || [
-      { name: 'Registrasi & Administrasi Klinik', quantity: 1, price: 25000 },
+      { name: 'Registrasi & Administrasi Umum Klinik', quantity: 1, price: 25000 },
       { name: 'Pelayanan Tindakan & Konsultasi Medis', quantity: 1, price: 50000 },
     ];
   }, [billingDataObj, serverData]);
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center space-y-3 mt-12">
-        <Loader2 className="w-8 h-8 text-[#1B9C90] animate-spin" />
-        <p className="text-xs font-bold text-slate-400">Memuat Rincian Kwitansi Kasir...</p>
-      </div>
+  // 🟢 LOGIKA MUTASI TERMIN: Memecah rentetan pembayaran jika ada status PENDING di tengah jalan
+  const { initialPayments, supplementalPayments } = useMemo(() => {
+    const paymentsList = serverData?.payments || [];
+    if (paymentsList.length === 0) {
+      return { initialPayments: [], supplementalPayments: [] };
+    }
+
+    // Cari index pembayaran pertama yang statusnya PENDING
+    const pendingIndex = paymentsList.findIndex(
+      (p: any) => p.status?.toUpperCase() === 'PENDING' || p.status?.toUpperCase() === 'PENDING_PAYMENT'
     );
+
+    // Jika status pending ditemukan dan di bawahnya masih ada entri transaksi pelunasan baru
+    if (pendingIndex !== -1 && pendingIndex < paymentsList.length - 1) {
+      return {
+        initialPayments: paymentsList.slice(0, pendingIndex + 1),
+        supplementalPayments: paymentsList.slice(pendingIndex + 1),
+      };
+    }
+
+    return {
+      initialPayments: paymentsList,
+      supplementalPayments: [],
+    };
+  }, [serverData?.payments]);
+
+  if (isLoading) {
+    return <TransactionDetailSkeleton />;
   }
 
   // SINKRONISASI AKSES: Pastikan membaca historyResponse.data dengan aman
-  if (isError || !historyResponse || !historyResponse.data) {
+  if (isError || !historyResponse || !serverData) {
     return (
       <div className="bg-white p-6 rounded-[24px] border border-[#DFE6EB] shadow-sm flex flex-col items-center justify-center text-center text-slate-400 text-xs font-medium h-60 mt-12">
         <AlertCircle className="w-6 h-6 text-slate-300 mb-2" />
@@ -101,7 +127,6 @@ export const TransactionDetail = () => {
   }
 
   const totalTagihanNetto = serverData.total || 0;
-  const isLunasTotal = serverData.status?.toUpperCase() === 'LUNAS';
   const canPayment = serverData.status?.toUpperCase() === 'PENDING_PAYMENT' || serverData.status?.toUpperCase() === 'PARTIAL';
 
   const statusConfig = useMemo(() => {
@@ -129,6 +154,15 @@ export const TransactionDetail = () => {
       };
     }
   }, [serverData.status]);
+
+  const txIdVal = serverData.transactionId;
+  const remainingAmountVal = serverData.remainingAmount;
+  const totalVal = serverData.total;
+  const patientNameVal = serverData.patient?.name;
+  const insuranceVal = serverData.patient?.insuranceType;
+  const statusVal = serverData.status;
+  const paidAmountVal = serverData.paidAmount;
+  const paidMethodsVal = serverData.payments?.map((p: any) => p.method) || [];
 
   return (
     <div className="space-y-6 w-full max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-200 mt-12">
@@ -162,7 +196,7 @@ export const TransactionDetail = () => {
         </div>
       </div>
 
-      {/* METADATA NOTA KLINIK (SINKRON DATA PATIENT & BIAYA) */}
+      {/* METADATA NOTA KLINIK */}
       <div className="bg-[#F4FBF9] rounded-2xl p-4 border border-emerald-100 space-y-2.5 text-xs">
         <div className="grid grid-cols-3 gap-1">
           <span className="font-semibold text-[#67737C]">Cashier</span>
@@ -181,7 +215,7 @@ export const TransactionDetail = () => {
         <Separator className="bg-[#D2EBE7] border-dashed my-2" />
         
         <div className="grid grid-cols-3 gap-1">
-          <span className="font-semibold text-[#67737C]">ID Transaksi</span>
+          <span className="font-semibold text-[#67737C]">No Invoice</span>
           <span className="col-span-2 font-mono font-bold text-[#13222D] truncate">: {serverData.transactionId}</span>
         </div>
         <div className="grid grid-cols-3 gap-1">
@@ -218,14 +252,14 @@ export const TransactionDetail = () => {
         </div>
       </div>
 
-      {/* SEKSI AKUMULASI BIAYA & HISTORI SPLIT BILL */}
+      {/* SEKSI AKUMULASI BIAYA & HISTORI SPLIT BILL DENGAN PECAHAN TERMIN */}
       <div className="bg-white p-4 rounded-2xl border border-[#DFE6EB] shadow-xs space-y-2.5 text-xs">
         <div className="flex justify-between items-center text-slate-600">
           <span>Harga Kotor Tagihan</span>
           <span className="font-semibold">{formatCurrency(totalTagihanNetto)}</span>
         </div>
 
-        {/* 🔵 DETAIL PENJAMINAN BPJS */}
+        {/* DETAIL PENJAMINAN BPJS */}
         {(serverData.patient?.insuranceType?.toUpperCase() === 'BPJS' || (serverData.bpjsAmount && serverData.bpjsAmount > 0)) && (
           <div className="space-y-2.5 border-t border-slate-100 pt-2.5 mt-1">
             <div className="flex justify-between items-center text-blue-700 font-semibold">
@@ -246,15 +280,16 @@ export const TransactionDetail = () => {
           <span className="font-black text-[#1B9C90] text-base">{formatCurrency(totalTagihanNetto)}</span>
         </div>
 
-        {/* 🟢 RENDERING SPLIT BILL AKURAT: Membaca properti 'payments' dari JSON kamu */}
-        {serverData.payments && serverData.payments.length > 0 ? (
-          <div className="mt-2 pt-2 border-t border-dashed border-slate-200 bg-amber-50/40 p-2.5 rounded-xl border border-amber-100/60 animate-in fade-in duration-200">
-            <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider block mb-1.5 flex items-center gap-1">
-              <Activity className="w-3 h-3 text-amber-600" /> Histori Pecahan Pembayaran (Split Bill)
+        {/* 🟢 TIER 1: RENDERING HISTORI PEMBAYARAN UTAMA */}
+        {initialPayments.length > 0 ? (
+          <div className="mt-2 pt-2 border-t border-dashed border-slate-200 space-y-2">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">
+              Metode &amp; Histori Pembayaran
             </span>
-            <div className="space-y-2">
-              {serverData.payments.map((split: any, sIdx: number) => (
-                <div key={split.id || sIdx} className="flex justify-between text-[11px] items-center border-b border-amber-100/30 pb-1.5 last:border-none last:pb-0">
+            {initialPayments.map((split: any, sIdx: number) => {
+              const isItemPending = split.status?.toUpperCase() === 'PENDING' || split.status?.toUpperCase() === 'PENDING_PAYMENT';
+              return (
+                <div key={split.id || sIdx} className="flex justify-between text-[11px] items-center bg-slate-50/60 p-2 rounded-xl border border-slate-100">
                   <div className="text-slate-600 font-medium">
                     <span>➔ via </span>
                     <span className="font-black text-slate-700 uppercase tracking-wide">{split.method}</span>
@@ -262,20 +297,52 @@ export const TransactionDetail = () => {
                       {split.paidAt ? new Date(split.paidAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB' : '-'}
                     </span>
                   </div>
-                  <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white font-extrabold text-[8px] h-4 rounded px-1 border-none shadow-none uppercase">
-                    {split.status}
+                  <Badge 
+                    className={cn(
+                      "font-extrabold text-[8px] h-4 rounded px-1 border-none shadow-none uppercase",
+                      isItemPending ? "bg-amber-500 text-white" : "bg-emerald-600 text-white"
+                    )}
+                  >
+                    {isItemPending ? 'PENDING' : 'LUNAS'}
                   </Badge>
                   <span className="font-black text-slate-800">{formatCurrency(split.amount)}</span>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         ) : (
           <div className="flex justify-between items-center text-[11px] text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100">
-            <span className="font-medium flex items-center gap-1"><CreditCard className="w-3.5 h-3.5 text-slate-400" /> Metode Bayar Utama</span>
+            <span className="font-medium flex items-center gap-1">Metode Bayar Utama</span>
             <span className="font-bold text-[#1B9C90] uppercase tracking-wide">
               {panelData?.paymentMethod || (serverData.patient?.insuranceType?.toUpperCase() === 'BPJS' ? 'BPJS' : 'TUNAI')}
             </span>
+          </div>
+        )}
+
+        {/* 🟢 TIER 2: BLOK KETERANGAN TAGIHAN PELUNASAN SUSULAN (MUNCUL OTOMATIS) */}
+        {supplementalPayments.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-dashed border-slate-200 space-y-2.5 animate-in fade-in duration-300">
+            <div className="flex items-center gap-1.5 text-[9px] font-black text-orange-600 uppercase tracking-widest pl-1 bg-orange-50 py-1 px-2.5 rounded-lg w-fit border border-orange-100/70">
+              <ArrowRightLeft className="w-3 h-3" /> Keterangan Tagihan Pelunasan
+            </div>
+            
+            <div className="space-y-2 pl-2 border-l-2 border-dashed border-orange-200">
+              {supplementalPayments.map((split: any, sIdx: number) => (
+                <div key={split.id || sIdx} className="flex justify-between text-[11px] items-center animate-in slide-in-from-left-2 duration-200">
+                  <div className="text-slate-600 font-medium flex items-center gap-1">
+                    <CornerDownRight className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                    <span>Pelunasan via </span>
+                    <span className="font-black text-slate-800 uppercase tracking-wide">{split.method}</span>
+                  </div>
+                  <div className="text-right flex items-center gap-2">
+                    <Badge className="bg-emerald-50 text-emerald-700 font-extrabold text-[8px] h-4 rounded px-1 border border-emerald-200/50 shadow-none uppercase">
+                      LUNAS
+                    </Badge>
+                    <span className="font-black text-slate-800">{formatCurrency(split.amount)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -286,10 +353,15 @@ export const TransactionDetail = () => {
           <Button 
             className="w-full h-11 bg-[#1B9C90] hover:bg-[#15857a] rounded-xl text-white font-bold text-xs shadow-md shadow-[#1B9C90]/10 gap-2 transition-all border-none cursor-pointer"
             onClick={() => setContent('payment', { 
-              transactionId: serverData.transactionId, 
-              amount: serverData.remainingAmount,
-              patientName: serverData.patient?.name,
-              insurance: serverData.patient?.insuranceType
+              transactionId: txIdVal, 
+              amount: remainingAmountVal,
+              total: totalVal,
+              patientName: patientNameVal,
+              insurance: insuranceVal,
+              status: statusVal,
+              paidAmount: paidAmountVal,
+              remainingAmount: remainingAmountVal,
+              paidMethods: paidMethodsVal
             } as any)}
           >
             <CreditCard className="w-4 h-4" />

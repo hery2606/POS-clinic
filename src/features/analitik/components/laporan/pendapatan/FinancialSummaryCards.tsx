@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { analitikService } from "../../services/analitik.service";
-import { type RevenueTrendResponse } from "../../types/analitik.types";
+import { analitikService } from "../../../services/analitik.service";
+import { type RevenueTrendResponse } from "../../../types/analitik.types";
 
 interface FinancialSummaryCardsProps {
   period?: string;
@@ -86,11 +86,10 @@ export function FinancialSummaryCards({ period = "2023-11" }: FinancialSummaryCa
               {formatCurrency(totalRevenueThisMonth)}
             </h3>
             <div className="flex items-center gap-2 text-xs font-semibold">
-              <span className={`${
-                comparison.persentase_kenaikan >= 0 
-                  ? "bg-[#DFF6F2] text-[#1B9C90]" 
+              <span className={`${comparison.persentase_kenaikan >= 0
+                  ? "bg-[#DFF6F2] text-[#1B9C90]"
                   : "bg-red-50 text-[#E62C2C]"
-              } px-2 py-0.5 rounded-full flex items-center gap-1`}>
+                } px-2 py-0.5 rounded-full flex items-center gap-1`}>
                 {comparison.persentase_kenaikan >= 0 ? (
                   <TrendingUp className="w-3 h-3" />
                 ) : (
