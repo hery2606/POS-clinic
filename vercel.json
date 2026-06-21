@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/proxy/warehouse/:path*",
-      "destination": "https://system-inventory-management.onrender.com/:path*"
+      "destination": "/api/warehouseProxy?targetPath=:path*"
     },
     {
       "source": "/proxy/rme/:path*",

@@ -1,5 +1,6 @@
 export default async function handler(req, res) {
-  const target = `https://system-inventory-management.onrender.com${req.url.replace('/api/warehouseProxy', '')}`;
+  const targetPath = req.query.targetPath || '';
+  const target = `https://system-inventory-management.onrender.com/${targetPath}`;
   try {
     const response = await fetch(target, {
       method: req.method,

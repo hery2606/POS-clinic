@@ -6,7 +6,7 @@ const getWarehouseBaseUrl = () => {
   const isDev = import.meta.env.DEV;
   return isDev
     ? import.meta.env.VITE_API_WAREHOUSE_URL
-    : '/api/warehouseProxy';
+    : '/proxy/warehouse';
 };
 
 export const warehouseClient = axios.create({
