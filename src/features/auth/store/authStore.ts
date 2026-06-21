@@ -50,9 +50,30 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  rmeToken: null,
-  authToken: secureStorage.getItem('authToken'), // Auto-load authToken on startup
-  setRmeToken: (token) => set({ rmeToken: token }),
-  setAuthToken: (token) => set({ authToken: token }),
-  clearTokens: () => set({ rmeToken: null, authToken: null }),
+  rmeToken: secureStorage.getItem('rmeToken'), // Auto-load rmeToken securely on startup
+  authToken: secureStorage.getItem('authToken'), // Auto-load authToken securely on startup
+  
+  setRmeToken: (token) => {
+    if (token) {
+      secureStorage.setItem('rmeToken', token);
+    } else {
+      secureStorage.removeItem('rmeToken');
+    }
+    set({ rmeToken: token });
+  },
+  
+  setAuthToken: (token) => {
+    if (token) {
+      secureStorage.setItem('authToken', token);
+    } else {
+      secureStorage.removeItem('authToken');
+    }
+    set({ authToken: token });
+  },
+  
+  clearTokens: () => {
+    secureStorage.removeItem('rmeToken');
+    secureStorage.removeItem('authToken');
+    set({ rmeToken: null, authToken: null });
+  },
 }));

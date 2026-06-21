@@ -204,7 +204,7 @@ export function ChartAreaInteractive() {
             </defs>
             
             {/* PERBAIKAN UTAMA: Stroke warna border solid lembut untuk garis horizontal */}
-            <CartesianGrid vertical={false} stroke="#EFF4F8" />
+          <CartesianGrid vertical={false} stroke="#CBD5E1" strokeDasharray="6 6" strokeWidth={1} opacity={0.8} />
             
             {/* SEKARANG SUDAH ADA YAXIS AGAR GARIS GRID MUNCUL */}
             <YAxis

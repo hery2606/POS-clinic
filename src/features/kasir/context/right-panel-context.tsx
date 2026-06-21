@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useCallback, useContext, useState } from 'react'
 
 export type RightPanelContentType = 'payment' | 'transaction-detail' | 'detail' | 'patient-detail' | 'notification' | 'stock-detail' | null
 
@@ -15,17 +15,15 @@ export function RightPanelProvider({ children }: { children: React.ReactNode }) 
   const [contentType, setContentType] = useState<RightPanelContentType>('payment')
   const [data, setData] = useState<Record<string, any>>({})
 
-  const setContent = (newContentType: RightPanelContentType, newData?: Record<string, any>) => {
+  const setContent = useCallback((newContentType: RightPanelContentType, newData?: Record<string, any>) => {
     setContentType(newContentType)
-    if (newData) {
-      setData(newData)
-    }
-  }
+    if (newData) setData(newData)
+  }, [])
 
-  const clearContent = () => {
+  const clearContent = useCallback(() => {
     setContentType(null)
     setData({})
-  }
+  }, [])
 
   return (
     <RightPanelContext.Provider value={{ contentType, data, setContent, clearContent }}>

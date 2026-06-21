@@ -29,7 +29,7 @@ export const AiInsightDetailModal = ({
   onRefresh,
   isLoading
 }: AiInsightDetailModalProps) => {
-  console.log("DEBUG MODAL - isOpen:", isOpen, "insights:", insights);
+  // console.log("DEBUG MODAL - isOpen:", isOpen, "insights:", insights);
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       {/* 🛠️ KAMU BISA CUSTOM UKURAN DI SINI (Contoh: diganti ke sm:max-w-2xl agar lebih lebar & lega) */}

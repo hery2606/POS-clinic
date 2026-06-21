@@ -12,100 +12,136 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { Skeleton } from "@/components/ui/skeleton";
 import { analitikService } from "../../../services/analitik.service";
-import type { RevenueChartData } from "../../../types/analitik.types";
 
 const chartConfig = {
-  current: {
-    label: "Bulan Ini",
-    color: "#1B9C90",
-  },
-  previous: {
-    label: "Bulan Lalu",
-    color: "#DFF6F2",
+  total: {
+    label: "Total Pendapatan",
+    color: "#1B9C90", // Toska Utama Klinik
   },
 } satisfies ChartConfig;
 
-const fallbackChartData: RevenueChartData[] = [
-  { week: "M1", current: 28000000, previous: 22000000 },
-  { week: "M2", current: 39000000, previous: 24000000 },
-  { week: "M3", current: 32000000, previous: 29000000 },
-  { week: "M4", current: 42500000, previous: 35600000 },
+// Data cadangan taktis (Fallback) jika response API kosong / offline
+const fallbackChartData = [
+  { name: "Bulan Lalu", total: 500000 },
+  { name: "Bulan Ini", total: 1395000 },
 ];
 
+const ChartSkeleton = () => (
+  <Card className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm w-full">
+    <CardHeader className="p-6 pb-0">
+      <Skeleton className="h-6 w-48 mb-2" />
+    </CardHeader>
+    <CardContent className="p-6">
+      <div className="h-75 w-full bg-slate-50/50 rounded-2xl animate-pulse" />
+    </CardContent>
+  </Card>
+);
+
 export function RevenueTrendChart() {
-  // Fetch revenue trend data from AI API
+  // Ambil tren pendapatan dari backend AI
   const revenueQuery = useQuery({
     queryKey: ["revenueTrend"],
     queryFn: () => analitikService.getRevenueTrend(),
     staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
   });
 
-  // Transform API data to chart format
+  const isLoading = revenueQuery.isLoading;
+  const error = revenueQuery.error;
+
+  // 🟢 PARSING TOTAL BULANAN SINKRON RES-BODY JSON
   const chartData = useMemo(() => {
-    if (!revenueQuery.data?.data?.grafik_tren_bulanan) {
+    const rawData = revenueQuery.data?.data || (revenueQuery.data as any);
+    const monthlyTrends = rawData?.grafik_tren_bulanan || rawData?.grafikTrenBulanan;
+
+    if (!monthlyTrends || monthlyTrends.length === 0) {
       return fallbackChartData;
     }
 
-    const monthlyTrends = revenueQuery.data.data.grafik_tren_bulanan;
-    const comparison = revenueQuery.data.data.perbandingan_bulan_ini_vs_lalu;
-
-    // Map monthly data to chart format with comparison values
-    return monthlyTrends.map((item: any, index: number) => ({
-      week: item.bulan || `M${index + 1}`,
-      current: item.total || 0,
-      previous: index === monthlyTrends.length - 1
-        ? comparison?.bulan_lalu || 0
-        : (monthlyTrends[index - 1]?.total || 0),
+    // Mapping murni mengikuti isi elemen objek array backend
+    return monthlyTrends.map((item: any) => ({
+      name: item.bulan || "Periode",
+      total: item.total ?? 0,
     }));
   }, [revenueQuery.data]);
+
+  if (isLoading) {
+    return <ChartSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm w-full">
+        <CardHeader className="p-6 pb-0">
+          <CardTitle className="text-base font-bold text-[#13222D]">
+            Grafik Tren Pendapatan
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="h-75 w-full flex items-center justify-center bg-red-50/30 rounded-2xl border border-dashed border-red-200">
+            <p className="text-red-500 text-xs font-bold">⚠️ Gagal memuat data grafik tren bulanan</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full">
       <CardHeader className="p-6 pb-0">
         <CardTitle className="text-base font-bold text-[#13222D]">
-          Grafik Tren Pendapatan
+          Grafik Tren Pendapatan Bulanan
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
         <ChartContainer config={chartConfig} className="h-75 w-full">
-          <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid vertical={false} stroke="#EFF4F8" />
+          <BarChart data={chartData} margin={{ top: 15, right: 10, left: 10, bottom: 0 }}>
+            {/* Garis putus-putus (Grid) yang lebih tebal dan jelas, memberi kesan profesional */}
+            <CartesianGrid vertical={false} stroke="#CBD5E1" strokeDasharray="6 6" strokeWidth={1} opacity={0.8} />
             <XAxis
-              dataKey="week"
+              dataKey="name"
               tickLine={false}
               axisLine={false}
-              tickMargin={12}
+              tickMargin={14}
               className="text-xs font-bold text-[#67737C]"
             />
             <YAxis
               tickLine={false}
               axisLine={false}
-              tickMargin={12}
+              tickMargin={16}
+              width={90} // 🟢 DIPERLEBAR: Agar teks "Rp 150 Jt" atau "Rp 700 Rb" tidak ketutupan
               className="text-[10px] font-bold text-[#67737C]"
-              tickFormatter={(val) => `Rp ${val / 1000000}M`}
+              // 🟢 PERBAIKAN FORMATTER: Support hingga Miliar (M) dan Juta (Jt)
+              tickFormatter={(val) => {
+                if (val >= 1000000000) {
+                  return `Rp ${(val / 1000000000).toFixed(1).replace(/\.0$/, '')} M`;
+                }
+                if (val >= 1000000) {
+                  return `Rp ${(val / 1000000).toFixed(1).replace(/\.0$/, '')} Jt`;
+                }
+                if (val >= 1000) {
+                  return `Rp ${(val / 1000).toFixed(0)} Rb`;
+                }
+                return `Rp ${val}`;
+              }}
             />
             <ChartTooltip
-              cursor={{ fill: "#F4F7F9", opacity: 0.5 }}
+              cursor={{ fill: "#F4F7F9", opacity: 0.6 }}
               content={
                 <ChartTooltipContent
-                  className="bg-white border-[#DFE6EB] rounded-xl shadow-lg p-3 text-xs font-semibold"
+                  className="bg-[#13222D] border-none text-white rounded-xl shadow-2xl p-3 text-xs font-bold"
                   formatter={(value) => `Rp ${Number(value).toLocaleString("id-ID")}`}
                 />
               }
             />
+            {/* Single Bar Terpusat dengan Warna Toska Klinik Premium */}
             <Bar
-              dataKey="previous"
-              fill="var(--color-previous)"
+              dataKey="total"
+              fill="var(--color-total)"
               radius={[6, 6, 0, 0]}
-              maxBarSize={32}
-            />
-            <Bar
-              dataKey="current"
-              fill="var(--color-current)"
-              radius={[6, 6, 0, 0]}
-              maxBarSize={32}
+              maxBarSize={45}
+              animationDuration={1200}
             />
             <ChartLegend
               content={<ChartLegendContent className="text-xs font-bold text-[#13222D] mt-6 flex justify-end gap-4" />}

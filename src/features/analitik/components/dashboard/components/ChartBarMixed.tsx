@@ -1,22 +1,31 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { Activity, Pill, Stethoscope, HeartPulse } from "lucide-react"
-import {
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card"
+import { Pill, Stethoscope, HeartPulse, TrendingUp } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
 import { analitikService } from '@/features/analitik/services/analitik.service'
 
 interface ChartItem {
   item: string
   value: number
   count: number
-  total: number
   type: "layanan" | "produk" | "laboratorium"
 }
+
+const typeConfig = {
+  layanan:      { icon: Stethoscope, color: '#1B9C90', bg: '#DFF6F2', label: 'Layanan' },
+  produk:       { icon: Pill,        color: '#8E59FF', bg: '#F0EBFF', label: 'Produk'  },
+  laboratorium: { icon: HeartPulse,  color: '#F2A618', bg: '#FFF9EB', label: 'Lab'     },
+}
+
+const barGradients = [
+  'linear-gradient(90deg, #1B9C90, #84DFD4)',
+  'linear-gradient(90deg, #8E59FF, #C4AEFF)',
+  'linear-gradient(90deg, #F2A618, #FFD580)',
+  'linear-gradient(90deg, #2297eb, #84C8FF)',
+  'linear-gradient(90deg, #E62C2C, #FF9595)',
+]
 
 export function ChartBarMixed() {
   const [chartData, setChartData] = useState<ChartItem[]>([])
@@ -30,184 +39,126 @@ export function ChartBarMixed() {
         const response = await analitikService.getProductAnalytics()
         const data = response.data
 
-        // Combine produk dan layanan data
-        const combinedData: ChartItem[] = []
+        const combined: ChartItem[] = [
+          ...data.produk_terlaris_top_10.slice(0, 5).map((p) => ({
+            item: p.nama_obat,
+            value: Math.round((p.jumlah_terjual / 150) * 100),
+            count: p.jumlah_terjual,
+            type: "produk" as const,
+          })),
+          ...data.pemeriksaan_layanan_terlaris.slice(0, 5).map((l) => ({
+            item: l.nama_layanan,
+            value: Math.round((l.jumlah_transaksi / 120) * 100),
+            count: l.jumlah_transaksi,
+            type: "layanan" as const,
+          })),
+        ]
 
-        // Add produk (top 5)
-        data.produk_terlaris_top_10.slice(0, 5).forEach((produk) => {
-          combinedData.push({
-            item: produk.nama_obat,
-            value: Math.round((produk.jumlah_terjual / 150) * 100), // Normalize based on max
-            count: produk.jumlah_terjual,
-            total: 2000,
-            type: "produk",
-          })
-        })
-
-        // Add layanan
-        data.pemeriksaan_layanan_terlaris.slice(0, 5).forEach((layanan) => {
-          combinedData.push({
-            item: layanan.nama_layanan,
-            value: Math.round((layanan.jumlah_transaksi / 120) * 100), // Normalize based on max
-            count: layanan.jumlah_transaksi,
-            total: 2000,
-            type: "layanan",
-          })
-        })
-
-        // Sort by value descending and take top items
-        const sortedData = combinedData.sort((a, b) => b.value - a.value).slice(0, 4)
-        setChartData(sortedData)
+        setChartData(combined.sort((a, b) => b.value - a.value).slice(0, 5))
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch data')
-        console.error('Error fetching product analytics:', err)
+        setError(err instanceof Error ? err.message : 'Gagal memuat data')
       } finally {
         setLoading(false)
       }
     }
-
     fetchData()
   }, [])
 
-  const getItemIcon = (type: string) => {
-    switch (type) {
-      case "layanan":
-        return <Stethoscope className="w-4 h-4 text-[#1B9C90]" />
-      case "produk":
-        return <Pill className="w-4 h-4 text-[#1B9C90]" />
-      case "laboratorium":
-        return <HeartPulse className="w-4 h-4 text-[#1B9C90]" />
-      default:
-        return <Activity className="w-4 h-4 text-[#1B9C90]" />
-    }
+  if (loading) {
+    return (
+      <div className="w-full h-full">
+        <div className="flex items-center gap-3 mb-6">
+          <Skeleton className="w-10 h-10 rounded-xl" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-56" />
+          </div>
+        </div>
+        <div className="space-y-5">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="space-y-2">
+              <div className="flex justify-between">
+                <Skeleton className="h-3.5 w-36" />
+                <Skeleton className="h-3.5 w-16" />
+              </div>
+              <Skeleton className="h-2 w-full rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden h-full w-full">
-        <CardHeader className="p-6 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#DFF6F2] flex items-center justify-center">
-              <Activity className="w-5 h-5 text-[#1B9C90]" />
-            </div>
-            <div>
-              <CardTitle className="text-base font-bold text-[#13222D]">
-                Produk & Layanan Terlaris
-              </CardTitle>
-              <CardDescription className="text-xs font-medium text-red-600 mt-0.5">
-                Error: {error}
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
+      <div className="w-full flex items-center justify-center h-40 text-xs text-red-500 font-bold">
+        ⚠️ {error}
       </div>
     )
   }
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden h-full w-full">
-        <CardHeader className="p-6 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#DFF6F2] flex items-center justify-center">
-              <Activity className="w-5 h-5 text-[#1B9C90]" />
-            </div>
-            <div>
-              <CardTitle className="text-base font-bold text-[#13222D]">
-                Produk & Layanan Terlaris
-              </CardTitle>
-              <CardDescription className="text-xs font-medium text-[#67737C] mt-0.5">
-                Memuat data...
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6 pt-0">
-          <div className="space-y-5">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="space-y-2">
-                <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-2.5 bg-gray-100 rounded animate-pulse"></div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </div>
-    )
-  }
+  const topItem = chartData[0]
 
   return (
-    <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden h-full w-full">
-      {/* HEADER WIDGET */}
-      <CardHeader className="p-6 pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-[#DFF6F2] flex items-center justify-center">
-            <Activity className="w-5 h-5 text-[#1B9C90]" />
-          </div>
-          <div>
-            <CardTitle className="text-base font-bold text-[#13222D]">
-              Produk & Layanan Terlaris
-            </CardTitle>
-            <CardDescription className="text-xs font-medium text-[#67737C] mt-0.5">
-              Berdasarkan total unit dan transaksi bulan ini
-            </CardDescription>
-          </div>
+    <div className="w-full h-full flex flex-col">
+      {/* HEADER */}
+      <div className="flex items-start gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-[#DFF6F2] flex items-center justify-center shrink-0">
+          <TrendingUp className="w-5 h-5 text-[#1B9C90]" />
         </div>
-      </CardHeader>
+        <div>
+          <h3 className="text-base font-bold text-[#13222D]">Produk & Layanan Terlaris</h3>
+          <p className="text-xs font-medium text-[#67737C] mt-0.5">
+            {topItem
+              ? `#1 — ${topItem.item} · ${topItem.count.toLocaleString('id-ID')} ${topItem.type === 'produk' ? 'unit' : 'transaksi'}`
+              : 'Berdasarkan akumulasi bulan ini'}
+          </p>
+        </div>
+      </div>
 
-      {/* VISUALIZATION LIST WITH PROGRESS INDICATORS */}
-      <CardContent className="p-6 pt-0">
-        <div className="space-y-5">
-          {chartData.map((data, index) => (
-            <div key={index} className="space-y-2 group">
-              
-              {/* Row Label, Count, and Percentage */}
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-3 min-w-0">
-                  {/* Rank Number Indicator */}
-                  <span className="text-xs font-black text-[#67737C]/40 min-w-[16px]">
-                    #{index + 1}
-                  </span>
-                  
-                  {/* Custom Minimalist Circle Icon */}
-                  <div className="w-8 h-8 rounded-lg bg-[#F9FEFC] border border-[#DFE6EB] flex items-center justify-center shrink-0 shadow-inner group-hover:border-[#1B9C90]/30 transition-colors">
-                    {getItemIcon(data.type)}
+      {/* PROGRESS LIST */}
+      <div className="space-y-4 flex-1">
+        {chartData.map((data, index) => {
+          const cfg = typeConfig[data.type] ?? typeConfig.layanan
+          const Icon = cfg.icon
+          return (
+            <div key={index}>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-[10px] font-black text-slate-300 w-4 shrink-0">#{index + 1}</span>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: cfg.bg }}>
+                    <Icon className="w-3.5 h-3.5" style={{ color: cfg.color }} />
                   </div>
-                  
-                  {/* Item Name */}
-                  <span className="font-bold text-[#13222D] truncate text-xs sm:text-sm">
-                    {data.item}
-                  </span>
+                  <span className="font-semibold text-[#13222D] truncate text-xs">{data.item}</span>
+                  <Badge
+                    className="text-[9px] font-bold border-none shadow-none uppercase px-1.5 py-0 shrink-0 hidden sm:inline-flex"
+                    style={{ backgroundColor: cfg.bg, color: cfg.color }}
+                  >
+                    {cfg.label}
+                  </Badge>
                 </div>
-
-                {/* Performance Metrics */}
-                <div className="text-right shrink-0 pl-4">
-                  <span className="font-black text-[#13222D] text-xs sm:text-sm">
-                    {data.value}%
-                  </span>
-                  <span className="text-[11px] font-semibold text-[#67737C] ml-1.5">
-                    ({data.count.toLocaleString('id-ID')} {data.type === 'produk' ? 'unit' : 'transaksi'})
-                  </span>
+                <div className="text-right shrink-0 pl-3">
+                  <span className="font-black text-[#13222D] text-xs">{data.value}%</span>
+                  <span className="text-[10px] font-medium text-[#67737C] ml-1">({data.count.toLocaleString('id-ID')})</span>
                 </div>
               </div>
 
-              {/* Linear Dynamic Progress Bar */}
-              <div className="w-full h-2.5 bg-[#EFF4F8] rounded-full overflow-hidden relative">
-                <div 
-                  className="h-full bg-[#1B9C90] rounded-full transition-all duration-500 ease-out shadow-sm"
-                  style={{ width: `${data.value}%` }}
+              {/* Gradient Progress Bar */}
+              <div className="w-full h-3.5 bg-[#F4F7F9] rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${Math.min(data.value, 100)}%`, background: barGradients[index] }}
                 />
               </div>
-
             </div>
-          ))}
-        </div>
-      </CardContent>
+          )
+        })}
+      </div>
 
-      {/* FOOTER WIDGET STATISTICS SUMMARY */}
-      <div className="px-6 py-10 bg-[#F9FEFC] border-t border-[#DFE6EB] flex items-center justify-between text-[11px] font-bold text-[#67737C] uppercase tracking-wider">
-        <span>Metrik Akumulasi</span>
-        <span className="text-[#13222D]">Target: 2.000 Transaksi</span>
+      {/* FOOTER */}
+      <div className="mt-6 pt-4 border-t border-[#F4F7F9] flex items-center justify-between text-[10px] font-bold text-[#67737C] uppercase tracking-wider">
+        <span>Top {chartData.length} Item</span>
+        <span className="text-[#1B9C90]">Akumulasi Bulan Ini</span>
       </div>
     </div>
   )

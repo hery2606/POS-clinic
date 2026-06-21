@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { analitikService } from '../../services/analitik.service';
 import { useQuery } from '@tanstack/react-query';
@@ -140,8 +141,8 @@ export const PatientListTable = () => {
       </div>
 
       <div className="overflow-x-auto min-h-[200px] relative">
-        {/* Loading overlay halus untuk menandakan re-fetching background server-side */}
-        {(isLoading || isFetching) && (
+        {/* Loading overlay halus untuk menandakan re-fetching background saat pindah halaman/filter */}
+        {isFetching && !isLoading && (
           <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] flex items-center justify-center z-10 transition-all">
             <Loader2 className="w-8 h-8 text-[#1B9C90] animate-spin" />
           </div>
@@ -158,7 +159,34 @@ export const PatientListTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentPatients.length === 0 && !isLoading ? (
+            {isLoading ? (
+              // 🟢 PERBAIKAN: Skeleton Loading agar seragam dengan komponen lain
+              Array.from({ length: 5 }).map((_, idx) => (
+                <TableRow key={`skeleton-${idx}`} className="border-b border-[#DFE6EB] transition-colors">
+                  <TableCell className="pl-8 py-4">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-9 h-9 rounded-full shrink-0" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4 text-left">
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell className="py-4 text-left">
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-3.5 h-3.5 text-[#67737C] opacity-30" />
+                      <Skeleton className="h-4 w-28" />
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center py-4">
+                    <Skeleton className="h-5 w-16 mx-auto rounded-full" />
+                  </TableCell>
+                  <TableCell className="pr-8 text-center py-4">
+                    <Skeleton className="h-8 w-16 mx-auto rounded-xl" />
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : currentPatients.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-10 text-xs font-bold text-[#67737C]">
                   Tidak ada data pasien ditemukan.

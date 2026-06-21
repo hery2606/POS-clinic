@@ -1,5 +1,4 @@
 import axios from "axios";
-import { initializeRmeAuth } from "./rmeClient";
 import { useAuthStore } from "@/features/auth/store/authStore";
 
 const getAiBaseUrl = () => {
@@ -14,10 +13,10 @@ export const aiClient = axios.create({
   },
 });
 
-// Add RME token from Zustand store to request headers
+// Add Internal JWT (authToken) from Zustand store to request headers
 aiClient.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().rmeToken;
+    const token = useAuthStore.getState().authToken; 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -32,25 +31,15 @@ aiClient.interceptors.request.use(
 aiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
-      console.warn("⚠️ AI Token (RME) expired atau invalid, melakukan re-login...");
-      useAuthStore.getState().setRmeToken(null);
+    const originalRequest = error.config;
+    if (originalRequest && error.response?.status === 401 && !(originalRequest as any)._retry) {
+      (originalRequest as any)._retry = true;
+      console.warn("⚠️ AI Token (Auth JWT) expired atau invalid.");
       
-      try {
-        await initializeRmeAuth();
-        // Retry request original dengan token baru
-        const originalRequest = error.config;
-        const token = useAuthStore.getState().rmeToken;
-        if (token) {
-          if (!originalRequest.headers) {
-            originalRequest.headers = {};
-          }
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return aiClient(originalRequest);
-        }
-      } catch (loginError) {
-        console.error("❌ Gagal melakukan re-autentikasi RME untuk AI:", loginError);
-      }
+      // Karena kita menggunakan JWT Login Utama, jika token mati/invalid, 
+      // kita cukup menghapus token agar user diarahkan kembali ke halaman Login.
+      useAuthStore.getState().clearTokens();
+      window.location.href = "/auth/login";
     }
     return Promise.reject(error);
   }

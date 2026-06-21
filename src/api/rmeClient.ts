@@ -28,13 +28,33 @@ rmeClient.interceptors.request.use(
 // Interceptor response untuk handle 401 (token expired)
 rmeClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      console.warn("⚠️ RME Token expired atau invalid, menghapus dari store");
+  async (error) => {
+    const originalRequest = error.config;
+    
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true;
+      console.warn("⚠️ RME Token expired atau invalid, mencoba re-autentikasi otomatis...");
+      
+      // Hapus token lama yang sudah kadaluarsa
       useAuthStore.getState().setRmeToken(null);
-      // Jangan redirect ke login, cukup clear token
-      // Component akan trigger ulang initializeRmeAuth saat melakukan request berikutnya
+      
+      try {
+        // Coba login otomatis kembali
+        await initializeRmeAuth();
+        
+        // Ambil token baru dari store
+        const newToken = useAuthStore.getState().rmeToken;
+        if (newToken) {
+          console.log("🔄 Melanjutkan request yang sempat gagal (Auto-Retry)...");
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return rmeClient(originalRequest);
+        }
+      } catch (retryError) {
+        console.error("❌ Auto-relogin RME gagal secara permanen.");
+        return Promise.reject(retryError);
+      }
     }
+    
     return Promise.reject(error);
   }
 );

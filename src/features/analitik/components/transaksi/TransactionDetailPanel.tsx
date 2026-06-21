@@ -54,6 +54,35 @@ export function TransactionDetailPanel({
   const billing = billingResponse?.data;
   const paymentHistory = paymentResponse?.data;
 
+  const items = Array.isArray(billing?.detail) ? billing.detail : [];
+  const payments = Array.isArray(paymentHistory?.payments) ? paymentHistory.payments : [];
+
+  // 🟢 LOGIKA PRO MUTASI TERMIN: Membagi list payment berdasarkan status pending
+  const { initialPayments, supplementalPayments } = useMemo(() => {
+    if (!payments || payments.length === 0) {
+      return { initialPayments: [], supplementalPayments: [] };
+    }
+
+    // Cari index pertama di mana ada metode pembayaran yang statusnya PENDING
+    const pendingIndex = payments.findIndex(
+      (pm: any) => pm?.status?.toUpperCase() === 'PENDING' || pm?.status?.toUpperCase() === 'PENDING_PAYMENT'
+    );
+
+    // Jika ditemukan status PENDING dan ada transaksi pelunasan baru di bawahnya
+    if (pendingIndex !== -1 && pendingIndex < payments.length - 1) {
+      return {
+        initialPayments: payments.slice(0, pendingIndex + 1),
+        supplementalPayments: payments.slice(pendingIndex + 1)
+      };
+    }
+
+    // Jika berjalan normal/langsung lunas tanpa pending menggantung
+    return {
+      initialPayments: payments,
+      supplementalPayments: []
+    };
+  }, [payments]);
+
   // 1. Placeholder jika belum memilih transaksi
   if (!transactionId) {
     return (
@@ -96,34 +125,7 @@ export function TransactionDetailPanel({
     );
   }
 
-  const items = billing?.detail || [];
-  const payments = paymentHistory?.payments || [];
 
-  // 🟢 LOGIKA PRO MUTASI TERMIN: Membagi list payment berdasarkan status pending
-  const { initialPayments, supplementalPayments } = useMemo(() => {
-    if (!payments || payments.length === 0) {
-      return { initialPayments: [], supplementalPayments: [] };
-    }
-
-    // Cari index pertama di mana ada metode pembayaran yang statusnya PENDING
-    const pendingIndex = payments.findIndex(
-      (pm: any) => pm.status?.toUpperCase() === 'PENDING' || pm.status?.toUpperCase() === 'PENDING_PAYMENT'
-    );
-
-    // Jika ditemukan status PENDING dan ada transaksi pelunasan baru di bawahnya
-    if (pendingIndex !== -1 && pendingIndex < payments.length - 1) {
-      return {
-        initialPayments: payments.slice(0, pendingIndex + 1),
-        supplementalPayments: payments.slice(pendingIndex + 1)
-      };
-    }
-
-    // Jika berjalan normal/langsung lunas tanpa pending menggantung
-    return {
-      initialPayments: payments,
-      supplementalPayments: []
-    };
-  }, [payments]);
 
   const mapStatusLabel = (status: string) => {
     switch (status) {
@@ -156,7 +158,7 @@ export function TransactionDetailPanel({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-[#13222D] truncate max-w-[70%]">
-            {billing?.noInvoice || `TRX-${transactionId.slice(0, 8).toUpperCase()}`}
+            {billing?.noInvoice || `TRX-${String(transactionId).slice(0, 8).toUpperCase()}`}
           </h2>
           <Badge className={cn(
             "border-none shadow-none px-2.5 py-0.5 text-xs font-bold rounded-full uppercase",
@@ -256,15 +258,15 @@ export function TransactionDetailPanel({
                 <div key={pm.id || idx} className="flex justify-between items-center text-xs text-[#13222D] bg-white p-2.5 rounded-lg border border-slate-100">
                   <div className="flex items-center gap-1.5 font-bold">
                     <QrCode className="w-3.5 h-3.5 text-[#1B9C90]" />
-                    <span className="uppercase">{pm.method}</span>
-                    {pm.isBpjsCoverage && (
+                    <span className="uppercase">{pm?.method || "-"}</span>
+                    {pm?.isBpjsCoverage && (
                       <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold uppercase">
                         BPJS
                       </span>
                     )}
                   </div>
                   <div className="text-right">
-                    <span className="font-bold block">Rp {pm.amount.toLocaleString("id-ID")}</span>
+                    <span className="font-bold block">Rp {Number(pm?.amount || 0).toLocaleString("id-ID")}</span>
                     <span className={cn(
                       "block text-[9px] font-black uppercase tracking-wider",
                       isItemPending ? "text-orange-500" : "text-[#1B9C90]"
@@ -296,13 +298,13 @@ export function TransactionDetailPanel({
                   <div className="flex items-center gap-1 font-medium text-slate-600">
                     <CornerDownRight className="w-3.5 h-3.5 text-orange-500 shrink-0" />
                     <span>Pelunasan via </span>
-                    <span className="font-black text-slate-800 uppercase tracking-wide">{pm.method}</span>
+                    <span className="font-black text-slate-800 uppercase tracking-wide">{pm?.method || "-"}</span>
                   </div>
                   <div className="text-right flex items-center gap-2">
                     <Badge className="bg-emerald-50 text-emerald-700 font-extrabold text-[8px] h-4 rounded px-1 border border-emerald-200/50 shadow-none uppercase">
                       LUNAS
                     </Badge>
-                    <span className="font-black text-slate-800">Rp {pm.amount.toLocaleString("id-ID")}</span>
+                    <span className="font-black text-slate-800">Rp {Number(pm?.amount || 0).toLocaleString("id-ID")}</span>
                   </div>
                 </div>
               ))}

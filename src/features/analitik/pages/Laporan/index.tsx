@@ -25,7 +25,7 @@ const tabs = ["Pendapatan", "Piutang"];
 
 export const LaporanPage = () => {
   const [selectedTab, setSelectedTab] = useState<string>("Pendapatan");
-  const [selectedPeriod, setSelectedPeriod] = useState<string>("2026-05");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>(periodOptions[0]?.value || "2026-06");
 
   // Fetch pending invoices & revenue trend
   const { data: pendingResponse } = useQuery({
@@ -208,7 +208,7 @@ export const LaporanPage = () => {
         transactionsToExport = apiData.daftar_transaksi_belum_lunas.map(item => ({
           no_invoice: item.no_invoice,
           pasien: item.pasien,
-          total_tagihan: item.total_tagihan,
+          total_tagihan: item.sisa_tagihan ?? item.total_tagihan ?? 0,
           hari_belum_lunas: item.hari_belum_lunas,
           status_reminder: item.status_reminder || "Belum Dikirim",
           wa_number: "081234567890"
@@ -475,13 +475,13 @@ export const LaporanPage = () => {
             {/* Right Column: Breakdown Card */}
             <div className="lg:col-span-4 flex w-full">
               <div className="w-full flex *:w-full *:h-full *:max-w-none">
-                <FinancialBreakdownCard activeTab="Pendapatan" />
+                <FinancialBreakdownCard activeTab="Pendapatan" period={selectedPeriod} />
               </div>
             </div>
           </div>
 
           <div className="w-full pt-2">
-            <FinancialDetailTable activeTab="Pendapatan" />
+            <FinancialDetailTable activeTab="Pendapatan" period={selectedPeriod} />
           </div>
         </div>
       ) : (

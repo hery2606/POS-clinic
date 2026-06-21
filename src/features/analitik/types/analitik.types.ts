@@ -1,31 +1,4 @@
-export interface DailyTrendData {
-  tanggal: string;
-  total: number;
-}
-
-export interface MonthlyTrendData {
-  bulan: string;
-  total: number;
-}
-
-export interface ComparisonData {
-  bulan_ini: number;
-  bulan_lalu: number;
-  persentase_kenaikan: number;
-  status: string;
-}
-
-export interface RevenueTrendResponse {
-  status: string;
-  data: {
-    total_pendapatan_hari_ini: number;
-    total_pendapatan_minggu_ini: number;
-    total_pendapatan_bulan_ini: number;
-    perbandingan_bulan_ini_vs_lalu: ComparisonData;
-    grafik_tren_harian: DailyTrendData[];
-    grafik_tren_bulanan: MonthlyTrendData[];
-  };
-}
+export * from "./revenue.types";
 
 export interface CashflowSummaryResponse {
   status: string;
@@ -50,26 +23,7 @@ export interface FinancialSummaryResponse {
   total_completed_transactions: number;
 }
 
-export interface PaymentMethodData {
-  metode: string;
-  persentase: number;
-  total_nominal: number;
-}
-
-export interface TrendMethodData {
-  bulan: string;
-  qris: number;
-  cash: number;
-  debit: number;
-}
-
-export interface PaymentsAnalyticsResponse {
-  status: string;
-  data: {
-    persentase_metode: PaymentMethodData[];
-    tren_metode_favorit: TrendMethodData[];
-  };
-}
+export * from "./payments.types";
 
 export interface PasienLoyalData {
   id_pasien: string;

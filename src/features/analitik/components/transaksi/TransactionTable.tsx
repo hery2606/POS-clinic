@@ -53,7 +53,7 @@ export function TransactionTable({ filters, onSelectTransaction, selectedId }: T
     if (filters.search) {
       const q = filters.search.toLowerCase().trim();
       result = result.filter(tx => 
-        tx.id.toLowerCase().includes(q) || 
+        String(tx.id).toLowerCase().includes(q) || 
         (tx.patient?.name && tx.patient.name.toLowerCase().includes(q))
       );
     }
@@ -204,8 +204,8 @@ export function TransactionTable({ filters, onSelectTransaction, selectedId }: T
                       selectedId === tx.id && "bg-[#F9FEFC] font-semibold border-l-4 border-l-[#1B9C90]"
                     )}
                   >
-                    <TableCell className="pl-6 py-4 text-xs font-bold text-[#13222D] text-left truncate" title={tx.id}>
-                      {tx.id.slice(0, 8).toUpperCase()}...
+                    <TableCell className="pl-6 py-4 text-xs font-bold text-[#13222D] text-left truncate" title={String(tx.id)}>
+                      {String(tx.id).slice(0, 8).toUpperCase()}...
                     </TableCell>
                     <TableCell className="py-4 text-sm font-semibold text-[#13222D] text-left truncate">
                       {tx.patient?.name || "Pasien Umum"}

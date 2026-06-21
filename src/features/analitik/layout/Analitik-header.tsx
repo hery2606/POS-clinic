@@ -60,13 +60,14 @@ export const AnalitikHeader = () => {
           </p>
         </div>
 
-        {!isLaporanPage && (
+        {isDashboardPage && (
           <div className="flex items-center gap-3 w-full sm:w-auto relative">
             <div className="relative">
               <Button 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="rounded-xl h-11 px-4 border-[#DFE6EB] text-[#13222D] font-bold bg-white hover:bg-[#EFF4F8] flex items-center gap-2 shadow-none border cursor-pointer transition-all text-xs"
-              >
+                >
+             
                 <CalendarIcon className="w-4 h-4 text-[#67737C]" />
                 <span>{getPeriodLabel()}</span>
                 <ChevronDown className={`w-4 h-4 text-[#67737C] transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`} />

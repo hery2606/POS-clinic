@@ -10,6 +10,7 @@ export type BreakdownTabType = "Pendapatan" | "Pengeluaran" | "Laba Rugi" | "Ner
 
 interface FinancialBreakdownCardProps {
   activeTab: BreakdownTabType;
+  period?: string;
 }
 
 export interface BreakdownData {
@@ -102,7 +103,7 @@ const formatCurrency = (amount: number): string => {
   return `Rp ${amount}`;
 };
 
-export function FinancialBreakdownCard({ activeTab }: FinancialBreakdownCardProps) {
+export function FinancialBreakdownCard({ activeTab, period }: FinancialBreakdownCardProps) {
   // Fetch cashflow and product data
   const cashflowQuery = useQuery({
     queryKey: ["cashflowSummary"],
@@ -117,6 +118,16 @@ export function FinancialBreakdownCard({ activeTab }: FinancialBreakdownCardProp
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
+
+  const revenueQuery = useQuery({
+    queryKey: ["revenueTrendData"],
+    queryFn: () => analitikService.getRevenueTrend(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  const activePeriod = period || todayStr;
 
   // Generate dynamic data for Arus Kas tab
   const dynamicArusKasData = useMemo(() => {
@@ -146,8 +157,69 @@ export function FinancialBreakdownCard({ activeTab }: FinancialBreakdownCardProp
     };
   }, [cashflowQuery.data]);
 
-  // Generate dynamic data for Pendapatan tab using products
+  // Generate dynamic data for Pendapatan tab using products or table_rincian_harian
   const dynamicPendapatanData = useMemo(() => {
+    // Attempt to calculate from table_rincian_harian first if available
+    if (revenueQuery.data?.data?.tabel_rincian_harian) {
+      const rincianHarian = revenueQuery.data.data.tabel_rincian_harian;
+      const matchedDays = rincianHarian.filter(
+        (item) => item.tanggal && item.tanggal.startsWith(activePeriod)
+      );
+
+      if (matchedDays.length > 0) {
+        const totalLayanan = matchedDays.reduce((sum, item) => sum + (item.pendapatan_layanan || 0), 0);
+        const totalObat = matchedDays.reduce((sum, item) => sum + (item.pendapatan_obat || 0), 0);
+        const total = totalLayanan + totalObat;
+
+        const persenLayanan = total > 0 ? Math.round((totalLayanan / total) * 100) : 65;
+        const persenFarmasi = 100 - persenLayanan;
+
+        // Dynamic contributors based on top daily revenues
+        const sortedDays = [...matchedDays].sort((a, b) => b.total_pendapatan - a.total_pendapatan);
+        const contributors = sortedDays.slice(0, 3).map((day) => {
+          const dateObj = new Date(day.tanggal);
+          const formattedDate = dateObj.toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+          });
+          return {
+            name: `Pendapatan Harian (${formattedDate})`,
+            amount: formatCurrency(day.total_pendapatan)
+          };
+        });
+
+        return {
+          title: "Breakdown Pendapatan",
+          subtitle: "Berdasarkan Kategori",
+          categories: [
+            { name: "Layanan Medis", percentage: persenLayanan, color: "#1B9C90" },
+            { name: "Farmasi & Obat", percentage: persenFarmasi, color: "#84DFD4" },
+          ],
+          contributorsTitle: "Top 3 Hari Teraktif",
+          contributors: contributors.length > 0 ? contributors : [
+            { name: "Layanan Medis (Akumulasi)", amount: formatCurrency(totalLayanan) },
+            { name: "Farmasi & Obat (Akumulasi)", amount: formatCurrency(totalObat) }
+          ],
+        };
+      } else if (activePeriod !== todayStr) {
+        // PERIODE YANG TIDAK MEMILIKI DATA: Paksa menjadi 0 agar akurat dengan filter
+        return {
+          title: "Breakdown Pendapatan",
+          subtitle: "Data Tidak Tersedia",
+          categories: [
+            { name: "Layanan Medis", percentage: 0, color: "#1B9C90" },
+            { name: "Farmasi & Obat", percentage: 0, color: "#84DFD4" },
+          ],
+          contributorsTitle: "Top Kontributor",
+          contributors: [
+            { name: "Tidak ada transaksi periode ini", amount: "Rp 0" }
+          ],
+        };
+      }
+    }
+
+    // Default fallback to static config or products query
     if (!productsQuery.data?.data) return staticBreakdownConfigs.Pendapatan;
 
     const products = productsQuery.data.data;
@@ -176,7 +248,7 @@ export function FinancialBreakdownCard({ activeTab }: FinancialBreakdownCardProp
         ...(topProducts.length > 1 ? [{ name: topProducts[1].nama_obat, amount: formatCurrency(topProducts[1].pendapatan_produk) }] : []),
       ].slice(0, 3),
     };
-  }, [productsQuery.data]);
+  }, [revenueQuery.data, productsQuery.data, activePeriod]);
 
   // Map active tab to data source
   const getDataForTab = (): BreakdownData => {

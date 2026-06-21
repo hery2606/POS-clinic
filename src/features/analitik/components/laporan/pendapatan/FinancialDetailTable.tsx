@@ -20,6 +20,7 @@ import { analitikService } from "../../../services/analitik.service";
 interface FinancialDetailTableProps {
   activeTab: BreakdownTabType;
   onViewAllClick?: () => void;
+  period?: string;
 }
 
 export const tableConfigs: Record<BreakdownTabType, { title: string; headers: string[]; widths: string[] }> = {
@@ -93,7 +94,7 @@ const getTodayDate = (): string => {
   return `${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
 };
 
-export function FinancialDetailTable({ activeTab, onViewAllClick }: FinancialDetailTableProps) {
+export function FinancialDetailTable({ activeTab, onViewAllClick, period }: FinancialDetailTableProps) {
   // Fetch cashflow data only for Arus Kas tab
   const cashflowQuery = useQuery({
     queryKey: ["cashflowSummary"],
@@ -102,6 +103,18 @@ export function FinancialDetailTable({ activeTab, onViewAllClick }: FinancialDet
     gcTime: 10 * 60 * 1000,
     enabled: activeTab === "Arus Kas",
   });
+
+  // Fetch revenue trend data only for Pendapatan tab
+  const revenueQuery = useQuery({
+    queryKey: ["revenueTrendData"],
+    queryFn: () => analitikService.getRevenueTrend(),
+    staleTime: 5 * 60 * 1000,
+    enabled: activeTab === "Pendapatan",
+  });
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  const activePeriod = period || todayStr;
 
   // Generate dynamic data for Arus Kas tab
   const dynamicArusKasData = useMemo(() => {
@@ -131,8 +144,52 @@ export function FinancialDetailTable({ activeTab, onViewAllClick }: FinancialDet
     ];
   }, [cashflowQuery.data]);
 
+  // Generate dynamic data for Pendapatan tab using table_rincian_harian
+  const dynamicPendapatanData = useMemo(() => {
+    if (!revenueQuery.data?.data?.tabel_rincian_harian) {
+      return dummyTableData.Pendapatan;
+    }
+
+    const rincianHarian = revenueQuery.data.data.tabel_rincian_harian;
+    const matchedDays = rincianHarian.filter(
+      (item) => item.tanggal && item.tanggal.startsWith(activePeriod)
+    );
+
+    if (matchedDays.length === 0) {
+      if (activePeriod === todayStr) {
+        return dummyTableData.Pendapatan;
+      }
+      return []; // Return empty array if no data for past/future selected period
+    }
+
+    // Sort matched days in descending order (latest first) to display in the table
+    const sortedMatchedDays = [...matchedDays].sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+
+    return sortedMatchedDays.map((item, index) => {
+      const dateObj = new Date(item.tanggal);
+      const formattedDate = dateObj.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      });
+
+      return {
+        col1: formattedDate,
+        col2: item.total_transaksi || 0,
+        col3: new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(item.pendapatan_layanan || 0),
+        col4: new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(item.pendapatan_obat || 0),
+        col5: new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(item.total_pendapatan || 0),
+        isHighlight: index === 0, // Highlight the latest record
+      };
+    });
+  }, [revenueQuery.data, activePeriod]);
+
   const config = tableConfigs[activeTab] || tableConfigs.Pendapatan;
-  const rows = activeTab === "Arus Kas" ? dynamicArusKasData : dummyTableData[activeTab] || dummyTableData.Pendapatan;
+  const rows = activeTab === "Arus Kas"
+    ? dynamicArusKasData
+    : activeTab === "Pendapatan"
+    ? dynamicPendapatanData
+    : dummyTableData[activeTab] || dummyTableData.Pendapatan;
 
   return (
     <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full flex flex-col justify-between">

@@ -92,31 +92,28 @@ export const TransactionDetail = () => {
     if (paymentsList.length === 0) {
       return { initialPayments: [], supplementalPayments: [] };
     }
-
-    // Cari index pembayaran pertama yang statusnya PENDING
     const pendingIndex = paymentsList.findIndex(
       (p: any) => p.status?.toUpperCase() === 'PENDING' || p.status?.toUpperCase() === 'PENDING_PAYMENT'
     );
-
-    // Jika status pending ditemukan dan di bawahnya masih ada entri transaksi pelunasan baru
     if (pendingIndex !== -1 && pendingIndex < paymentsList.length - 1) {
       return {
         initialPayments: paymentsList.slice(0, pendingIndex + 1),
         supplementalPayments: paymentsList.slice(pendingIndex + 1),
       };
     }
-
-    return {
-      initialPayments: paymentsList,
-      supplementalPayments: [],
-    };
+    return { initialPayments: paymentsList, supplementalPayments: [] };
   }, [serverData?.payments]);
 
-  if (isLoading) {
-    return <TransactionDetailSkeleton />;
-  }
+  // 🟢 PINDAHAN KE SINI: statusConfig harus di atas semua conditional return!
+  const statusConfig = useMemo(() => {
+    const status = serverData?.status?.toUpperCase();
+    if (status === 'LUNAS') return { bg: '#DFF6F2', text: '#1B9C90', label: 'SUKSES / LUNAS', icon: CheckCircle2 };
+    if (status === 'PARTIAL') return { bg: '#FFF2E6', text: '#E27A12', label: 'BAYAR SEBAGIAN (PARTIAL)', icon: Activity };
+    return { bg: '#FFF9EB', text: '#F2A618', label: 'PENDING PEMBAYARAN', icon: AlertCircle };
+  }, [serverData?.status]);
 
-  // SINKRONISASI AKSES: Pastikan membaca historyResponse.data dengan aman
+  if (isLoading) return <TransactionDetailSkeleton />;
+
   if (isError || !historyResponse || !serverData) {
     return (
       <div className="bg-white p-6 rounded-[24px] border border-[#DFE6EB] shadow-sm flex flex-col items-center justify-center text-center text-slate-400 text-xs font-medium h-60 mt-12">
@@ -128,32 +125,6 @@ export const TransactionDetail = () => {
 
   const totalTagihanNetto = serverData.total || 0;
   const canPayment = serverData.status?.toUpperCase() === 'PENDING_PAYMENT' || serverData.status?.toUpperCase() === 'PARTIAL';
-
-  const statusConfig = useMemo(() => {
-    const status = serverData.status?.toUpperCase();
-    if (status === 'LUNAS') {
-      return {
-        bg: '#DFF6F2',
-        text: '#1B9C90',
-        label: 'SUKSES / LUNAS',
-        icon: CheckCircle2
-      };
-    } else if (status === 'PARTIAL') {
-      return {
-        bg: '#FFF2E6',
-        text: '#E27A12',
-        label: 'BAYAR SEBAGIAN (PARTIAL)',
-        icon: Activity
-      };
-    } else {
-      return {
-        bg: '#FFF9EB',
-        text: '#F2A618',
-        label: 'PENDING PEMBAYARAN',
-        icon: AlertCircle
-      };
-    }
-  }, [serverData.status]);
 
   const txIdVal = serverData.transactionId;
   const remainingAmountVal = serverData.remainingAmount;
