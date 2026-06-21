@@ -104,11 +104,10 @@ export const initializeWarehouseAuth = async () => {
     }
   } catch (error: any) {
     console.error("❌ Gagal melakukan otomatisasi login admin Warehouse");
+    console.error("📧 Email digunakan:", import.meta.env.VITE_WAREHOUSE_ADMIN_EMAIL ?? "undefined (ENV tidak terbaca!)");
     if (error.response) {
-      console.error(`Status: ${error.response.status} ${error.response.statusText}`);
-      console.error("Detail error:", error.response.data);
-    } else if (error.request) {
-      console.error("Tidak ada respon dari server:", error.request);
+      console.error(`Status: ${error.response.status}`);
+      console.error("Detail error:", JSON.stringify(error.response.data));
     } else {
       console.error("Error:", error.message);
     }
