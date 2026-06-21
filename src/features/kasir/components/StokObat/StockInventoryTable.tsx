@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   Search, 
   Pill, 
@@ -25,44 +25,27 @@ import { cn } from "@/lib/utils";
 import { useRightPanel } from "../../context/right-panel-context";
 import { InventoryFilter } from "./InventoryFilter";
 import type { FilterState } from "./InventoryFilter";
-// IMPORT WAREHOUSE SERVICE & REACT QUERY
 import { useQuery } from '@tanstack/react-query';
 import { warehouseService } from '../../services/warehouse.service';
-import { initializeWarehouseAuth } from '@/api/warehouseClient';
 
 export const StockInventoryTable = () => {
   const { setContent } = useRightPanel();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const authInitialized = useRef(false);
-  
+
   const [filters, setFilters] = useState<FilterState>({
     categories: [],
     statuses: [],
     types: [],
   });
 
-  // Initialize warehouse auth ketika component di-mount
-  // Tunggu sampai selesai baru izinkan React Query fetch
-  useEffect(() => {
-    if (authInitialized.current) return;
-    authInitialized.current = true;
-    
-    initializeWarehouseAuth().finally(() => {
-      setIsAuthReady(true);
-    });
-  }, []);
-
   // FETCH DATA DARI WAREHOUSE SERVICE DENGAN REACT QUERY
-  // enabled: false sampai auth selesai agar token sudah ada di localStorage
   const { data: medicinesResponse, isLoading, error } = useQuery({
     queryKey: ['warehouseMedicines'],
     queryFn: () => warehouseService.getMedicinesList(),
-    enabled: isAuthReady,      // Tunggu auth selesai dulu
-    staleTime: 5 * 60 * 1000, // 5 menit
-    gcTime: 10 * 60 * 1000,   // 10 menit
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   // Extract data array dari response
