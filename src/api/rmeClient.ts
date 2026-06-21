@@ -4,8 +4,17 @@ import { secureStorage } from "@/features/auth/store/authStore";
 // ==========================================
 // 1. INSTANCE UNTUK REKAM MEDIS (RME)
 // ==========================================
+// Di production (Vercel), gunakan path /proxy/rme agar Vercel forward ke backend (bypass CORS)
+// Di development (localhost), langsung ke URL backend
+const getRmeBaseUrl = () => {
+  const isDev = import.meta.env.DEV;
+  return isDev
+    ? import.meta.env.VITE_API_RME_URL
+    : '/proxy/rme';
+};
+
 export const rmeClient = axios.create({
-  baseURL: import.meta.env.VITE_API_RME_URL,
+  baseURL: getRmeBaseUrl(),
   headers: {
     "Content-Type": "application/json",
   },
@@ -73,7 +82,8 @@ export const initializeRmeAuth = async () => {
     console.log("🔄 Mencoba mengautentikasi Admin ke RME...");
     
     // PERBAIKAN UTAMA: Mengubah properti 'email' menjadi 'identifier' sesuai request backend
-    const response = await axios.post(`${import.meta.env.VITE_API_RME_URL}/api/v1/auth/login`, {
+    const baseUrl = getRmeBaseUrl();
+    const response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
       identifier: import.meta.env.VITE_RME_ADMIN_EMAIL, 
       password: import.meta.env.VITE_RME_ADMIN_PASSWORD,
     });
