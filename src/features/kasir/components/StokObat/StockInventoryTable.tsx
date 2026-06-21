@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Search, 
   Pill, 
@@ -35,6 +35,8 @@ export const StockInventoryTable = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const authInitialized = useRef(false);
   
   const [filters, setFilters] = useState<FilterState>({
     categories: [],
@@ -43,14 +45,22 @@ export const StockInventoryTable = () => {
   });
 
   // Initialize warehouse auth ketika component di-mount
+  // Tunggu sampai selesai baru izinkan React Query fetch
   useEffect(() => {
-    initializeWarehouseAuth();
+    if (authInitialized.current) return;
+    authInitialized.current = true;
+    
+    initializeWarehouseAuth().finally(() => {
+      setIsAuthReady(true);
+    });
   }, []);
 
   // FETCH DATA DARI WAREHOUSE SERVICE DENGAN REACT QUERY
+  // enabled: false sampai auth selesai agar token sudah ada di localStorage
   const { data: medicinesResponse, isLoading, error } = useQuery({
     queryKey: ['warehouseMedicines'],
     queryFn: () => warehouseService.getMedicinesList(),
+    enabled: isAuthReady,      // Tunggu auth selesai dulu
     staleTime: 5 * 60 * 1000, // 5 menit
     gcTime: 10 * 60 * 1000,   // 10 menit
   });
