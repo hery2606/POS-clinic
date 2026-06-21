@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useAuthStore } from "@/features/auth/store/authStore";
+import { secureStorage } from "@/features/auth/store/authStore";
 
 const getAiBaseUrl = () => {
   const url = import.meta.env.VITE_API_AI_URL || "";
@@ -13,10 +13,10 @@ export const aiClient = axios.create({
   },
 });
 
-// Add Internal JWT (authToken) from Zustand store to request headers
+// Add Internal JWT (authToken) from localStorage via secureStorage
 aiClient.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().authToken; 
+    const token = secureStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -36,9 +36,8 @@ aiClient.interceptors.response.use(
       (originalRequest as any)._retry = true;
       console.warn("⚠️ AI Token (Auth JWT) expired atau invalid.");
       
-      // Karena kita menggunakan JWT Login Utama, jika token mati/invalid, 
-      // kita cukup menghapus token agar user diarahkan kembali ke halaman Login.
-      useAuthStore.getState().clearTokens();
+      // Hapus token dari localStorage agar user diarahkan kembali ke halaman Login.
+      secureStorage.removeItem('authToken');
       window.location.href = "/auth/login";
     }
     return Promise.reject(error);

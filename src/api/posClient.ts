@@ -1,5 +1,5 @@
 import axios from 'axios';
-import AuthService from "@/features/auth/service/auth.service";
+import { secureStorage } from "@/features/auth/store/authStore";
 
 
 export const posClient = axios.create({
@@ -11,10 +11,10 @@ export const posClient = axios.create({
   },
 });
 
-// Interceptor otomatis menyisipkan Token JWT Kasir dari memori Zustand
+// Interceptor otomatis menyisipkan Token JWT Kasir dari localStorage
 posClient.interceptors.request.use(
   (config) => {
-    const token = AuthService.getToken(); // Ambil token dari RAM state
+    const token = secureStorage.getItem('authToken'); // Ambil token dari localStorage
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }

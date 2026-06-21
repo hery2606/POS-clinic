@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useAuthStore } from "@/features/auth/store/authStore";
+import { secureStorage } from "@/features/auth/store/authStore";
 
 // ==========================================
 // 1. INSTANCE UNTUK REKAM MEDIS (RME)
@@ -11,14 +11,14 @@ export const rmeClient = axios.create({
   },
 });
 
-// Interceptor khusus RME: Menyisipkan token admin RME dari Zustand Store
+// Interceptor khusus RME: Menyisipkan token admin RME dari localStorage
 rmeClient.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().rmeToken; 
+    const token = secureStorage.getItem('rmeToken');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     } else if (!token) {
-      console.warn("⚠️ RME token tidak ditemukan di store, request akan dikirim tanpa auth");
+      console.warn("⚠️ RME token tidak ditemukan di localStorage, request akan dikirim tanpa auth");
     }
     return config;
   },
@@ -36,14 +36,14 @@ rmeClient.interceptors.response.use(
       console.warn("⚠️ RME Token expired atau invalid, mencoba re-autentikasi otomatis...");
       
       // Hapus token lama yang sudah kadaluarsa
-      useAuthStore.getState().setRmeToken(null);
+      secureStorage.removeItem('rmeToken');
       
       try {
         // Coba login otomatis kembali
         await initializeRmeAuth();
         
-        // Ambil token baru dari store
-        const newToken = useAuthStore.getState().rmeToken;
+        // Ambil token baru dari localStorage
+        const newToken = secureStorage.getItem('rmeToken');
         if (newToken) {
           console.log("🔄 Melanjutkan request yang sempat gagal (Auto-Retry)...");
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
@@ -61,11 +61,11 @@ rmeClient.interceptors.response.use(
 
 // Fungsi Otomatisasi Login Sistem/Admin ke RME
 export const initializeRmeAuth = async () => {
-  const existingToken = useAuthStore.getState().rmeToken;
+  const existingToken = secureStorage.getItem('rmeToken');
   
-  // Jika sudah ada token di store, tidak perlu hit API login lagi
+  // Jika sudah ada token di localStorage, tidak perlu hit API login lagi
   if (existingToken) {
-    console.log("✅ Token RME sudah ada di store, skip login");
+    console.log("✅ Token RME sudah ada di localStorage, skip login");
     return;
   }
 
@@ -82,8 +82,8 @@ export const initializeRmeAuth = async () => {
     const token = response.data?.data?.accessToken;
     
     if (token) {
-      useAuthStore.getState().setRmeToken(token);
-      console.log("✅ Autentikasi RME Berhasil! Token disimpan di store.");
+      secureStorage.setItem('rmeToken', token);
+      console.log("✅ Autentikasi RME Berhasil! Token disimpan di localStorage.");
     } else {
       console.warn("⚠️ Respon login sukses, tetapi accessToken tidak ditemukan pada struktur data.");
       console.warn("📋 Response:", response.data);
