@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "source": "/proxy/warehouse/:path*",
+      "destination": "https://system-inventory-management.onrender.com/:path*"
+    },
+    {
+      "source": "/proxy/rme/:path*",
+      "destination": "https://smartclinic-rekam-medis.onrender.com/:path*"
+    },
+    {
+      "source": "/proxy/ai/:path*",
+      "destination": "https://dashboard-ai-9k65.onrender.com/:path*"
+    },
+    {
+      "source": "/proxy/internal/:path*",
+      "destination": "https://db-posqris-cpgii-production.up.railway.app/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

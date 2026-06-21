@@ -1,7 +1,16 @@
 import axios from "axios";
 
+// Di production (Vercel), gunakan path /proxy/* agar Vercel yang forward ke backend (bypass CORS)
+// Di development (localhost), langsung ke URL backend via vite proxy
+const getWarehouseBaseUrl = () => {
+  const isDev = import.meta.env.DEV;
+  return isDev
+    ? import.meta.env.VITE_API_WAREHOUSE_URL
+    : '/proxy/warehouse';
+};
+
 export const warehouseClient = axios.create({
-  baseURL: import.meta.env.VITE_API_WAREHOUSE_URL,
+  baseURL: getWarehouseBaseUrl(),
   headers: {
     "Content-Type": "application/json",
   },
@@ -49,7 +58,8 @@ warehouseClient.interceptors.response.use(
 // Fungsi Axios murni untuk menembak login (akan dipanggil oleh React Query)
 export const loginWarehouseAdmin = async () => {
   console.log("Mencoba mengautentikasi sistem ke server Warehouse...");
-  const response = await axios.post(`${import.meta.env.VITE_API_WAREHOUSE_URL}/api/v1/auth/login`, {
+  const baseUrl = getWarehouseBaseUrl();
+  const response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
     email: import.meta.env.VITE_WAREHOUSE_ADMIN_EMAIL,
     password: import.meta.env.VITE_WAREHOUSE_ADMIN_PASSWORD,
   });
@@ -77,8 +87,8 @@ export const initializeWarehouseAuth = async () => {
 
   try {
     console.log("🔄 Mencoba mengautentikasi Admin ke Warehouse...");
-    
-    const response = await axios.post(`${import.meta.env.VITE_API_WAREHOUSE_URL}/api/v1/auth/login`, {
+    const baseUrl = getWarehouseBaseUrl();
+    const response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
       email: import.meta.env.VITE_WAREHOUSE_ADMIN_EMAIL,
       password: import.meta.env.VITE_WAREHOUSE_ADMIN_PASSWORD,
     });
