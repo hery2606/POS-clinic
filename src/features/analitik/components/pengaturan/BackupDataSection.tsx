@@ -165,7 +165,7 @@ export const BackupDataSection = () => {
         <Button
           onClick={handleCreateBackup}
           disabled={isBackingUp}
-          className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white gap-2"
         >
           <RotateCw className={`w-4 h-4 ${isBackingUp ? 'animate-spin' : ''}`} />
           {isBackingUp ? 'Membuat Backup...' : 'Buat Backup Sekarang'}
@@ -179,41 +179,43 @@ export const BackupDataSection = () => {
           {backups.map((backup) => (
             <div
               key={backup.id}
-              className="flex items-center justify-between p-3 bg-white border border-[#DFE6EB] rounded-lg hover:border-[#1B9C90]/30 transition-all"
+              className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white border border-[#DFE6EB] rounded-lg hover:border-[#1B9C90]/30 transition-all gap-3"
             >
-              <div className="flex items-start gap-3 flex-1 min-w-0">
+              <div className="flex items-start gap-3 flex-1 min-w-0 w-full">
                 <div className={`p-2 rounded-lg flex-shrink-0 ${backup.status === 'success' ? 'bg-green-50' : 'bg-red-50'}`}>
                   <FileText className={`w-4 h-4 ${backup.status === 'success' ? 'text-green-600' : 'text-red-600'}`} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-medium text-sm text-[#13222D] truncate">{backup.name}</p>
-                    <span className={`text-xs px-2 py-0.5 rounded font-semibold whitespace-nowrap ${
-                      backup.type === 'full'
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {backup.type === 'full' ? 'Full' : 'Incremental'}
-                    </span>
-                    <span className={`text-xs px-2 py-0.5 rounded font-semibold whitespace-nowrap ${
-                      backup.status === 'success'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {backup.status === 'success' ? 'Sukses' : 'Gagal'}
-                    </span>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 mb-1.5 flex-wrap">
+                    <p className="font-semibold text-sm text-[#13222D] truncate max-w-[200px] sm:max-w-none">{backup.name}</p>
+                    <div className="flex gap-1.5 flex-wrap">
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                        backup.type === 'full'
+                          ? 'bg-purple-100 text-purple-700'
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {backup.type === 'full' ? 'Full' : 'Incremental'}
+                      </span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                        backup.status === 'success'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {backup.status === 'success' ? 'Sukses' : 'Gagal'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-[#67737C]">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#67737C]">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
                       {backup.date}
                     </div>
-                    <span>•</span>
+                    <span className="hidden sm:inline">•</span>
                     <span>{backup.size}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+              <div className="flex items-center justify-end gap-2 flex-shrink-0 w-full sm:w-auto border-t border-slate-100 sm:border-t-0 pt-2.5 sm:pt-0">
                 <Button
                   onClick={() => handleDownload(backup)}
                   disabled={backup.status !== 'success'}

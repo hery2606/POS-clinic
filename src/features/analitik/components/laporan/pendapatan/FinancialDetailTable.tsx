@@ -195,7 +195,7 @@ export function FinancialDetailTable({ activeTab, onViewAllClick, period }: Fina
     <div className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full flex flex-col justify-between">
 
       {/* HEADER TABLE */}
-      <div className="p-6 border-b border-[#DFE6EB] flex items-center justify-between">
+      <div className="p-4 sm:p-6 border-b border-[#DFE6EB] flex items-center justify-between">
         <h3 className="text-base font-bold text-[#13222D]">
           {config.title}
         </h3>
@@ -210,7 +210,7 @@ export function FinancialDetailTable({ activeTab, onViewAllClick, period }: Fina
 
       {/* TABLE WORKSPACE */}
       <div className="overflow-x-auto w-full">
-        <Table className="w-full min-w-225 table-fixed">
+        <Table className="w-full min-w-[800px] table-fixed">
           <TableHeader>
             <TableRow className="bg-[#F4F7F9] hover:bg-[#F4F7F9] border-none">
               {config.headers.map((header, idx) => (
@@ -218,8 +218,8 @@ export function FinancialDetailTable({ activeTab, onViewAllClick, period }: Fina
                   key={idx}
                   className={cn(
                     "text-xs font-bold text-[#67737C] h-12 text-left",
-                    idx === 0 && "pl-6",
-                    idx === config.headers.length - 1 && "pr-6",
+                    idx === 0 && "pl-4 sm:pl-6",
+                    idx === config.headers.length - 1 && "pr-4 sm:pr-6",
                     config.widths[idx]
                   )}
                 >
@@ -234,7 +234,7 @@ export function FinancialDetailTable({ activeTab, onViewAllClick, period }: Fina
                 key={index}
                 className="border-b border-[#DFE6EB] last:border-none transition-colors hover:bg-[#F9FEFC]"
               >
-                <TableCell className="pl-6 py-4 text-xs font-bold text-[#13222D] text-left">
+                <TableCell className="pl-4 sm:pl-6 py-4 text-xs font-bold text-[#13222D] text-left">
                   {row.col1}
                 </TableCell>
                 <TableCell className="py-4 text-sm font-medium text-[#67737C] text-left truncate">
@@ -246,7 +246,7 @@ export function FinancialDetailTable({ activeTab, onViewAllClick, period }: Fina
                 <TableCell className="py-4 text-sm font-medium text-[#67737C] text-left">
                   {row.col4}
                 </TableCell>
-                <TableCell className={cn("py-4 text-sm text-left", index === 0 ? "pr-6" : "")}>
+                <TableCell className={cn("py-4 text-sm text-left", index === 0 ? "pr-4 sm:pr-6" : "")}>
                   {row.isBadge ? (
                     <Badge className="bg-[#DFF6F2] text-[#1B9C90] hover:bg-[#DFF6F2] font-bold border-none shadow-none rounded-full px-2.5 py-0.5 text-xs">
                       {row.col5}
@@ -267,7 +267,7 @@ export function FinancialDetailTable({ activeTab, onViewAllClick, period }: Fina
       </div>
 
       {/* FOOTER PAGINATION BLOCK */}
-      <div className="px-6 py-4 border-t border-[#DFE6EB] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#F9FEFC]/30">
+      <div className="px-4 py-4 sm:px-6 border-t border-[#DFE6EB] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#F9FEFC]/30">
         <span className="text-xs font-medium text-[#67737C]">
           Menampilkan <span className="text-[#13222D] font-bold">1 - 5</span> dari <span className="text-[#13222D] font-bold">48</span> data entri
         </span>

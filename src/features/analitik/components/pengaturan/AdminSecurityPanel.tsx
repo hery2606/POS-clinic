@@ -70,8 +70,35 @@ export const AdminSecurityPanel = () => {
         <p className="text-sm text-[#67737C] mt-2">Kelola pengaturan keamanan, tambah user, dan aktivitas akun admin Anda</p>
       </div>
 
-      {/* Security Menu Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      {/* Mobile/Tablet Security Menu Tabs */}
+      <div className="lg:hidden flex overflow-x-auto  gap-3 mb-6 pb-2 -mx-4 px-4">
+        {securityMenus.map((menu) => {
+          const Icon = menu.icon;
+          const isActive = activeTab === menu.id;
+          
+          return (
+            <button
+              key={menu.id}
+              onClick={() => setActiveTab(menu.id as any)}
+              className={`
+                flex-shrink-0 flex items-center gap-2.5 px-4 py-3 rounded-[12px] border-2 transition-all duration-200 text-left
+                ${isActive 
+                  ? 'border-[#1B9C90] bg-[#F4FBF9] text-[#1B9C90]' 
+                  : 'border-[#DFE6EB] bg-white text-[#67737C] hover:border-[#1B9C90]/30'
+                }
+              `}
+            >
+              <div className={`${menu.bgColor} p-1.5 rounded-lg flex items-center justify-center`}>
+                <Icon className={`w-4 h-4 ${menu.color}`} />
+              </div>
+              <span className="font-bold text-xs whitespace-nowrap text-[#13222D]">{menu.title}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Desktop Security Menu Grid */}
+      <div className="hidden lg:grid grid-cols-5 gap-4 mb-6">
         {securityMenus.map((menu) => {
           const Icon = menu.icon;
           const isActive = activeTab === menu.id;
@@ -107,7 +134,7 @@ export const AdminSecurityPanel = () => {
       </div>
 
       {/* Content Section */}
-      <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm min-h-[400px]">
+      <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-4 md:p-6 shadow-sm min-h-[400px]">
         {activeTab === 'password' && <ChangePasswordSection />}
         {activeTab === 'add-user' && <AddUserSection />}
         {activeTab === 'backup' && <BackupDataSection />}

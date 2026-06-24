@@ -31,8 +31,8 @@ const formatCurrency = (value: number): string => {
   }).format(value || 0);
 };
 
-const KPISkeleton = () => (
-  <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-5 flex flex-col justify-between min-h-[145px]">
+const KPISkeleton = ({ className }: { className?: string }) => (
+  <Card className={cn("bg-white rounded-[24px] border border-[#DFE6EB] p-4 sm:p-5 flex flex-col justify-between min-h-[145px]", className)}>
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <Skeleton className="w-4 h-4 rounded-md" />
@@ -130,10 +130,11 @@ export const KpiCards = () => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 w-full">
-        {Array.from({ length: 5 }).map((_, idx) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 w-full">
+        {[1, 2, 3, 4].map((idx) => (
           <KPISkeleton key={idx} />
         ))}
+        <KPISkeleton className="sm:col-span-2 md:col-span-1 xl:col-span-1" />
       </div>
     );
   }
@@ -147,13 +148,16 @@ export const KpiCards = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 w-full">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 w-full">
       {kpiData.map((data, index) => {
         const Icon = data.icon;
         return (
           <Card 
             key={index} 
-            className="bg-white rounded-[24px] border border-[#DFE6EB] p-5 shadow-none flex flex-col justify-between hover:shadow-sm hover:border-[#1B9C90]/30 transition-all duration-150 min-h-[145px]"
+            className={cn(
+              "bg-white rounded-[24px] border border-[#DFE6EB] p-4 sm:p-5 shadow-none flex flex-col justify-between hover:shadow-sm hover:border-[#1B9C90]/30 transition-all duration-150 min-h-[145px]",
+              index === 4 && "sm:col-span-2 md:col-span-1 xl:col-span-1"
+            )}
           >
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -169,7 +173,7 @@ export const KpiCards = () => {
             
             <div className="mt-2">
               <span className={cn(
-                "text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-wide uppercase",
+                "text-[10px] font-bold px-2 py-0.5 rounded-md border tracking-wide uppercase inline-flex items-center break-words whitespace-normal max-w-full text-left",
                 data.isPositive 
                   ? "text-[#137333] bg-[#E6F4EA] border-[#CCECD5]" 
                   : "text-[#C5221F] bg-[#FCE8E6] border-[#FAD2CF]"

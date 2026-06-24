@@ -265,7 +265,7 @@ export function FinancialBreakdownCard({ activeTab, period }: FinancialBreakdown
   const data = getDataForTab();
 
   return (
-    <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm w-full max-w-md space-y-5 h-full flex flex-col justify-between">
+    <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-4 sm:p-6 shadow-sm w-full max-w-md space-y-5 h-full flex flex-col justify-between">
 
       {/* HEADER SECTION */}
       <div>

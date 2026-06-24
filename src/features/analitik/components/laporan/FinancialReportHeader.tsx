@@ -127,7 +127,7 @@ export function FinancialReportHeader({
   const activeMonthLabel = monthOptions.find((m) => m.value === activeMonth)?.label || "";
 
   return (
-    <div className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+    <div className="bg-white rounded-[24px] border border-[#DFE6EB] p-4 sm:p-6 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-4 w-full">
       <div className="space-y-1">
         <h2 className="text-xl font-bold text-[#13222D]">
           Laporan Keuangan
@@ -137,28 +137,28 @@ export function FinancialReportHeader({
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full xl:w-auto">
+        <div className="grid grid-cols-3 sm:flex items-center gap-2 w-full lg:w-auto">
           {/* Shortcut Button Hari Ini */}
           <Button
             onClick={handleResetToToday}
             variant="outline"
             className={cn(
-              "h-11 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-none text-xs px-4 font-bold border",
+              "h-11 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-none text-xs px-2 sm:px-4 font-bold border w-full sm:w-auto",
               isCurrentPeriod
                 ? "bg-[#1B9C90] text-white border-transparent hover:bg-[#157A71]"
                 : "bg-[#F4F7F9] border-transparent text-[#67737C] hover:bg-[#DFE6EB] hover:text-[#13222D]"
             )}
           >
-            <Clock className="w-4 h-4" />
-            <span>Hari Ini</span>
+            <Clock className="w-4 h-4 shrink-0" />
+            <span className="truncate">Hari Ini</span>
           </Button>
 
           {/* Dropdown Pilih Bulan */}
           <Select value={activeMonth} onValueChange={handleMonthChange}>
-            <SelectTrigger className="w-full sm:w-36 h-11 bg-[#F4F7F9] border-none text-xs font-semibold text-[#13222D] rounded-xl focus:ring-1 focus:ring-[#1B9C90] shadow-none px-4 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-[#67737C]" />
-              <SelectValue placeholder="Pilih Bulan" />
+            <SelectTrigger className="w-full sm:w-36 h-11 bg-[#F4F7F9] border-none text-xs font-semibold text-[#13222D] rounded-xl focus:ring-1 focus:ring-[#1B9C90] shadow-none px-2 sm:px-4 flex items-center justify-center sm:justify-start gap-1 sm:gap-2">
+              <Calendar className="w-4 h-4 text-[#67737C] shrink-0" />
+              <SelectValue placeholder="Bulan" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-[#DFE6EB] bg-white text-xs font-medium text-[#13222D]">
               {monthOptions.map((option) => (
@@ -171,8 +171,8 @@ export function FinancialReportHeader({
 
           {/* Dropdown Pilih Tahun */}
           <Select value={activeYear} onValueChange={handleYearChange}>
-            <SelectTrigger className="w-full sm:w-28 h-11 bg-[#F4F7F9] border-none text-xs font-semibold text-[#13222D] rounded-xl focus:ring-1 focus:ring-[#1B9C90] shadow-none px-4 flex items-center gap-2">
-              <SelectValue placeholder="Pilih Tahun" />
+            <SelectTrigger className="w-full sm:w-28 h-11 bg-[#F4F7F9] border-none text-xs font-semibold text-[#13222D] rounded-xl focus:ring-1 focus:ring-[#1B9C90] shadow-none px-2 sm:px-4 flex items-center justify-center sm:justify-start gap-1 sm:gap-2">
+              <SelectValue placeholder="Tahun" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-[#DFE6EB] bg-white text-xs font-medium text-[#13222D]">
               {yearOptions.map((yearOpt) => (
@@ -184,22 +184,24 @@ export function FinancialReportHeader({
           </Select>
         </div>
 
-        <Button
-          onClick={handleDownloadPDF}
-          variant="outline"
-          className="w-full sm:w-auto border-[#DFE6EB] text-[#13222D] hover:bg-[#F4F7F9] font-bold h-11 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-none text-xs px-4"
-        >
-          <Download className="w-4 h-4 text-[#67737C]" />
-          <span>Unduh PDF</span>
-        </Button>
+        <div className="flex flex-row items-center gap-2 w-full lg:w-auto">
+          <Button
+            onClick={handleDownloadPDF}
+            variant="outline"
+            className="flex-1 lg:flex-none border-[#DFE6EB] text-[#13222D] hover:bg-[#F4F7F9] font-bold h-11 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-none text-xs px-4"
+          >
+            <Download className="w-4 h-4 text-[#67737C] shrink-0" />
+            <span className="truncate">Unduh PDF</span>
+          </Button>
 
-        <Button
-          onClick={handleExportExcel}
-          className="w-full sm:w-auto bg-[#1B9C90] hover:bg-[#157A71] text-white font-bold h-11 px-5 rounded-xl flex items-center justify-center gap-2 transition-colors border-none shadow-none text-xs"
-        >
-          <FileSpreadsheet className="w-4 h-4" />
-          <span>Export Excel</span>
-        </Button>
+          <Button
+            onClick={handleExportExcel}
+            className="flex-1 lg:flex-none bg-[#1B9C90] hover:bg-[#157A71] text-white font-bold h-11 px-5 rounded-xl flex items-center justify-center gap-2 transition-colors border-none shadow-none text-xs"
+          >
+            <FileSpreadsheet className="w-4 h-4 shrink-0" />
+            <span className="truncate">Export Excel</span>
+          </Button>
+        </div>
       </div>
     </div>
   );

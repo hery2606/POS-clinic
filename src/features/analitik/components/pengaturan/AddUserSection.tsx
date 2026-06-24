@@ -103,7 +103,7 @@ export const AddUserSection = () => {
           <UserPlus className="w-5 h-5 text-[#1B9C90]" />
           <h2 className="text-xl font-black text-[#13222D]">Tambah User Baru</h2>
         </div>
-        <p className="text-sm text-[#67737C] ml-7">
+        <p className="text-sm text-[#67737C] sm:ml-7 ml-0">
           Tambahkan akun staf baru (Admin/Kasir) ke dalam sistem dan atur hak akses mereka.
         </p>
       </div>
@@ -168,7 +168,7 @@ export const AddUserSection = () => {
             <label className="block text-sm font-bold text-[#13222D] mb-3">
               Hak Akses (Role) <span className="text-red-500">*</span>
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {roleOptions.map((role) => (
                 <button
                   type="button"
@@ -202,7 +202,7 @@ export const AddUserSection = () => {
           <div className="space-y-2">
             {errors.map((error, idx) => (
               <div key={idx} className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-3">
-                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                 <span className="text-xs text-red-700 font-medium">{error.message}</span>
               </div>
             ))}
@@ -212,7 +212,7 @@ export const AddUserSection = () => {
         {/* Success Message */}
         {successMessage && (
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-bold text-green-900">Berhasil!</p>
               <p className="text-xs text-green-700 mt-1">{successMessage}</p>
@@ -221,11 +221,11 @@ export const AddUserSection = () => {
         )}
 
         {/* Submit Button */}
-        <div className="flex gap-3 pt-4 border-t border-[#DFE6EB]">
+        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-[#DFE6EB]">
           <Button 
             type="submit" 
             disabled={loading || !formData.name || !formData.email || !formData.password || !formData.role}
-            className="bg-[#1B9C90] hover:bg-[#157A6D] text-white font-bold shadow-sm transition-all disabled:opacity-50"
+            className="w-full sm:w-auto bg-[#1B9C90] hover:bg-[#157A6D] text-white font-bold shadow-sm transition-all disabled:opacity-50"
           >
             {loading ? (
               <>
@@ -247,7 +247,7 @@ export const AddUserSection = () => {
               setErrors([]);
               setSuccessMessage(null);
             }}
-            className="border-2 border-[#DFE6EB] hover:bg-[#F9FEFC]"
+            className="w-full sm:w-auto border-2 border-[#DFE6EB] hover:bg-[#F9FEFC]"
           >
             Reset Form
           </Button>

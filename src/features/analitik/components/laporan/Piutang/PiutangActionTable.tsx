@@ -96,10 +96,34 @@ export function PiutangActionTable({
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
+  // Helper to get range of visible pages (limit buttons on mobile)
+  const getVisiblePages = () => {
+    const range = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) range.push(i);
+    } else {
+      let start = Math.max(1, currentPage - 2);
+      let end = Math.min(totalPages, currentPage + 2);
+      
+      if (start === 1) {
+        end = maxVisible;
+      } else if (end === totalPages) {
+        start = totalPages - maxVisible + 1;
+      }
+      
+      for (let i = start; i <= end; i++) {
+        range.push(i);
+      }
+    }
+    return range;
+  };
+
   return (
     <Card className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full flex flex-col justify-between">
       {/* Header Table */}
-      <div className="p-6 border-b border-[#DFE6EB] flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="p-4 sm:p-6 border-b border-[#DFE6EB] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-0.5">
           <h3 className="text-base font-bold text-[#13222D]">
             Tabel Aksi Penagihan Piutang
@@ -127,16 +151,16 @@ export function PiutangActionTable({
 
       {/* Table Workspace */}
       <div className="overflow-x-auto w-full">
-        <Table className="w-full min-w-225 table-fixed">
+        <Table className="w-full min-w-[900px] table-fixed">
           <TableHeader>
             <TableRow className="bg-[#F4F7F9] hover:bg-[#F4F7F9] border-none">
-              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-left pl-6 w-[15%]">TANGGAL</TableHead>
-              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-left w-[18%]">NO. INVOICE</TableHead>
-              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-left w-[20%]">NAMA PASIEN</TableHead>
-              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-left w-[15%]">SISA TAGIHAN</TableHead>
-              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-left w-[12%]">LAMA MENUNGGAK</TableHead>
-              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-left w-[22%]">NOMOR WHATSAPP</TableHead>
-              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-center pr-6 w-[18%]">AKSI REMINDER</TableHead>
+              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-left pl-4 sm:pl-6 w-[12%]">TANGGAL</TableHead>
+              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-left w-[15%]">NO. INVOICE</TableHead>
+              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-left w-[18%]">NAMA PASIEN</TableHead>
+              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-left w-[13%]">SISA TAGIHAN</TableHead>
+              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-left w-[10%]">LAMA MENUNGGAK</TableHead>
+              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-left w-[18%]">NOMOR WHATSAPP</TableHead>
+              <TableHead className="text-xs font-bold text-[#67737C] h-12 text-center pr-4 sm:pr-6 w-[14%]">AKSI REMINDER</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -157,7 +181,7 @@ export function PiutangActionTable({
                     className="border-b border-[#DFE6EB] last:border-none transition-colors hover:bg-[#F9FEFC]"
                   >
                     {/* Tanggal */}
-                    <TableCell className="pl-6 py-4 text-xs font-bold text-[#13222D] text-left">
+                    <TableCell className="pl-4 sm:pl-6 py-4 text-xs font-bold text-[#13222D] text-left">
                       {getFormattedDate(item.hari_belum_lunas)}
                     </TableCell>
 
@@ -196,19 +220,19 @@ export function PiutangActionTable({
                     <TableCell className="py-4 text-left">
                       <div className="flex items-center gap-2">
                         {isEditing ? (
-                          <div className="flex items-center gap-1 w-full max-w-[160px]">
+                          <div className="flex items-center gap-1 w-full max-w-[170px]">
                             <input
                               type="text"
                               value={tempPhone}
                               onChange={(e) => setTempPhone(e.target.value)}
-                              className="h-7 w-full border border-[#DFE6EB] rounded px-2 text-xs font-bold focus:outline-none focus:border-[#1B9C90]"
+                              className="h-9 w-full border border-[#DFE6EB] rounded-xl px-3 text-xs font-bold focus:outline-none focus:border-[#1B9C90]"
                             />
                             <Button
                               size="icon"
-                              className="h-7 w-7 bg-[#1B9C90] hover:bg-[#157A71] text-white rounded shrink-0 border-none shadow-none"
+                              className="h-9 w-9 bg-[#1B9C90] hover:bg-[#157A71] text-white rounded-xl shrink-0 border-none shadow-none flex items-center justify-center cursor-pointer"
                               onClick={() => savePhone(item.no_invoice)}
                             >
-                              <Check className="w-3.5 h-3.5" />
+                              <Check className="w-4 h-4" />
                             </Button>
                           </div>
                         ) : (
@@ -218,10 +242,10 @@ export function PiutangActionTable({
                             </span>
                             <button
                               onClick={() => startEditingPhone(item.no_invoice, item.wa_number)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-[#EFF4F8] rounded text-[#67737C] hover:text-[#13222D]"
+                              className="md:opacity-0 md:group-hover:opacity-100 transition-opacity p-2 hover:bg-[#EFF4F8] rounded-lg text-[#67737C] hover:text-[#13222D] flex items-center justify-center w-8 h-8 cursor-pointer"
                               title="Ubah nomor WhatsApp"
                             >
-                              <Edit2 className="w-3 h-3" />
+                              <Edit2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         )}
@@ -229,7 +253,7 @@ export function PiutangActionTable({
                     </TableCell>
 
                     {/* Aksi Reminder WA */}
-                    <TableCell className="py-4 text-center pr-6">
+                    <TableCell className="py-4 text-center pr-4 sm:pr-6">
                       {status === "sending" ? (
                         <Button
                           disabled
@@ -262,7 +286,7 @@ export function PiutangActionTable({
       </div>
 
       {/* Footer Pagination */}
-      <div className="px-6 py-4 border-t border-[#DFE6EB] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#F9FEFC]/30">
+      <div className="px-4 py-4 sm:px-6 border-t border-[#DFE6EB] flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#F9FEFC]/30">
         <span className="text-xs font-medium text-[#67737C]">
           Menampilkan <span className="text-[#13222D] font-bold">
             {totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} - {Math.min(currentPage * itemsPerPage, totalItems)}
@@ -279,19 +303,19 @@ export function PiutangActionTable({
             <ChevronLeft className="w-4 h-4" />
           </Button>
 
-          {Array.from({ length: totalPages }).map((_, i) => (
+          {getVisiblePages().map((page) => (
             <Button
-              key={i}
+              key={page}
               variant="outline"
-              onClick={() => setCurrentPage(i + 1)}
+              onClick={() => setCurrentPage(page)}
               className={cn(
                 "h-8 px-3 rounded-lg text-xs font-bold border-none shadow-none",
-                currentPage === i + 1
+                currentPage === page
                   ? "bg-[#13272F]/5 text-[#1B9C90]"
                   : "text-[#67737C] hover:bg-[#F4F7F9]"
               )}
             >
-              {i + 1}
+              {page}
             </Button>
           ))}
 

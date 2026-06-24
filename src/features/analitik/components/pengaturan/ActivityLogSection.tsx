@@ -242,7 +242,7 @@ export const ActivityLogSection = () => {
           </div>
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-col sm:flex-row sm:justify-end gap-2">
           <Button
             onClick={() => {
               setFilterType('all');
@@ -251,6 +251,7 @@ export const ActivityLogSection = () => {
             }}
             variant="outline"
             size="sm"
+            className="w-full sm:w-auto"
           >
             Reset Filter
           </Button>
@@ -258,7 +259,7 @@ export const ActivityLogSection = () => {
             onClick={handleExport}
             variant="outline"
             size="sm"
-            className="gap-2"
+            className="w-full sm:w-auto gap-2"
           >
             <Download className="w-4 h-4" />
             Export CSV

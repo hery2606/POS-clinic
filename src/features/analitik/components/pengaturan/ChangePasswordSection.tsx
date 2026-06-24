@@ -105,7 +105,7 @@ export const ChangePasswordSection = () => {
           <Lock className="w-5 h-5 text-[#1B9C90]" />
           <h2 className="text-xl font-black text-[#13222D]">Ubah Password</h2>
         </div>
-        <p className="text-sm text-[#67737C] ml-7">
+        <p className="text-sm text-[#67737C] sm:ml-7 ml-0">
           Perbarui password akun admin Anda untuk menjaga keamanan tertinggi
         </p>
       </div>
@@ -271,11 +271,11 @@ export const ChangePasswordSection = () => {
         )}
 
         {/* Submit Buttons */}
-        <div className="flex gap-3 pt-4 border-t border-[#DFE6EB]">
+        <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-[#DFE6EB]">
           <Button 
             type="submit" 
             disabled={loading || !formData.currentPassword || !formData.newPassword || !formData.confirmPassword}
-            className="bg-gradient-to-r from-[#1B9C90] to-[#157A6D] hover:from-[#157A6D] hover:to-[#0D5C54] text-white font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto bg-gradient-to-r from-[#1B9C90] to-[#157A6D] hover:from-[#157A6D] hover:to-[#0D5C54] text-white font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
@@ -296,7 +296,7 @@ export const ChangePasswordSection = () => {
               setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
               setErrors([]);
             }}
-            className="border-2 border-[#DFE6EB] hover:bg-[#F9FEFC]"
+            className="w-full sm:w-auto border-2 border-[#DFE6EB] hover:bg-[#F9FEFC]"
           >
             Batal
           </Button>

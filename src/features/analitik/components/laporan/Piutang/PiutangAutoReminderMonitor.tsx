@@ -33,9 +33,9 @@ export function PiutangAutoReminderMonitor({
   }, [autoLogs]);
 
   return (
-    <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm">
+    <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-4 sm:p-6 shadow-sm">
       {/* Top Controller Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <div className="relative flex h-2 w-2">
@@ -52,21 +52,21 @@ export function PiutangAutoReminderMonitor({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-row items-center gap-2 w-full lg:w-auto">
           <Button
             onClick={onAddMockInvoices}
-            className="bg-[#1B9C90] hover:bg-[#157A71] text-white font-bold text-xs h-9 rounded-xl border-none shadow-none px-3.5 flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="flex-1 lg:flex-none bg-[#1B9C90] hover:bg-[#157A71] text-white font-bold text-xs h-9 rounded-xl border-none shadow-none px-3.5 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
-            Simulasi Tambah +5 Tagihan
+            <Plus className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Simulasi +5 Tagihan</span>
           </Button>
           <Button
             variant="outline"
             onClick={onClearLogs}
             disabled={autoLogs.length === 0}
-            className="h-9 px-3 rounded-xl border-[#DFE6EB] text-[#67737C] hover:bg-[#F4F7F9] disabled:opacity-40 flex items-center gap-1 text-xs font-bold shadow-none cursor-pointer"
+            className="flex-none h-9 px-3 rounded-xl border-[#DFE6EB] text-[#67737C] hover:bg-[#F4F7F9] disabled:opacity-40 flex items-center justify-center gap-1 text-xs font-bold shadow-none cursor-pointer"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-3.5 h-3.5 shrink-0" />
             Clear
           </Button>
         </div>

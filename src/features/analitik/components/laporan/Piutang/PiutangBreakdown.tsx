@@ -30,7 +30,7 @@ export function PiutangBreakdown({
   topDebtors,
 }: PiutangBreakdownProps) {
   return (
-    <Card className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm lg:col-span-4 flex flex-col justify-between p-6 space-y-6">
+    <Card className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm lg:col-span-4 flex flex-col justify-between p-4 sm:p-6 space-y-6">
       {/* Breakdown Penjamin */}
       <div className="space-y-4">
         <div>

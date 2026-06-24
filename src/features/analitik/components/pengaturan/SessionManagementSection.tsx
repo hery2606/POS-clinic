@@ -210,14 +210,14 @@ export const SessionManagementSection = () => {
 
       {/* Sessions List */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 mb-4">
           <h3 className="font-medium text-[#13222D] text-sm">Perangkat & Sesi</h3>
           {!isLoading && sessions.length > 1 && (
             <Button
               onClick={handleLogoutOtherSessions}
               variant="outline"
               size="sm"
-              className="text-orange-600 border-orange-200 hover:bg-orange-50 cursor-pointer"
+              className="w-full sm:w-auto text-orange-600 border-orange-200 hover:bg-orange-50 cursor-pointer justify-center"
             >
               <LogOut className="w-3 h-3 mr-1" />
               Logout Sesi Lain
@@ -262,8 +262,8 @@ export const SessionManagementSection = () => {
                     : 'bg-white border-[#DFE6EB] hover:border-[#1B9C90]/30'
                 }`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 flex-1 min-w-0 w-full">
                     <div className={`p-2 rounded-lg flex-shrink-0 ${
                       session.status === 'active'
                         ? 'bg-blue-100'
@@ -296,7 +296,7 @@ export const SessionManagementSection = () => {
                         Browser: <span className="font-medium">{session.browser}</span>
                       </p>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mt-3">
                         <div>
                           <span className="text-[#67737C]">IP Address</span>
                           <p className="font-mono text-[#13222D] font-semibold">{session.ipAddress}</p>
@@ -317,40 +317,25 @@ export const SessionManagementSection = () => {
                     </div>
                   </div>
 
-                  {/* More Options Menu */}
-                  <div className="relative flex-shrink-0">
-                    <button
-                      onClick={() => setShowMore(showMore === session.id ? null : session.id)}
-                      className="p-1.5 hover:bg-[#DFE6EB] rounded-lg transition-colors cursor-pointer"
-                    >
-                      <MoreVertical className="w-4 h-4 text-[#67737C]" />
-                    </button>
-
-                    {showMore === session.id && (
-                      <div className="absolute right-0 top-8 bg-white border border-[#DFE6EB] rounded-lg shadow-lg z-10 min-w-[200px] overflow-hidden">
-                        <button
-                          onClick={() => handleLogoutSession(session.id)}
-                          disabled={session.isCurrent}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Logout Sesi Ini
-                        </button>
-                        <div className="border-t border-[#DFE6EB]" />
-                        <button
-                          onClick={() => {
-                            if (confirm('Apakah Anda yakin ingin menghapus sesi ini?')) {
-                              handleLogoutSession(session.id);
-                            }
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 cursor-pointer"
-                        >
-                          <AlertCircle className="w-4 h-4" />
-                          Hapus Sesi
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  {/* Action Button */}
+                  {!session.isCurrent && (
+                    <div className="flex-shrink-0 w-full sm:w-auto border-t border-slate-100 sm:border-t-0 pt-3 sm:pt-0 flex justify-end">
+                      <Button
+                        onClick={() => {
+                          if (confirm('Apakah Anda yakin ingin menghentikan sesi ini?')) {
+                            handleLogoutSession(session.id);
+                          }
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50 font-semibold gap-1.5 flex items-center justify-center"
+                        title="Logout Sesi"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span className="sm:hidden lg:inline text-xs">Logout Sesi</span>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))

@@ -78,9 +78,9 @@ export function FinancialSummaryCards({ period }: FinancialSummaryCardsProps) {
   if (loading || !data) {
     return (
       <div className="w-full space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2].map((i) => (
+            <Card key={i} className="bg-white rounded-[24px] border border-[#DFE6EB] p-4 sm:p-6 shadow-sm">
               <CardContent className="p-0 space-y-3">
                 <div className="h-4 bg-slate-100 rounded-md animate-pulse w-32"></div>
                 <div className="h-8 bg-slate-100 rounded-xl animate-pulse w-48"></div>
@@ -88,6 +88,13 @@ export function FinancialSummaryCards({ period }: FinancialSummaryCardsProps) {
               </CardContent>
             </Card>
           ))}
+          <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-4 sm:p-6 shadow-sm sm:col-span-2 lg:col-span-1">
+            <CardContent className="p-0 space-y-3">
+              <div className="h-4 bg-slate-100 rounded-md animate-pulse w-32"></div>
+              <div className="h-8 bg-slate-100 rounded-xl animate-pulse w-48"></div>
+              <div className="h-4 bg-slate-100 rounded-md animate-pulse w-40"></div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );  
@@ -173,10 +180,10 @@ export function FinancialSummaryCards({ period }: FinancialSummaryCardsProps) {
 
   return (
     <div className="w-full space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         
         {/* Card 1: Total Pendapatan */}
-        <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+        <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
           <CardContent className="p-0 space-y-2">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#67737C]">
@@ -189,9 +196,9 @@ export function FinancialSummaryCards({ period }: FinancialSummaryCardsProps) {
             <h3 className="text-2xl font-black text-[#13222D]">
               {formatCurrency(totalRevenueThisMonth)}
             </h3>
-            <div className="flex items-center gap-2 text-xs font-semibold pt-1">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold pt-1">
               <span className={cn(
-                "px-2 py-0.5 rounded-md border flex items-center gap-1 uppercase tracking-wide text-[10px] font-black shadow-none",
+                "px-2 py-0.5 rounded-md border flex items-center gap-1 uppercase tracking-wide text-[10px] font-black shadow-none shrink-0",
                 isPositiveTrend 
                   ? "text-[#137333] bg-[#E6F4EA] border-[#CCECD5]" 
                   : "text-[#C5221F] bg-[#FCE8E6] border-[#FAD2CF]"
@@ -203,7 +210,7 @@ export function FinancialSummaryCards({ period }: FinancialSummaryCardsProps) {
                 )}
                 {Math.abs(comparison.persentase_kenaikan).toFixed(1)}%
               </span>
-              <span className="text-[#67737C] tracking-tight truncate">
+              <span className="text-[#67737C] tracking-tight">
                 vs Bulan Lalu ({formatCurrency(comparison.bulan_lalu)})
               </span>
             </div>
@@ -211,7 +218,7 @@ export function FinancialSummaryCards({ period }: FinancialSummaryCardsProps) {
         </Card>
 
         {/* Card 2: Rata-rata Pendapatan Harian */}
-        <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+        <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
           <CardContent className="p-0 space-y-2">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#67737C]">
@@ -224,8 +231,8 @@ export function FinancialSummaryCards({ period }: FinancialSummaryCardsProps) {
             <h3 className="text-2xl font-black text-[#13222D]">
               {formatCurrency(dailyAverage)}
             </h3>
-            <div className="flex items-center gap-2 text-xs font-semibold pt-1">
-              <span className="bg-[#EFF4F8] text-[#67737C] border border-slate-200 px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wide text-[10px] font-black shadow-none">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold pt-1">
+              <span className="bg-[#EFF4F8] text-[#67737C] border border-slate-200 px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wide text-[10px] font-black shadow-none shrink-0">
                 Estimated
               </span>
               <span className="text-[#67737C]">Rata-rata per hari bulan ini</span>
@@ -234,7 +241,7 @@ export function FinancialSummaryCards({ period }: FinancialSummaryCardsProps) {
         </Card>
 
         {/* Card 3: Total Pendapatan Minggu Ini */}
-        <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+        <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-200 sm:col-span-2 lg:col-span-1">
           <CardContent className="p-0 space-y-2">
             <div className="flex justify-between items-start">
               <span className="text-xs font-semibold text-[#67737C]">
@@ -247,8 +254,8 @@ export function FinancialSummaryCards({ period }: FinancialSummaryCardsProps) {
             <h3 className="text-2xl font-black text-[#13222D]">
               {formatCurrency(totalRevenueThisWeek)}
             </h3>
-            <div className="flex items-center gap-2 text-xs font-semibold pt-1">
-              <span className="bg-[#DFF6F2] text-[#1B9C90] border border-[#1B9C90]/20 px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wide text-[10px] font-black shadow-none">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold pt-1">
+              <span className="bg-[#DFF6F2] text-[#1B9C90] border border-[#1B9C90]/20 px-2 py-0.5 rounded-md flex items-center gap-1 uppercase tracking-wide text-[10px] font-black shadow-none shrink-0">
                 Current
               </span>
               <span className="text-[#67737C]">Transaksi minggu berjalan</span>

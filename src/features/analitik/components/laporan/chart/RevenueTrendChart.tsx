@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/chart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { analitikService } from "../../../services/analitik.service";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const chartConfig = {
   total: {
@@ -28,18 +29,22 @@ const fallbackChartData = [
   { name: "Bulan Ini", total: 1395000 },
 ];
 
-const ChartSkeleton = () => (
-  <Card className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm w-full">
-    <CardHeader className="p-6 pb-0">
-      <Skeleton className="h-6 w-48 mb-2" />
-    </CardHeader>
-    <CardContent className="p-6">
-      <div className="h-[300px] w-full bg-slate-50/50 rounded-2xl animate-pulse" />
-    </CardContent>
-  </Card>
-);
+const ChartSkeleton = () => {
+  const isMobile = useIsMobile();
+  return (
+    <Card className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm w-full">
+      <CardHeader className="p-4 sm:p-6 pb-0">
+        <Skeleton className="h-6 w-48 mb-2" />
+      </CardHeader>
+      <CardContent className="p-4 sm:p-6">
+        <div className="h-[300px] w-full bg-slate-50/50 rounded-2xl animate-pulse" />
+      </CardContent>
+    </Card>
+  );
+};
 
 export function RevenueTrendChart() {
+  const isMobile = useIsMobile();
   // Ambil tren pendapatan dari backend AI
   const revenueQuery = useQuery({
     queryKey: ["revenueTrend"],
@@ -73,12 +78,12 @@ export function RevenueTrendChart() {
   if (error) {
     return (
       <Card className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm w-full">
-        <CardHeader className="p-6 pb-0">
+        <CardHeader className="p-4 sm:p-6 pb-0">
           <CardTitle className="text-base font-bold text-[#13222D]">
             Grafik Tren Pendapatan
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <div className="h-[300px] w-full flex items-center justify-center bg-red-50/30 rounded-2xl border border-dashed border-red-200">
             <p className="text-red-500 text-xs font-bold">⚠️ Gagal memuat data grafik tren bulanan</p>
           </div>
@@ -89,14 +94,14 @@ export function RevenueTrendChart() {
 
   return (
     <Card className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full">
-      <CardHeader className="p-6 pb-0">
+      <CardHeader className="p-4 sm:p-6 pb-0">
         <CardTitle className="text-base font-bold text-[#13222D]">
           Grafik Tren Pendapatan Bulanan
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         <ChartContainer config={chartConfig} className="h-[300px] w-full">
-          <BarChart data={chartData} margin={{ top: 15, right: 10, left: 10, bottom: 0 }}>
+          <BarChart data={chartData} margin={{ top: 15, right: 10, left: isMobile ? -25 : 10, bottom: 0 }}>
             {/* Garis putus-putus (Grid) yang lebih tebal dan jelas, memberi kesan profesional */}
             <CartesianGrid vertical={false} stroke="#CBD5E1" strokeDasharray="6 6" strokeWidth={1} opacity={0.8} />
             <XAxis
@@ -109,8 +114,8 @@ export function RevenueTrendChart() {
             <YAxis
               tickLine={false}
               axisLine={false}
-              tickMargin={16}
-              width={90} // 🟢 DIPERLEBAR: Agar teks "Rp 150 Jt" atau "Rp 700 Rb" tidak ketutupan
+              tickMargin={isMobile ? 6 : 16}
+              width={isMobile ? 55 : 90} // 🟢 DIPERLEBAR: Agar teks "Rp 150 Jt" atau "Rp 700 Rb" tidak ketutupan
               className="text-[10px] font-bold text-[#67737C]"
               // 🟢 PERBAIKAN FORMATTER: Support hingga Miliar (M) dan Juta (Jt)
               tickFormatter={(val) => {
@@ -118,7 +123,7 @@ export function RevenueTrendChart() {
                   return `Rp ${(val / 1000000000).toFixed(1).replace(/\.0$/, '')} M`;
                 }
                 if (val >= 1000000) {
-                  return `Rp ${(val / 1000000).toFixed(1).replace(/\.0$/, '')} Jt`;
+                  return `Rp ${(val / 1000000).toFixed(0)} Jt`;
                 }
                 if (val >= 1000) {
                   return `Rp ${(val / 1000).toFixed(0)} Rb`;
@@ -140,7 +145,7 @@ export function RevenueTrendChart() {
               dataKey="total"
               fill="var(--color-total)"
               radius={[6, 6, 0, 0]}
-              maxBarSize={70}
+              maxBarSize={isMobile ? 32 : 70}
               animationDuration={1200}
             />
             <ChartLegend
