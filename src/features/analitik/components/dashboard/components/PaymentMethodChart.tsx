@@ -165,7 +165,7 @@ export const PaymentMethodChart: React.FC<PaymentMethodChartProps> = ({ classNam
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-4">
           {/* Donut Chart */}
           <div className="relative w-36 h-36 flex-shrink-0 mx-auto sm:mx-0">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <PieChart>
                 <Pie
                   data={paymentData.length > 0 ? paymentData : [{ value: 1, color: '#F4F7F9' }]}

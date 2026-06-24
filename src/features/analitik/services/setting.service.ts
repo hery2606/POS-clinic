@@ -1,8 +1,10 @@
-import { aiClient } from "@/api";
+import { aiClient, posClient } from "@/api";
 import { 
   type ActivityLogResponse, 
   type SessionResponse, 
-  type RevokeSessionResponse 
+  type RevokeSessionResponse,
+  type CreateUserRequest,
+  type CreateUserResponse
 } from "../types/setting.types";
 
 export const settingService = {
@@ -27,6 +29,14 @@ export const settingService = {
    */
   revokeSession: async (idSesi: string): Promise<RevokeSessionResponse> => {
     const response = await aiClient.post<RevokeSessionResponse>(`/api/v1/settings/sessions/${idSesi}/revoke`);
+    return response.data;
+  },
+
+  /**
+   * Menambahkan user baru dengan role tertentu
+   */
+  createUser: async (payload: CreateUserRequest): Promise<CreateUserResponse> => {
+    const response = await posClient.post<CreateUserResponse>("/api/auth/create-user", payload);
     return response.data;
   }
 };

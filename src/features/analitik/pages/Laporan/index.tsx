@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FinancialReportHeader, periodOptions } from "@/features/analitik/components/laporan/FinancialReportHeader";
 import { FinancialSummaryCards } from "@/features/analitik/components/laporan/pendapatan/FinancialSummaryCards";
 import { RevenueTrendChart } from "@/features/analitik/components/laporan/chart/RevenueTrendChart";
 import { FinancialBreakdownCard } from "@/features/analitik/components/laporan/pendapatan/FinancialBreakdownCard";
-import { FinancialDetailTable, dummyTableData } from "@/features/analitik/components/laporan/pendapatan/FinancialDetailTable";
+import { FinancialDetailTable } from "@/features/analitik/components/laporan/pendapatan/FinancialDetailTable";
 import { PiutangReportSection } from "@/features/analitik/components/laporan/PiutangReportSection";
 import { PrintFormalReportTemplate } from "@/features/analitik/components/print/print-formal-report-template";
 import { analitikService } from "../../services/analitik.service";
+import { billingPosService } from "@/features/kasir/services/billing.pos.service";
 import { cn } from "@/lib/utils";
 
 interface LocalDaftarTransaksiBelumLunas {
@@ -19,6 +20,7 @@ interface LocalDaftarTransaksiBelumLunas {
   hari_belum_lunas: number;
   status_reminder: string;
   wa_number: string;
+  insurance_type?: string;
 }
 
 const tabs = ["Pendapatan", "Piutang"];
@@ -40,11 +42,120 @@ export const LaporanPage = () => {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch outstanding invoices from POS for piutang data
+  const outstandingInvoicesQuery = useQuery({
+    queryKey: ["outstandingInvoices"],
+    queryFn: () => billingPosService.getOutstandingInvoices(),
+    staleTime: 5 * 60 * 1000,
+    enabled: selectedTab === "Piutang",
+  });
+
   const trendData = revenueResponse?.data;
-  const totalRevenue = trendData?.total_pendapatan_bulan_ini || 148500000;
-  const dailyAvg = totalRevenue / 30;
-  const weeklyRevenue = trendData?.total_pendapatan_minggu_ini || 34500000;
-  const percentageUp = trendData?.perbandingan_bulan_ini_vs_lalu?.persentase_kenaikan || 3.4;
+
+  // Determine if selected period is current month
+  const todayDate = new Date();
+  const currentPeriodStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, "0")}`;
+  const isCurrentPeriod = selectedPeriod === currentPeriodStr;
+
+  // Period-aware KPI data computation
+  const { totalRevenue, weeklyRevenue, dailyAvg, percentageUp } = useMemo(() => {
+    const rincianHarian = trendData?.tabel_rincian_harian || [];
+    const matchedDays = rincianHarian.filter(
+      (item: any) => item.tanggal && item.tanggal.startsWith(selectedPeriod)
+    );
+
+    const tempSum = matchedDays.reduce((sum: number, d: any) => sum + (d.total_pendapatan || 0), 0);
+
+    if (matchedDays.length > 0 && tempSum > 0) {
+      // Has data for this period
+      const total = tempSum;
+      const daily = total / matchedDays.length;
+      const sortedDays = [...matchedDays].sort((a: any, b: any) => a.tanggal.localeCompare(b.tanggal));
+      const last7 = sortedDays.slice(-7);
+      const weekly = last7.reduce((sum: number, d: any) => sum + (d.total_pendapatan || 0), 0);
+      const pctUp = trendData?.perbandingan_bulan_ini_vs_lalu?.persentase_kenaikan || 0;
+      return { totalRevenue: total, weeklyRevenue: weekly, dailyAvg: daily, percentageUp: pctUp };
+    } else if (isCurrentPeriod) {
+      // Current month but no rincian harian → use summary fields
+      const total = trendData?.total_pendapatan_bulan_ini || 0;
+      const weekly = trendData?.total_pendapatan_minggu_ini || 0;
+      const daily = total > 0 ? total / 30 : 0;
+      const pctUp = trendData?.perbandingan_bulan_ini_vs_lalu?.persentase_kenaikan || 0;
+      return { totalRevenue: total, weeklyRevenue: weekly, dailyAvg: daily, percentageUp: pctUp };
+    } else {
+      // Past/future period with no data → all zero
+      return { totalRevenue: 0, weeklyRevenue: 0, dailyAvg: 0, percentageUp: 0 };
+    }
+  }, [trendData, selectedPeriod, isCurrentPeriod]);
+
+  // ============================================================
+  // Piutang data calculations (mirrors PiutangReportSection logic)
+  // ============================================================
+  const fallbackTransactions = useMemo<LocalDaftarTransaksiBelumLunas[]>(() => [
+    { no_invoice: "INV-2026-001", pasien: "Budi Santoso", total_tagihan: 120000, hari_belum_lunas: 1, status_reminder: "Belum Dikirim", wa_number: "081234567890", insurance_type: "BPJS" },
+    { no_invoice: "INV-2026-002", pasien: "Siti Aminah", total_tagihan: 100000, hari_belum_lunas: 2, status_reminder: "Belum Dikirim", wa_number: "082345678901", insurance_type: "UMUM" },
+    { no_invoice: "INV-2026-003", pasien: "Ahmad Dahlan", total_tagihan: 60000, hari_belum_lunas: 3, status_reminder: "Belum Dikirim", wa_number: "083456789012", insurance_type: "UMUM" },
+    { no_invoice: "INV-2026-004", pasien: "Dewi Lestari", total_tagihan: 40000, hari_belum_lunas: 5, status_reminder: "Belum Dikirim", wa_number: "084567890123", insurance_type: "UMUM" },
+    { no_invoice: "INV-2026-005", pasien: "Eko Prasetyo", total_tagihan: 50000, hari_belum_lunas: 8, status_reminder: "Belum Dikirim", wa_number: "085678901234", insurance_type: "BPJS" },
+    { no_invoice: "INV-2026-006", pasien: "Farhan Hakim", total_tagihan: 40000, hari_belum_lunas: 9, status_reminder: "Belum Dikirim", wa_number: "086789012345", insurance_type: "UMUM" },
+    { no_invoice: "INV-2026-007", pasien: "Gita Gutawa", total_tagihan: 20000, hari_belum_lunas: 10, status_reminder: "Belum Dikirim", wa_number: "087890123456", insurance_type: "UMUM" },
+    { no_invoice: "INV-2026-008", pasien: "Hendra Wijaya", total_tagihan: 10000, hari_belum_lunas: 12, status_reminder: "Belum Dikirim", wa_number: "088901234567", insurance_type: "BPJS" },
+  ], []);
+
+  const piutangTransactions = useMemo<LocalDaftarTransaksiBelumLunas[]>(() => {
+    const apiData = outstandingInvoicesQuery.data?.data;
+    if (apiData && apiData.length > 0) {
+      return apiData.map((item: any) => ({
+        no_invoice: `INV-2026-${item.id.split("-")[0].toUpperCase()}`,
+        pasien: item.patient?.name || "Pasien",
+        total_tagihan: item.remainingAmount || item.total || 0,
+        hari_belum_lunas: item.daysPending || 1,
+        status_reminder: "Belum Dikirim",
+        wa_number: item.patient?.phone || "0812XXXXXXXX",
+        insurance_type: item.patient?.insuranceType || "UMUM",
+      }));
+    }
+    return fallbackTransactions;
+  }, [outstandingInvoicesQuery.data, fallbackTransactions]);
+
+  const piutangTotalPiutang = useMemo(() => {
+    return piutangTransactions.reduce((sum, t) => sum + t.total_tagihan, 0) || 440000;
+  }, [piutangTransactions]);
+
+  const piutangAvgDelay = useMemo(() => {
+    if (piutangTransactions.length === 0) return 2;
+    return Math.round(piutangTransactions.reduce((sum, t) => sum + t.hari_belum_lunas, 0) / piutangTransactions.length) || 2;
+  }, [piutangTransactions]);
+
+  const piutangRatio = useMemo(() => {
+    if (totalRevenue === 0) return 0.3;
+    return Number(((piutangTotalPiutang / totalRevenue) * 100).toFixed(2));
+  }, [piutangTotalPiutang, totalRevenue]);
+
+  const piutangAgingSchedule = useMemo(() => {
+    let range1 = 0, range2 = 0, range3 = 0;
+    piutangTransactions.forEach(t => {
+      if (t.hari_belum_lunas <= 2) range1 += t.total_tagihan;
+      else if (t.hari_belum_lunas <= 5) range2 += t.total_tagihan;
+      else range3 += t.total_tagihan;
+    });
+    if (range1 === 0 && range2 === 0 && range3 === 0) {
+      return [{ name: "1-2 Hari", amount: 220000 }, { name: "3-5 Hari", amount: 100000 }, { name: "> 7 Hari", amount: 120000 }];
+    }
+    return [{ name: "1-2 Hari", amount: range1 }, { name: "3-5 Hari", amount: range2 }, { name: "> 7 Hari", amount: range3 }];
+  }, [piutangTransactions]);
+
+  const piutangBreakdownProportion = useMemo(() => {
+    let umumAmount = 0, bpjsAmount = 0;
+    piutangTransactions.forEach(t => {
+      if ((t.insurance_type || "UMUM").toUpperCase() === "BPJS") bpjsAmount += t.total_tagihan;
+      else umumAmount += t.total_tagihan;
+    });
+    const total = umumAmount + bpjsAmount;
+    if (total === 0) return { umumPercent: 70, bpjsPercent: 30, umumVal: 308000, bpjsVal: 132000 };
+    const umumPercent = Math.round((umumAmount / total) * 100);
+    return { umumPercent, bpjsPercent: 100 - umumPercent, umumVal: umumAmount, bpjsVal: bpjsAmount };
+  }, [piutangTransactions]);
 
   const handleDownloadPDF = () => {
     window.print();
@@ -60,8 +171,12 @@ export const LaporanPage = () => {
       minute: "2-digit"
     });
 
+    const formatCurrencyExcel = (amount: number): string => {
+      return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount || 0);
+    };
+
     if (selectedTab === "Pendapatan") {
-      // original excel export for revenue
+      // Fetch fresh trend data for export
       let trendExportData = null;
       try {
         const trendResponse = await analitikService.getRevenueTrend();
@@ -77,6 +192,44 @@ export const LaporanPage = () => {
       };
       const dailyAverage = revTotal / 30;
       const weeklyRevenueAmount = trendExportData?.total_pendapatan_minggu_ini || 34500000;
+
+      // Build dynamic table rows from API data (tabel_rincian_harian)
+      let tableRowsHtml = "";
+      const rincianHarian = trendExportData?.tabel_rincian_harian || [];
+      const matchedDays = rincianHarian.filter(
+        (item: any) => item.tanggal && item.tanggal.startsWith(selectedPeriod)
+      );
+
+      if (matchedDays.length > 0) {
+        // Sort descending by date
+        const sortedDays = [...matchedDays].sort((a: any, b: any) => b.tanggal.localeCompare(a.tanggal));
+        tableRowsHtml = sortedDays.map((item: any, index: number) => {
+          const dateObj = new Date(item.tanggal);
+          const formattedDate = dateObj.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+          const isHighlight = index === 0;
+          return `
+            <tr class="${isHighlight ? 'highlight' : ''}">
+              <td>${formattedDate}</td>
+              <td>${item.total_transaksi || 0}</td>
+              <td>${formatCurrencyExcel(item.pendapatan_layanan || 0)}</td>
+              <td>${formatCurrencyExcel(item.pendapatan_obat || 0)}</td>
+              <td class="currency" style="font-weight: bold; color: #1B9C90;">${formatCurrencyExcel(item.total_pendapatan || 0)}</td>
+            </tr>
+          `;
+        }).join("");
+      } else {
+        // Fallback to dummy data if no API data
+        const { dummyTableData } = await import("@/features/analitik/components/laporan/pendapatan/FinancialDetailTable");
+        tableRowsHtml = (dummyTableData.Pendapatan || []).map((row: any) => `
+          <tr class="${row.isHighlight ? 'highlight' : ''}">
+            <td>${row.col1}</td>
+            <td>${row.col2}</td>
+            <td>${row.col3}</td>
+            <td>${row.col4}</td>
+            <td class="currency" style="font-weight: bold; color: #1B9C90;">${row.col5}</td>
+          </tr>
+        `).join("");
+      }
 
       let html = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
@@ -157,15 +310,7 @@ export const LaporanPage = () => {
               </tr>
             </thead>
             <tbody>
-              ${(dummyTableData.Pendapatan || []).map(row => `
-                <tr class="${row.isHighlight ? 'highlight' : ''}">
-                  <td>${row.col1}</td>
-                  <td>${row.col2}</td>
-                  <td>${row.col3}</td>
-                  <td>${row.col4}</td>
-                  <td class="currency" style="font-weight: bold; color: #1B9C90;">${row.col5}</td>
-                </tr>
-              `).join('')}
+              ${tableRowsHtml}
             </tbody>
           </table>
           <br/>
@@ -187,33 +332,11 @@ export const LaporanPage = () => {
       }
 
     } else {
-      // export for Piutang
-      const apiData = pendingResponse?.data;
-      const totalPiutang = apiData?.nilai_total_piutang || 440000;
-      const ratioPercentage = ((totalPiutang / totalRevenue) * 100).toFixed(2);
-
-      const fallbackTransactions: LocalDaftarTransaksiBelumLunas[] = [
-        { no_invoice: "INV-2026-001", pasien: "Budi Santoso", total_tagihan: 120000, hari_belum_lunas: 1, status_reminder: "Belum Dikirim", wa_number: "081234567890" },
-        { no_invoice: "INV-2026-002", pasien: "Siti Aminah", total_tagihan: 100000, hari_belum_lunas: 2, status_reminder: "Belum Dikirim", wa_number: "082345678901" },
-        { no_invoice: "INV-2026-003", pasien: "Ahmad Dahlan", total_tagihan: 60000, hari_belum_lunas: 3, status_reminder: "Belum Dikirim", wa_number: "083456789012" },
-        { no_invoice: "INV-2026-004", pasien: "Dewi Lestari", total_tagihan: 40000, hari_belum_lunas: 5, status_reminder: "Belum Dikirim", wa_number: "084567890123" },
-        { no_invoice: "INV-2026-005", pasien: "Eko Prasetyo", total_tagihan: 50000, hari_belum_lunas: 8, status_reminder: "Belum Dikirim", wa_number: "085678901234" },
-        { no_invoice: "INV-2026-006", pasien: "Farhan Hakim", total_tagihan: 40000, hari_belum_lunas: 9, status_reminder: "Belum Dikirim", wa_number: "086789012345" },
-        { no_invoice: "INV-2026-007", pasien: "Gita Gutawa", total_tagihan: 20000, hari_belum_lunas: 10, status_reminder: "Belum Dikirim", wa_number: "087890123456" },
-        { no_invoice: "INV-2026-008", pasien: "Hendra Wijaya", total_tagihan: 10000, hari_belum_lunas: 12, status_reminder: "Belum Dikirim", wa_number: "088901234567" },
-      ];
-
-      let transactionsToExport = fallbackTransactions;
-      if (apiData?.daftar_transaksi_belum_lunas && apiData.daftar_transaksi_belum_lunas.length > 0) {
-        transactionsToExport = apiData.daftar_transaksi_belum_lunas.map(item => ({
-          no_invoice: item.no_invoice,
-          pasien: item.pasien,
-          total_tagihan: item.sisa_tagihan ?? item.total_tagihan ?? 0,
-          hari_belum_lunas: item.hari_belum_lunas,
-          status_reminder: item.status_reminder || "Belum Dikirim",
-          wa_number: "081234567890"
-        }));
-      }
+      // export for Piutang — using calculated piutang data
+      const transactionsToExport = piutangTransactions;
+      const exportTotalPiutang = piutangTotalPiutang;
+      const exportAvgDelay = piutangAvgDelay;
+      const exportRatio = piutangRatio;
 
       const getFormattedDate = (daysAgo: number) => {
         const date = new Date();
@@ -244,8 +367,9 @@ export const LaporanPage = () => {
                     <x:DisplayGridlines/>
                   </x:WorksheetOptions>
                 </x:ExcelWorksheet>
-              </x:ExcelWorkbook>
-            </xml>
+              </x:ExcelWorksheets>
+            </x:ExcelWorkbook>
+          </xml>
             <![endif]-->
           <style>
             body { font-family: Arial, sans-serif; }
@@ -279,8 +403,8 @@ export const LaporanPage = () => {
             <tbody>
               <tr>
                 <td>Total Piutang (Bulan Ini)</td>
-                <td class="currency" style="font-weight: bold;">Rp ${totalPiutang.toLocaleString("id-ID")}</td>
-                <td>Porsi: ${ratioPercentage}% dari Pendapatan Bulanan (Rp ${totalRevenue.toLocaleString("id-ID")})</td>
+                <td class="currency" style="font-weight: bold;">Rp ${exportTotalPiutang.toLocaleString("id-ID")}</td>
+                <td>Porsi: ${exportRatio}% dari Pendapatan Bulanan (Rp ${totalRevenue.toLocaleString("id-ID")})</td>
               </tr>
               <tr>
                 <td>Transaksi Pending Belum Lunas</td>
@@ -289,8 +413,8 @@ export const LaporanPage = () => {
               </tr>
               <tr>
                 <td>Rata-rata Keterlambatan</td>
-                <td class="currency" style="font-weight: bold;">2 Hari</td>
-                <td class="highlight">Batas toleransi: 3 Hari (Status: AMAN)</td>
+                <td class="currency" style="font-weight: bold;">${exportAvgDelay} Hari</td>
+                <td class="highlight">Batas toleransi: 3 Hari (Status: ${exportAvgDelay <= 3 ? "AMAN" : "KRITIS"})</td>
               </tr>
             </tbody>
           </table>
@@ -299,7 +423,7 @@ export const LaporanPage = () => {
           <table>
             <thead>
               <tr>
-                <th colspan="3" class="section-header" style="text-align: center;">2. AGING SCHEDULE (DISTRUBUSI UMUR PIUTANG)</th>
+                <th colspan="3" class="section-header" style="text-align: center;">2. AGING SCHEDULE (DISTRIBUSI UMUR PIUTANG)</th>
               </tr>
               <tr>
                 <th>KELOMPOK UMUR TUNGGAKAN</th>
@@ -311,17 +435,17 @@ export const LaporanPage = () => {
               <tr>
                 <td>1-2 Hari (Keterlambatan Awal)</td>
                 <td class="currency">Rp ${age1_2.toLocaleString("id-ID")}</td>
-                <td>${((age1_2 / totalPiutang) * 100).toFixed(0)}% dari total piutang</td>
+                <td>${exportTotalPiutang > 0 ? ((age1_2 / exportTotalPiutang) * 100).toFixed(0) : 0}% dari total piutang</td>
               </tr>
               <tr>
                 <td>3-5 Hari (Perhatian Khusus)</td>
                 <td class="currency">Rp ${age3_5.toLocaleString("id-ID")}</td>
-                <td>${((age3_5 / totalPiutang) * 100).toFixed(0)}% dari total piutang</td>
+                <td>${exportTotalPiutang > 0 ? ((age3_5 / exportTotalPiutang) * 100).toFixed(0) : 0}% dari total piutang</td>
               </tr>
               <tr>
                 <td>&gt; 7 Hari (Tindakan Kritis)</td>
                 <td class="currency" style="color: #E62C2C;">Rp ${ageMore7.toLocaleString("id-ID")}</td>
-                <td class="warning-text">${((ageMore7 / totalPiutang) * 100).toFixed(0)}% - Prioritas WhatsApp CRM</td>
+                <td class="warning-text">${exportTotalPiutang > 0 ? ((ageMore7 / exportTotalPiutang) * 100).toFixed(0) : 0}% - Prioritas WhatsApp CRM</td>
               </tr>
             </tbody>
           </table>
@@ -378,58 +502,7 @@ export const LaporanPage = () => {
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 space-y-6 animate-in fade-in duration-300">
 
-      {/* 🔒 PRINT STYLES - CONDITIONAL TO PIUTANG TAB TO AVOID INTERFERING WITH PENDAPATAN PRINT TEMPLATE */}
-      {selectedTab === "Piutang" && (
-        <style dangerouslySetInnerHTML={{
-          __html: `
-          @media print {
-            aside, nav, header, footer, button, input, .no-print, [role="navigation"], select, .bg-[#F4F7F9] input {
-              display: none !important;
-            }
-            
-            body, html, #root, main, .min-h-screen {
-              background: white !important;
-              color: #13222D !important;
-              padding: 0 !important;
-              margin: 0 !important;
-              width: 100% !important;
-              max-width: 100% !important;
-              overflow: visible !important;
-            }
-            
-            .card, .border, [role="table"] {
-              border: 1px solid #DFE6EB !important;
-              box-shadow: none !important;
-              background: white !important;
-              page-break-inside: avoid;
-            }
-
-            .grid {
-              display: grid !important;
-            }
-
-            .grid-cols-3 {
-              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-            }
-
-            .lg\\:grid-cols-12 {
-              grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
-            }
-
-            .lg\\:col-span-8 {
-              grid-column: span 8 / span 8 !important;
-            }
-
-            .lg\\:col-span-4 {
-              grid-column: span 4 / span 4 !important;
-            }
-            
-            tr {
-              page-break-inside: avoid !important;
-            }
-          }
-        ` }} />
-      )}
+      {/* Print styles are now handled by PrintFormalReportTemplate for both tabs */}
 
       <FinancialReportHeader
         selectedPeriod={selectedPeriod}
@@ -490,20 +563,34 @@ export const LaporanPage = () => {
         </div>
       )}
 
-      {/* Printable template for Pendapatan */}
-      {selectedTab === "Pendapatan" && (
-        <PrintFormalReportTemplate
-          periodLabel={periodOptions.find(p => p.value === selectedPeriod)?.label || selectedPeriod}
-          isLaporanPage={true}
-          activeTab="Pendapatan"
-          kpiData={{
-            totalRevenue,
-            weeklyRevenue,
-            dailyAvg,
-            percentageUp
-          }}
-        />
-      )}
+      {/* Printable template for both Pendapatan & Piutang tabs */}
+      <PrintFormalReportTemplate
+        periodLabel={periodOptions.find(p => p.value === selectedPeriod)?.label || selectedPeriod}
+        isLaporanPage={true}
+        activeTab={selectedTab as any}
+        period={selectedPeriod}
+        kpiData={{
+          totalRevenue,
+          weeklyRevenue,
+          dailyAvg,
+          percentageUp
+        }}
+        piutangData={selectedTab === "Piutang" ? {
+          totalPiutang: piutangTotalPiutang,
+          totalPendingTransactions: piutangTransactions.length,
+          averageDelayDays: piutangAvgDelay,
+          piutangRatioPercentage: piutangRatio,
+          agingSchedule: piutangAgingSchedule,
+          breakdownProportion: piutangBreakdownProportion,
+          transactions: piutangTransactions.map(t => ({
+            no_invoice: t.no_invoice,
+            pasien: t.pasien,
+            total_tagihan: t.total_tagihan,
+            hari_belum_lunas: t.hari_belum_lunas,
+            status_reminder: t.status_reminder,
+          })),
+        } : undefined}
+      />
 
     </div>
   );

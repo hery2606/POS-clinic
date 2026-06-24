@@ -150,7 +150,7 @@ export const analitikService = {
           hasBpjs: params?.hasBpjs,
         }
       });
-      console.log("✅ Pasien berhasil diambil dari RME dengan params:", params);
+      console.log("✅ Pasien berhasil diambil dari RME dengan params:");
       return response.data;
     } catch (error: any) {
       console.error("❌ Gagal mengambil data pasien dari RME");

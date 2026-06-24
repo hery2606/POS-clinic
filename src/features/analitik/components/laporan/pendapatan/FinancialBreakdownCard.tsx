@@ -288,7 +288,7 @@ export function FinancialBreakdownCard({ activeTab, period }: FinancialBreakdown
               </div>
               <span className="font-bold text-[#13222D]">{cat.percentage}%</span>
             </div>
-            <div className="w-full h-2 bg-[#EFF4F8] rounded-full overflow-hidden">
+            <div className="w-full h-4 bg-[#EFF4F8] rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${cat.percentage}%`, backgroundColor: cat.color }}

@@ -34,7 +34,7 @@ const ChartSkeleton = () => (
       <Skeleton className="h-6 w-48 mb-2" />
     </CardHeader>
     <CardContent className="p-6">
-      <div className="h-75 w-full bg-slate-50/50 rounded-2xl animate-pulse" />
+      <div className="h-[300px] w-full bg-slate-50/50 rounded-2xl animate-pulse" />
     </CardContent>
   </Card>
 );
@@ -79,7 +79,7 @@ export function RevenueTrendChart() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="h-75 w-full flex items-center justify-center bg-red-50/30 rounded-2xl border border-dashed border-red-200">
+          <div className="h-[300px] w-full flex items-center justify-center bg-red-50/30 rounded-2xl border border-dashed border-red-200">
             <p className="text-red-500 text-xs font-bold">⚠️ Gagal memuat data grafik tren bulanan</p>
           </div>
         </CardContent>
@@ -95,7 +95,7 @@ export function RevenueTrendChart() {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
-        <ChartContainer config={chartConfig} className="h-75 w-full">
+        <ChartContainer config={chartConfig} className="h-[300px] w-full">
           <BarChart data={chartData} margin={{ top: 15, right: 10, left: 10, bottom: 0 }}>
             {/* Garis putus-putus (Grid) yang lebih tebal dan jelas, memberi kesan profesional */}
             <CartesianGrid vertical={false} stroke="#CBD5E1" strokeDasharray="6 6" strokeWidth={1} opacity={0.8} />
@@ -140,7 +140,7 @@ export function RevenueTrendChart() {
               dataKey="total"
               fill="var(--color-total)"
               radius={[6, 6, 0, 0]}
-              maxBarSize={45}
+              maxBarSize={70}
               animationDuration={1200}
             />
             <ChartLegend

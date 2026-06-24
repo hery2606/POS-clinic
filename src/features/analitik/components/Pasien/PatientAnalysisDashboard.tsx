@@ -130,7 +130,7 @@ export function PatientAnalysisDashboard() {
               <ActivitySquare className="w-4 h-4 text-[#1B9C90]" />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-[#13222D]">{analytics.total_pasien_unik_periode_ini.toLocaleString()}</h3>
+              <h3 className="text-2xl font-black text-[#13222D]">{(analytics.total_pasien_unik_periode_ini ?? 0).toLocaleString()}</h3>
               <p className="text-[11px] font-semibold text-[#67737C] mt-1">Pasien unik bulan berjalan</p>
             </div>
           </CardContent>
@@ -176,10 +176,10 @@ export function PatientAnalysisDashboard() {
             </div>
             <div>
               <h3 className="text-lg font-black text-[#13222D] truncate">
-                {analytics.pasien_spend_tertinggi[0] ? formatCurrency(analytics.pasien_spend_tertinggi[0].total_spend) : "Rp 0"}
+                {analytics.pasien_spend_tertinggi?.[0] ? formatCurrency(analytics.pasien_spend_tertinggi[0].total_spend) : "Rp 0"}
               </h3>
               <p className="text-[11px] font-semibold text-[#67737C] mt-1 truncate">
-                👤 {analytics.pasien_spend_tertinggi[0]?.nama_pasien || "N/A"}
+                👤 {analytics.pasien_spend_tertinggi?.[0]?.nama_pasien || "N/A"}
               </p>
             </div>
           </CardContent>
@@ -207,7 +207,7 @@ export function PatientAnalysisDashboard() {
             {/* AREA UTAMA DONUT CHART */}
             <div className="flex flex-col items-center justify-center flex-1 py-4 relative">
               <div className="relative w-40 h-40">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                   <PieChart>
                     <Pie
                       data={retentionData}
@@ -258,7 +258,7 @@ export function PatientAnalysisDashboard() {
 
             {/* DAFTAR BARIS TOP SPENDER CLEAN SEGMENT */}
             <div className="space-y-2 flex-1 overflow-y-auto max-h-[260px] pr-1 [scrollbar-width:thin]">
-              {analytics.pasien_spend_tertinggi.map((spender, index) => (
+              {(analytics.pasien_spend_tertinggi || []).map((spender, index) => (
                 <div
                   key={index}
                   className="p-3 rounded-xl bg-[#FAFCFD] border border-slate-100 hover:border-[#1B9C90]/20 flex items-center justify-between gap-4 transition-all"

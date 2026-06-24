@@ -178,8 +178,10 @@ export const AnalitikHeader = () => {
 
       <VisualSummaryModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
-      {/* 📄 PEMANGGILAN LAYOUT TEMPLATE LAPORAN FORMAL YANG BARU KITA PISAH */}
-      <PrintFormalReportTemplate periodLabel={getPeriodLabel()} isLaporanPage={isLaporanPage} />
+      {/* 📄 PEMANGGILAN LAYOUT TEMPLATE LAPORAN FORMAL (hanya untuk dashboard, laporan punya template sendiri) */}
+      {!isLaporanPage && (
+        <PrintFormalReportTemplate periodLabel={getPeriodLabel()} isLaporanPage={isLaporanPage} />
+      )}
     </>
   );
 };

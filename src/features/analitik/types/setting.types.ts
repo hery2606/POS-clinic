@@ -50,3 +50,22 @@ export interface RevokeSessionResponse {
   status: string;
   message: string;
 }
+
+export interface CreateUserRequest {
+  name: string;
+  email: string;
+  password?: string;
+  role: string;
+}
+
+export interface UserDetail {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+export interface CreateUserResponse {
+  message: string;
+  user: UserDetail;
+}
