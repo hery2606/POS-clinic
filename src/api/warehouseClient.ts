@@ -30,27 +30,68 @@ warehouseClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Mekanisme antrean untuk mencegah multiple login bersamaan
+let isWarehouseRefreshing = false;
+let warehouseRefreshSubscribers: ((token: string) => void)[] = [];
+
+const subscribeWarehouseTokenRefresh = (cb: (token: string) => void) => {
+  warehouseRefreshSubscribers.push(cb);
+};
+
+const onWarehouseRefreshed = (token: string) => {
+  warehouseRefreshSubscribers.forEach((cb) => cb(token));
+  warehouseRefreshSubscribers = [];
+};
+
 // Interceptor response untuk handle 401 (token expired)
 warehouseClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
-      console.warn("⚠️ Warehouse Token expired atau invalid, melakukan re-login...");
-      localStorage.removeItem("warehouse_auth_token");
+    const originalRequest = error.config;
+    
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true;
       
-      try {
-        await initializeWarehouseAuth();
-        // Retry request original dengan token baru
-        const originalRequest = error.config;
-        const token = localStorage.getItem("warehouse_auth_token");
-        if (token) {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return warehouseClient(originalRequest);
+      if (!isWarehouseRefreshing) {
+        isWarehouseRefreshing = true;
+        console.warn("⚠️ Warehouse Token expired atau invalid, melakukan re-login...");
+        localStorage.removeItem("warehouse_auth_token");
+        
+        try {
+          await initializeWarehouseAuth();
+          
+          const token = localStorage.getItem("warehouse_auth_token");
+          isWarehouseRefreshing = false;
+          
+          if (token) {
+            onWarehouseRefreshed(token);
+          } else {
+            // Jika login tetap gagal
+            onWarehouseRefreshed('');
+          }
+        } catch (loginError) {
+          isWarehouseRefreshing = false;
+          onWarehouseRefreshed('');
+          console.error("❌ Failed to re-authenticate warehouse:", loginError);
         }
-      } catch (loginError) {
-        console.error("❌ Failed to re-authenticate warehouse:", loginError);
       }
+
+      // Semua request yang gagal karena 401 akan menunggu di sini sampai token baru didapatkan
+      const retryOriginalRequest = new Promise((resolve, reject) => {
+        subscribeWarehouseTokenRefresh((token: string) => {
+          if (token) {
+            console.log("🔄 Melanjutkan request Warehouse yang sempat gagal (Auto-Retry)...");
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            resolve(warehouseClient(originalRequest));
+          } else {
+            reject(error);
+          }
+        });
+      });
+      
+      return retryOriginalRequest;
     }
+    
     return Promise.reject(error);
   }
 );

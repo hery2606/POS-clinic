@@ -34,6 +34,19 @@ rmeClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Mekanisme antrean untuk mencegah multiple login bersamaan
+let isRmeRefreshing = false;
+let rmeRefreshSubscribers: ((token: string) => void)[] = [];
+
+const subscribeRmeTokenRefresh = (cb: (token: string) => void) => {
+  rmeRefreshSubscribers.push(cb);
+};
+
+const onRmeRefreshed = (token: string) => {
+  rmeRefreshSubscribers.forEach((cb) => cb(token));
+  rmeRefreshSubscribers = [];
+};
+
 // Interceptor response untuk handle 401 (token expired)
 rmeClient.interceptors.response.use(
   (response) => response,
@@ -42,26 +55,49 @@ rmeClient.interceptors.response.use(
     
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
-      console.warn("⚠️ RME Token expired atau invalid, mencoba re-autentikasi otomatis...");
       
-      // Hapus token lama yang sudah kadaluarsa
-      secureStorage.removeItem('rmeToken');
-      
-      try {
-        // Coba login otomatis kembali
-        await initializeRmeAuth();
+      if (!isRmeRefreshing) {
+        isRmeRefreshing = true;
+        console.warn("⚠️ RME Token expired atau invalid, mencoba re-autentikasi otomatis...");
         
-        // Ambil token baru dari localStorage
-        const newToken = secureStorage.getItem('rmeToken');
-        if (newToken) {
-          console.log("🔄 Melanjutkan request yang sempat gagal (Auto-Retry)...");
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          return rmeClient(originalRequest);
+        // Hapus token lama yang sudah kadaluarsa
+        secureStorage.removeItem('rmeToken');
+        
+        try {
+          // Coba login otomatis kembali
+          await initializeRmeAuth();
+          
+          // Ambil token baru dari localStorage
+          const newToken = secureStorage.getItem('rmeToken');
+          isRmeRefreshing = false;
+          
+          if (newToken) {
+            onRmeRefreshed(newToken);
+          } else {
+            // Jika login tetap gagal
+            onRmeRefreshed('');
+          }
+        } catch (retryError) {
+          isRmeRefreshing = false;
+          onRmeRefreshed('');
+          console.error("❌ Auto-relogin RME gagal secara permanen.");
         }
-      } catch (retryError) {
-        console.error("❌ Auto-relogin RME gagal secara permanen.");
-        return Promise.reject(retryError);
       }
+
+      // Semua request yang gagal karena 401 akan menunggu di sini sampai token baru didapatkan
+      const retryOriginalRequest = new Promise((resolve, reject) => {
+        subscribeRmeTokenRefresh((token: string) => {
+          if (token) {
+            console.log("🔄 Melanjutkan request yang sempat gagal (Auto-Retry)...");
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            resolve(rmeClient(originalRequest));
+          } else {
+            reject(error);
+          }
+        });
+      });
+      
+      return retryOriginalRequest;
     }
     
     return Promise.reject(error);
