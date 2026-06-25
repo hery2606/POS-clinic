@@ -154,7 +154,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                     value={credentials.email}
                     onChange={handleChange}
                     disabled={isLoading}
-                    className="pl-10 h-11 bg-[#EFF4F8]/40 border-[#DFE6EB] rounded-xl text-xs font-bold focus:ring-2 focus:ring-[#1B9C90]/15 focus:border-[#1B9C90] transition-all placeholder:text-[#67737C]"
+                    className="pl-10 h-11 bg-[#EFF4F8]/40 border-[#DFE6EB] rounded-xl text-xs font-medium focus:ring-2 focus:ring-[#1B9C90]/15 focus:border-[#1B9C90] transition-all placeholder:text-[#67737C]"
                   />
                 </div>
               </div>
