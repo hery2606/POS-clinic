@@ -142,8 +142,12 @@ Menu Pengaturan menyediakan opsi kustomisasi lengkap bagi administrator klinik y
 
 ## 🌐 Panduan Deployment
 
+
 Aplikasi ini siap dideploy langsung ke **Vercel**:
 1. Repositori ini sudah dilengkapi dengan file `vercel.json` yang berisi aturan rewrite rute halaman SPA ke `index.html` dan proxy backend untuk production.
 2. Hubungkan repositori GitHub Anda ke Vercel Dashboard.
 3. Masukkan seluruh konfigurasi variabel lingkungan (Environment Variables) dari file `.env.local` Anda ke pengaturan Vercel project.
 4. Klik **Deploy** dan verifikasi URL produksi Anda.
+
+
+## create by hery
