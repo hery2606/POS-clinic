@@ -19,12 +19,15 @@ export const rmeClient = axios.create({
 
 // Interceptor khusus RME: Menyisipkan token admin RME dari localStorage
 rmeClient.interceptors.request.use(
-  (config) => {
-    const token = secureStorage.getItem('rmeToken');
+  async (config) => {
+    let token = secureStorage.getItem('rmeToken');
+    if (!token) {
+      console.log("🔑 RME token tidak ditemukan, melakukan inisialisasi login...");
+      await initializeRmeAuth();
+      token = secureStorage.getItem('rmeToken');
+    }
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else if (!token) {
-      console.warn("⚠️ RME token tidak ditemukan di localStorage, request akan dikirim tanpa auth");
     }
     return config;
   },
@@ -102,7 +105,7 @@ rmeClient.interceptors.response.use(
 );
 
 // Fungsi Otomatisasi Login Sistem/Admin ke RME
-export const initializeRmeAuth = async () => {
+export async function initializeRmeAuth() {
   const existingToken = secureStorage.getItem('rmeToken');
   
   // Jika sudah ada token di localStorage, tidak perlu hit API login lagi

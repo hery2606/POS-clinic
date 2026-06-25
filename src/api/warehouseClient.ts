@@ -16,12 +16,15 @@ export const warehouseClient = axios.create({
 
 // Interceptor khusus Warehouse: Menempelkan token WMS otomatis jika ada
 warehouseClient.interceptors.request.use(
-  (config) => {
-    const token = secureStorage.getItem("warehouse_auth_token");
+  async (config) => {
+    let token = secureStorage.getItem("warehouse_auth_token");
+    if (!token) {
+      console.log("🔑 Warehouse token tidak ditemukan, melakukan inisialisasi login...");
+      await initializeWarehouseAuth();
+      token = secureStorage.getItem("warehouse_auth_token");
+    }
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else if (!token) {
-      console.warn("⚠️ Warehouse token tidak ditemukan di secureStorage");
     }
     return config;
   },
@@ -95,7 +98,7 @@ warehouseClient.interceptors.response.use(
 );
 
 // Fungsi Axios murni untuk menembak login (akan dipanggil oleh React Query)
-export const loginWarehouseAdmin = async () => {
+export async function loginWarehouseAdmin() {
   console.log("Mencoba mengautentikasi sistem ke server Warehouse...");
   let response;
   if (import.meta.env.DEV) {
@@ -117,10 +120,10 @@ export const loginWarehouseAdmin = async () => {
     console.warn("Autentikasi Warehouse sukses, tetapi properti accessToken kosong.");
     return null;
   }
-};
+}
 
 // Fungsi Otomatisasi Login Sistem/Admin ke Warehouse
-export const initializeWarehouseAuth = async () => {
+export async function initializeWarehouseAuth() {
   const existingToken = secureStorage.getItem("warehouse_auth_token");
   
   // Jika sudah ada token di browser, tidak perlu hit API login lagi
