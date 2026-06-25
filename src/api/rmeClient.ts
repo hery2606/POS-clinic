@@ -7,10 +7,7 @@ import { secureStorage } from "@/features/auth/store/authStore";
 // Di production (Vercel), gunakan path /proxy/rme agar Vercel forward ke backend (bypass CORS)
 // Di development (localhost), langsung ke URL backend
 const getRmeBaseUrl = () => {
-  const isDev = import.meta.env.DEV;
-  return isDev
-    ? import.meta.env.VITE_API_RME_URL
-    : '/proxy/rme';
+  return '/proxy/rme';
 };
 
 export const rmeClient = axios.create({
@@ -22,12 +19,15 @@ export const rmeClient = axios.create({
 
 // Interceptor khusus RME: Menyisipkan token admin RME dari localStorage
 rmeClient.interceptors.request.use(
-  (config) => {
-    const token = secureStorage.getItem('rmeToken');
+  async (config) => {
+    let token = secureStorage.getItem('rmeToken');
+    if (!token) {
+      console.log("🔑 RME token tidak ditemukan, melakukan inisialisasi login...");
+      await initializeRmeAuth();
+      token = secureStorage.getItem('rmeToken');
+    }
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else if (!token) {
-      console.warn("⚠️ RME token tidak ditemukan di localStorage, request akan dikirim tanpa auth");
     }
     return config;
   },
@@ -105,7 +105,7 @@ rmeClient.interceptors.response.use(
 );
 
 // Fungsi Otomatisasi Login Sistem/Admin ke RME
-export const initializeRmeAuth = async () => {
+export async function initializeRmeAuth() {
   const existingToken = secureStorage.getItem('rmeToken');
   
   // Jika sudah ada token di localStorage, tidak perlu hit API login lagi
@@ -117,12 +117,17 @@ export const initializeRmeAuth = async () => {
   try {
     console.log("🔄 Mencoba mengautentikasi Admin ke RME...");
     
-    // PERBAIKAN UTAMA: Mengubah properti 'email' menjadi 'identifier' sesuai request backend
-    const baseUrl = getRmeBaseUrl();
-    const response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
-      identifier: import.meta.env.VITE_RME_ADMIN_EMAIL, 
-      password: import.meta.env.VITE_RME_ADMIN_PASSWORD,
-    });
+    let response;
+    if (import.meta.env.DEV) {
+      const baseUrl = getRmeBaseUrl();
+      response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
+        identifier: import.meta.env.VITE_RME_ADMIN_EMAIL, 
+        password: import.meta.env.VITE_RME_ADMIN_PASSWORD,
+      });
+    } else {
+      // Di production, tembak ke Vercel serverless function proxy
+      response = await axios.post("/api/rmeLogin");
+    }
 
     // Menyesuaikan dengan Response Body sukses -> response.data.data.accessToken
     const token = response.data?.data?.accessToken;

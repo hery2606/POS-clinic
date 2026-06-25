@@ -1,5 +1,11 @@
 export default async function handler(req, res) {
-  const targetPath = req.query.targetPath || '';
+  let targetPath = req.query.targetPath || '';
+  
+  // Sanitasi path untuk mencegah Directory Traversal dan SSRF Protocol redirection
+  targetPath = targetPath
+    .replace(/\.\./g, '')
+    .replace(/^(https?:)?\/\//, '');
+
   const target = `https://system-inventory-management.onrender.com/${targetPath}`;
   try {
     const response = await fetch(target, {
