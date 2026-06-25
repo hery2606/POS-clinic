@@ -1,4 +1,5 @@
 import axios from "axios";
+import { secureStorage } from "@/features/auth/store/authStore";
 
 // Di production (Vercel), gunakan path /proxy/* agar Vercel yang forward ke backend (bypass CORS)
 // Di development (localhost), langsung ke URL backend via vite proxy
@@ -16,11 +17,11 @@ export const warehouseClient = axios.create({
 // Interceptor khusus Warehouse: Menempelkan token WMS otomatis jika ada
 warehouseClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("warehouse_auth_token");
+    const token = secureStorage.getItem("warehouse_auth_token");
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     } else if (!token) {
-      console.warn("⚠️ Warehouse token tidak ditemukan di localStorage");
+      console.warn("⚠️ Warehouse token tidak ditemukan di secureStorage");
     }
     return config;
   },
@@ -52,12 +53,12 @@ warehouseClient.interceptors.response.use(
       if (!isWarehouseRefreshing) {
         isWarehouseRefreshing = true;
         console.warn("⚠️ Warehouse Token expired atau invalid, melakukan re-login...");
-        localStorage.removeItem("warehouse_auth_token");
+        secureStorage.removeItem("warehouse_auth_token");
         
         try {
           await initializeWarehouseAuth();
           
-          const token = localStorage.getItem("warehouse_auth_token");
+          const token = secureStorage.getItem("warehouse_auth_token");
           isWarehouseRefreshing = false;
           
           if (token) {
@@ -120,11 +121,11 @@ export const loginWarehouseAdmin = async () => {
 
 // Fungsi Otomatisasi Login Sistem/Admin ke Warehouse
 export const initializeWarehouseAuth = async () => {
-  const existingToken = localStorage.getItem("warehouse_auth_token");
+  const existingToken = secureStorage.getItem("warehouse_auth_token");
   
   // Jika sudah ada token di browser, tidak perlu hit API login lagi
   if (existingToken) {
-    console.log("✅ Token Warehouse sudah ada di localStorage, skip login");
+    console.log("✅ Token Warehouse sudah ada di secureStorage, skip login");
     return;
   }
 
@@ -145,8 +146,8 @@ export const initializeWarehouseAuth = async () => {
     const token = response.data?.accessToken;
     
     if (token) {
-      localStorage.setItem("warehouse_auth_token", token);
-      console.log("✅ Autentikasi Warehouse Berhasil! Token disimpan di localStorage.");
+      secureStorage.setItem("warehouse_auth_token", token);
+      console.log("✅ Autentikasi Warehouse Berhasil! Token disimpan di secureStorage.");
     } else {
       console.warn("⚠️ Respon login sukses, tetapi accessToken tidak ditemukan pada struktur data.");
       console.warn("📋 Response:", response.data);
