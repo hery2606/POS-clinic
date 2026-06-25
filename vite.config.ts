@@ -22,7 +22,31 @@ export default defineConfig({
         target: 'https://midtrans-backend-eight.vercel.app',
         changeOrigin: true,
         secure: false,
-      }
+      },
+      '/proxy/rme': {
+        target: 'https://smartclinic-rekam-medis.onrender.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/proxy\/rme/, ''),
+      },
+      '/proxy/warehouse': {
+        target: 'https://system-inventory-management.onrender.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/proxy\/warehouse/, ''),
+      },
+      '/proxy/ai': {
+        target: 'https://dashboard-ai-9k65.onrender.com',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/proxy\/ai/, ''),
+      },
+      '/proxy/internal': {
+        target: 'https://db-posqris-cpgii-production.up.railway.app',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/proxy\/internal/, ''),
+      },
     }
   }
 })

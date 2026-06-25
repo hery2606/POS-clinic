@@ -3,10 +3,7 @@ import axios from "axios";
 // Di production (Vercel), gunakan path /proxy/* agar Vercel yang forward ke backend (bypass CORS)
 // Di development (localhost), langsung ke URL backend via vite proxy
 const getWarehouseBaseUrl = () => {
-  const isDev = import.meta.env.DEV;
-  return isDev
-    ? import.meta.env.VITE_API_WAREHOUSE_URL
-    : '/proxy/warehouse';
+  return '/proxy/warehouse';
 };
 
 export const warehouseClient = axios.create({

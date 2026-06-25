@@ -2,8 +2,7 @@ import axios from "axios";
 import { secureStorage } from "@/features/auth/store/authStore";
 
 const getAiBaseUrl = () => {
-  const url = import.meta.env.VITE_API_AI_URL || "";
-  return url.replace(/\/docs\/?$/, "");
+  return '/proxy/ai';
 };
 
 export const aiClient = axios.create({

@@ -7,10 +7,7 @@ import { secureStorage } from "@/features/auth/store/authStore";
 // Di production (Vercel), gunakan path /proxy/rme agar Vercel forward ke backend (bypass CORS)
 // Di development (localhost), langsung ke URL backend
 const getRmeBaseUrl = () => {
-  const isDev = import.meta.env.DEV;
-  return isDev
-    ? import.meta.env.VITE_API_RME_URL
-    : '/proxy/rme';
+  return '/proxy/rme';
 };
 
 export const rmeClient = axios.create({

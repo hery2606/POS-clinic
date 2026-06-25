@@ -4,7 +4,7 @@ import { secureStorage } from "@/features/auth/store/authStore";
 
 export const posClient = axios.create({
   // 🌐 Membaca env khusus sesuai request-mu
-  baseURL: import.meta.env.VITE_API_INTERNAL_URL, 
+  baseURL: '/proxy/internal', 
   withCredentials: false, // MUTLAK: Agar session cookie/token aman dari backend ikut terkirim
   headers: {
     'Content-Type': 'application/json',
