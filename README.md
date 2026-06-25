@@ -1,7 +1,6 @@
-<<<<<<< HEAD
 # Klinik Payment (POS & Analytics System)
 
-Sistem Aplikasi Point of Sale (POS) dan Analitik berbasis web yang dirancang khusus untuk operasional Klinik. Aplikasi ini mempermudah pengelolaan transaksi kasir, manajemen stok obat, rekam medis elektronik (RME), hingga analitik performa klinik secara keseluruhan.
+Sistem Aplikasi Point of Sale (POS) dan Analitik berbasis web yang dirancang khusus untuk operasional Klinik. Aplikasi ini mempermudah pengelolaan transaksi kasir, manajemen stok obat, sinkronisasi rekam medis elektronik (RME), hingga analitik performa finansial dan demografi pasien secara real-time.
 
 ---
 
@@ -9,86 +8,105 @@ Sistem Aplikasi Point of Sale (POS) dan Analitik berbasis web yang dirancang khu
 
 Aplikasi ini dibagi menjadi 2 portal utama berdasarkan peran pengguna (Role):
 
-### 1. Portal Kasir (Cashier)
-Didesain untuk efisiensi transaksi harian di meja kasir.
-- **Dashboard Kasir:** Antarmuka utama untuk melakukan transaksi pembayaran pasien/pelanggan.
-- **Riwayat Transaksi:** Melacak dan melihat detail dari seluruh transaksi yang telah berhasil maupun dibatalkan.
-- **Manajemen Stok:** Memeriksa ketersediaan stok obat dan alat kesehatan secara *real-time*.
-- **Pengaturan Kasir:** Konfigurasi khusus untuk perangkat kasir seperti printer struk (Thermal/A4), mode tampilan, dsb.
+### 1. Portal Kasir (Cashier Portal)
+Didesain khusus untuk efisiensi transaksi harian di meja kasir dengan fungsionalitas:
+- **Dashboard Kasir:** Antarmuka intuitif untuk memproses transaksi pembayaran pasien.
+- **Integrasi Pembayaran QRIS & Tunai:** Didukung oleh payment gateway **Midtrans** (Sandbox/Production) untuk opsi pembayaran non-tunai yang terverifikasi otomatis.
+- **Split Bill (Pembayaran Terpisah):** Memungkinkan pasien membagi pembayaran menggunakan kombinasi tunai dan QRIS secara fleksibel.
+- **Riwayat Transaksi:** Melacak, memfilter berdasarkan tanggal/status, dan melihat rincian detail dari seluruh transaksi.
+- **Pencetakan Struk:** Konfigurasi cetak struk format **Thermal 80mm** (untuk printer kasir portabel) maupun **A4 Portrait** (untuk laporan formal/kwitansi resmi).
 
 ### 2. Portal Analitik & Admin
-Didesain untuk manajemen klinik memantau performa dan laporan operasional.
-- **Dashboard Analitik:** Ringkasan visual (grafik/chart) dari pendapatan, jumlah pasien, dan tren performa klinik.
-- **Laporan:** Pembuatan dan pencetakan laporan transaksi atau keuangan klinik.
-- **Data Pasien:** Manajemen data dasar pasien yang terintegrasi.
-- **Manajemen Transaksi Admin:** Melihat keseluruhan transaksi operasional secara lebih detail.
-- **Pengaturan Sistem:** Mengatur profil klinik, preferensi keamanan (2FA), manajemen pengguna, dan preferensi notifikasi.
+Didesain untuk kebutuhan manajemen dan pemilik klinik guna memantau performa bisnis:
+- **Dashboard Analitik:** Ringkasan visual interaktif (grafik/chart Recharts) untuk tren pendapatan harian/bulanan, total transaksi, rata-rata nilai billing, dan status keuangan.
+- **Analisis Demografi Pasien:** Visualisasi statistik pasien berdasarkan usia, gender, domisili, dan total kunjungan yang terintegrasi dengan data RME.
+- **Manajemen Inventaris Obat (WMS):** Sinkronisasi data obat dari Warehouse Management System, lengkap dengan indikator status stok (**Tersedia**, **Stok Menipis**, atau **Stok Kritis**).
+- **Pengaturan Sistem (Settings):** Pusat konfigurasi profil klinik, preferensi cetak struk, opsi notifikasi alert, keamanan akun, dan manajemen akses pengguna (User Management).
 
 ---
 
-## 🛠️ Tech Stack & Teknologi
+## 🛠️ Tech Stack & Arsitektur
 
-Aplikasi ini dibangun menggunakan arsitektur modern Front-End dengan spesifikasi sebagai berikut:
+Aplikasi ini dibangun menggunakan arsitektur modern Front-End yang responsif, interaktif, dan aman:
 
 | Kategori | Teknologi Utama | Deskripsi |
 | :--- | :--- | :--- |
-| **Core & Framework** | [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) | Framework utama untuk membangun antarmuka pengguna secara reaktif dan *type-safe*. |
-| **Build Tool** | [Vite 6](https://vitejs.dev/) | Bundler modern yang super cepat untuk lingkungan *development* dan *production*. |
-| **State Management** | [Zustand](https://github.com/pmndrs/zustand) | Manajemen *state* global yang ringan dan terukur. |
-| **Data Fetching** | [TanStack React Query v5](https://tanstack.com/query/latest) + [Axios](https://axios-http.com/) | Manajemen asinkron, *caching*, dan *fetching* API. |
-| **Routing** | [React Router v7](https://reactrouter.com/) | Penanganan navigasi dan rute aplikasi berbasis komponen. |
-| **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) | Framework CSS berbasis *utility* untuk mempercepat *styling*. |
-| **UI Components** | [Radix UI](https://www.radix-ui.com/) + [Shadcn](https://ui.shadcn.com/) | Komponen *headless* yang *accessible* dan komponen visual UI. |
-| **Icons & Charts** | [Lucide React](https://lucide.dev/) & [Recharts](https://recharts.org/) | Ikon modern dan pustaka visualisasi data untuk *dashboard* analitik. |
+| **Core & Framework** | [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) | Framework utama untuk UI reaktif, terstruktur, dan tipe data aman (*type-safe*). |
+| **Build Tool** | [Vite 6](https://vitejs.dev/) | Bundler modern super cepat untuk performa HMR lokal yang instan. |
+| **State Management** | [Zustand](https://github.com/pmndrs/zustand) | Manajemen status global yang ringan, modular, dan cepat. |
+| **Data Fetching** | [TanStack React Query v5](https://tanstack.com/query/latest) + [Axios](https://axios-http.com/) | Penanganan asinkronus, caching pintar, dan auto-retry request API. |
+| **Routing** | [React Router v7](https://reactrouter.com/) | Sistem routing dinamis dengan penanganan proteksi rute akses. |
+| **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) | Utilitas CSS modern dengan dukungan performa rendering optimal. |
+| **UI Components** | [Radix UI](https://www.radix-ui.com/) + [Shadcn UI](https://ui.shadcn.com/) | Komponen visual UI bertema minimalis, modern, dan aksesibel. |
+| **Visualisasi Data** | [Recharts](https://recharts.org/) | Pustaka chart interaktif untuk visualisasi grafik analitik yang responsif. |
 
 ---
 
-## 🔌 Integrasi Layanan Backend (API)
+## 🔒 Sistem Keamanan & Integrasi API
 
-Aplikasi ini menggunakan arsitektur modular yang berkomunikasi dengan 4 backend layanan (Microservices):
-- **Backend Internal Login (`VITE_API_INTERNAL_URL`):** Otentikasi dan otorisasi untuk KASIR dan SUPER_ADMIN.
-- **Backend RME (`VITE_API_RME_URL`):** Terhubung dengan sistem Rekam Medis Elektronik untuk data pasien dan dokter.
-- **Backend Warehouse (`VITE_API_WAREHOUSE_URL`):** Sinkronisasi inventaris obat/stok dengan gudang (WMS).
-- **Backend AI (`VITE_API_AI_URL`):** Layanan asisten cerdas untuk operasional.
+Aplikasi ini mengintegrasikan mikroservis dari 4 backend eksternal secara aman:
+1. **POS Internal Backend (`VITE_API_INTERNAL_URL`):** Manajemen login staf (Kasir, Admin, Super Admin) dan pencatatan riwayat transaksi kasir.
+2. **RME Backend (`VITE_API_RME_URL`):** Pengambilan data rekam medis elektronik pasien, antrean berobat, serta histori tindakan medis.
+3. **Warehouse/WMS Backend (`VITE_API_WAREHOUSE_URL`):** Sinkronisasi inventaris obat, status stok minimum, dan detail harga obat.
+4. **AI Backend (`VITE_API_AI_URL`):** Layanan kecerdasan buatan untuk analisis prediktif performa klinik.
+
+### 🛡️ Implementasi Keamanan Tambahan
+- **Enkripsi/Obfuskasi Frontend (`secureStorage`):** Token sensitif (`authToken`, `rmeToken`, dan `warehouse_auth_token`) disimpan di browser secara terenkripsi menggunakan helper custom `secureStorage` (menggunakan algoritma XOR + salt + Base64) untuk mencegah eksploitasi visual sederhana (*shoulder surfing*) dan *data sniffing* via inspect element.
+- **Pencegahan CORS via Local Proxy (`vite.config.ts`):** Mengatasi isu CORS di lingkungan pengembangan lokal dengan memetakan request `/proxy/*` langsung ke server backend target, selaras dengan konfigurasi Vercel Rewrite (`vercel.json`) di lingkungan produksi.
+- **Otomatisasi Re-login Interceptor:** Interceptor request/response Axios dikonfigurasi untuk mendeteksi ketiadaan token atau token kedaluwarsa (401), secara otomatis melakukan otentikasi ulang menggunakan kredensial sistem secara senyap (*silent re-login*), lalu mengulangi kembali request awal tanpa mengganggu pengalaman pengguna.
 
 ---
 
 ## 🚀 Panduan Memulai (Development)
 
-Pastikan Anda telah menginstal [Node.js](https://nodejs.org/) versi terbaru.
+### 1. Prasyarat
+Pastikan Anda sudah menginstal [Node.js](https://nodejs.org/) (versi 18 ke atas disarankan) dan npm di perangkat Anda.
 
-### 1. Clone & Instalasi
-Clone repositori ini atau buka direktori proyek, lalu instal dependensi:
+### 2. Instalasi Dependensi
+Clone repositori ini, masuk ke direktori proyek, lalu jalankan instalasi:
 ```bash
-cd CapstonPos-QrisGII
+git clone https://github.com/hery2606/POS-clinic.git
+cd POS-clinic
 npm install
 ```
 
-### 2. Konfigurasi Environment Variables
-Buat file `.env.local` di root proyek dan tambahkan variabel lingkungan berikut. Sesuaikan dengan kredensial API Anda:
+### 3. Konfigurasi Environment Variables
+Buat file bernama `.env.local` di folder root proyek dan lengkapi variabel berikut:
 ```env
 # 1. Backend Utama Rekam Medis (RME)
-VITE_API_RME_URL=https://<url-backend-rme>
+VITE_API_RME_URL=https://smartclinic-rekam-medis.onrender.com
 
-# 2. Backend AI Engineer
-VITE_API_AI_URL=https://<url-backend-ai>
 
-# 3. Backend Warehouse / Gudang (WMS)
-VITE_API_WAREHOUSE_URL=https://<url-backend-warehouse>
+# 2. Backend Warehouse / Gudang (WMS)
+VITE_API_WAREHOUSE_URL=https://system-inventory-management.onrender.com
 
-# 4. Backend Internal Login (Kasir & Super Admin)
-VITE_API_INTERNAL_URL=https://<url-backend-internal>
+
+# 3. Backend AI Engineer
+VITE_API_AI_URL=https://dashboard-ai-9k65.onrender.com/docs
+
+# 4. Backend Internal Login
+VITE_API_INTERNAL_URL=https://db-posqris-cpgii-production.up.railway.app
+
+# 5. Kunci Klien Midtrans (Opsional - Untuk hilangkan warning SDK)
+VITE_MIDTRANS_CLIENT_KEY=SB-Mid-client-xxxxxxxxxxxx
+
+# 6. Server-Side Credentials (untuk serverless dev lokal)
+RME_ADMIN_EMAIL=
+RME_ADMIN_PASSWORD=
+WAREHOUSE_ADMIN_EMAIL=
+WAREHOUSE_ADMIN_PASSWORD=
 ```
 
-### 3. Menjalankan Aplikasi
-Berikut adalah daftar perintah atau *scripts* yang tersedia:
+### 4. Menjalankan Server Lokal
+Jalankan perintah berikut untuk memulai server pengembangan:
+```bash
+npm run dev
+```
+Aplikasi akan berjalan di `http://localhost:5174` (atau port default lainnya yang tertera di konsol).
 
-| Command | Fungsi |
-| :--- | :--- |
-| `npm run dev` | Menjalankan server pengembangan (Development Server) di `http://localhost:5173` |
-| `npm run build` | Mengompilasi TypeScript dan mem-build aplikasi untuk *production* (folder `dist`) |
-| `npm run lint` | Menjalankan ESLint untuk memeriksa masalah sintaks atau standar kode |
-| `npm run preview` | Menjalankan server lokal untuk melihat hasil *build production* |
+### 5. Skrip Build & Produksi
+- `npm run build` : Mengompilasi TypeScript dan mem-build berkas produksi ke folder `/dist`.
+- `npm run preview` : Menjalankan server lokal untuk meninjau hasil build produksi.
 
 ---
 
@@ -96,371 +114,36 @@ Berikut adalah daftar perintah atau *scripts* yang tersedia:
 
 ```
 src/
-├── api/          # Konfigurasi axios proxy dan layanan client (RME, POS, Warehouse, AI)
-├── assets/       # Aset statis seperti gambar, ikon, atau font lokal
-├── components/   # Komponen UI global yang reusable (Button, Input, Layout, dsb)
-├── features/     # Fitur utama aplikasi yang dikelompokkan berdasarkan domain (Domain-Driven)
-│   ├── analitik/ # Halaman & komponen khusus untuk Dashboard Admin / Analitik
-│   ├── auth/     # Halaman login, konteks otentikasi, dan pengaturan *session*
-│   └── kasir/    # Halaman & komponen khusus untuk Portal Kasir
-├── hooks/        # Custom React Hooks
-├── lib/          # Fungsi utilitas pembantu (utils) dan konfigurasi eksternal
-└── routes/       # Konfigurasi routing (routeConfig) dan komponen pelindung rute (ProtectedRoute)
-=======
-# Settings Component - Visual Guide & Usage Examples
-
-## 🎨 Component Structure
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                      HEADER (Breadcrumb)                 │
-├──────────────┬──────────────────────────────────────────┤
-│              │                                            │
-│  NAVIGATION  │             CONTENT AREA                  │
-│  SIDEBAR     │                                            │
-│              │  ┌─────────────────────────────────────┐  │
-│  ┌─────────┐ │  │ Tab Title                            │  │
-│  │ ●  Umum │ │  │ Tab Description                      │  │
-│  ├─────────┤ │  ├─────────────────────────────────────┤  │
-│  │ ○ Print │ │  │                                      │  │
-│  ├─────────┤ │  │     Setting Inputs & Controls       │  │
-│  │ ○ Notif │ │  │                                      │  │
-│  ├─────────┤ │  │                                      │  │
-│  │ ○ Bill  │ │  │                                      │  │
-│  ├─────────┤ │  ├─────────────────────────────────────┤  │
-│  │ ○ Secur │ │  │ [Simpan] [Batal]                    │  │
-│  ├─────────┤ │  │                                      │  │
-│  │ ○ Users │ │  │                                      │  │
-│  └─────────┘ │  └─────────────────────────────────────┘  │
-│              │                                            │
-└──────────────┴──────────────────────────────────────────┘
-```
-
-## 🎯 Tab Navigation
-
-### Active Tab Styling
-```
-┌─────────────────────────┐
-│ ● Umum                  │  ← Green background (#1B9C90)
-│ Pengaturan umum sistem  │     White text
-│                         │     Shadow effect
-└─────────────────────────┘
-```
-
-### Inactive Tab Styling
-```
-┌─────────────────────────┐
-│ ○ Printer               │  ← White background
-│ Konfigurasi printer     │     Gray text (#67737C)
-│                         │     Hover: Light blue bg
-└─────────────────────────┘
-```
-
-## 📋 Tab Contents
-
-### 1. UMUM (General Settings)
-```
-┌─────────────────────────────┐
-│ INFORMASI KLINIK            │
-├─────────────────────────────┤
-│ Nama Klinik                 │
-│ [_______________]           │
-│                             │
-│ Jam Operasional             │
-│ [08:00] - [17:00]           │
-│                             │
-│ Waktu Zone                  │
-│ [UTC +7:00 WIB ▼]           │
-├─────────────────────────────┤
-│ TAMPILAN SISTEM             │
-├─────────────────────────────┤
-│ Mode Gelap          [O] ✓   │ ← Toggle Switch
-│ Suara Notifikasi    [O] ✓   │
-└─────────────────────────────┘
-```
-
-### 2. PRINTER
-```
-┌─────────────────────────────┐
-│ PRINTER TERPASANG           │
-├─────────────────────────────┤
-│ ┌─────────────────────────┐ │
-│ │ Printer Kasir 01        │ │
-│ │ Thermal Printer 80mm    │ │
-│ │         ✓ Terhubung     │ │ ← Status Badge
-│ └─────────────────────────┘ │
-│                             │
-│ Nama Printer                │
-│ [Printer Kasir 01]          │
-│                             │
-│ Model Printer               │
-│ [Thermal 80mm ▼]            │
-│                             │
-│ Format Laporan Default      │
-│ [Thermal (80mm) ▼]          │
-├─────────────────────────────┤
-│ [Tes Printer]               │
-└─────────────────────────────┘
-```
-
-### 3. NOTIFIKASI
-```
-┌─────────────────────────────┐
-│ PREFERENSI NOTIFIKASI       │
-├─────────────────────────────┤
-│ ┌─────────────────────────┐ │
-│ │ Email Notifikasi   [●] ✓ │ │
-│ │ Terima notifikasi via email
-│ └─────────────────────────┘ │
-│                             │
-│ ┌─────────────────────────┐ │
-│ │ SMS Notifikasi     [○]   │ │
-│ │ Terima notifikasi via sms
-│ └─────────────────────────┘ │
-│                             │
-│ ┌─────────────────────────┐ │
-│ │ Alert Stok Rendah  [●] ✓ │ │
-│ │ Notif stok menipis      │
-│ └─────────────────────────┘ │
-│                             │
-│ ┌─────────────────────────┐ │
-│ │ Konfirmasi Pembayaran [●]✓│ │
-│ │ Notif konfirmasi transaksi│
-│ └─────────────────────────┘ │
-└─────────────────────────────┘
-```
-
-### 4. BILLING & INVOICE
-```
-┌─────────────────────────────┐
-│ INFORMASI PERUSAHAAN        │
-├─────────────────────────────┤
-│ Nama Perusahaan             │
-│ [Klinik Mitra Sehat]        │
-│                             │
-│ Alamat                      │
-│ [Jl. Melati No. 45...]      │
-│ [Sleman, Yogyakarta 55284]  │
-│                             │
-│ Nomor Telepon   NPWP/NIK    │
-│ [+62274...]  [01.123...]    │
-├─────────────────────────────┤
-│ FORMAT INVOICE              │
-├─────────────────────────────┤
-│ Prefix Invoice              │
-│ [INV]                       │
-│ Contoh: INV-230814-001      │
-│                             │
-│ Format Struk                │
-│ ◉ Thermal (80mm)            │
-│ ○ A4 Portrait               │
-└─────────────────────────────┘
-```
-
-### 5. KEAMANAN (Security)
-```
-┌─────────────────────────────┐
-│ KEAMANAN AKUN               │
-├─────────────────────────────┤
-│ Password Saat Ini           │
-│ [••••••••]                  │
-│                             │
-│ Password Baru               │
-│ [••••••••]                  │
-│                             │
-│ Konfirmasi Password         │
-│ [••••••••]                  │
-├─────────────────────────────┤
-│ [Ubah Password]             │
-├─────────────────────────────┤
-│ AUTENTIKASI DUA FAKTOR      │
-├─────────────────────────────┤
-│ Tingkatkan keamanan dengan  │
-│ autentikasi dua faktor      │
-│                             │
-│ [Aktifkan 2FA]              │
-├─────────────────────────────┤
-│ ⚠️  PERHATIAN KEAMANAN      │
-│ Jangan pernah bagikan       │
-│ password kepada siapapun    │
-└─────────────────────────────┘
-```
-
-### 6. PENGGUNA & AKSES (User Management)
-```
-┌─────────────────────────────┐
-│ [+ Tambah Pengguna Baru]    │
-├─────────────────────────────┤
-│ ┌─────────────────────────┐ │
-│ │ Andi Pratama            │ │
-│ │ andi@klinik.com         │ │
-│ │                         │ │
-│ │ [Admin]  [Aktif]        │ │
-│ │                         │ │
-│ │ [Edit] [✕]              │ │
-│ └─────────────────────────┘ │
-│                             │
-│ ┌─────────────────────────┐ │
-│ │ Siti Nurhaliza          │ │
-│ │ siti@klinik.com         │ │
-│ │                         │ │
-│ │ [Cashier]  [Aktif]      │ │
-│ │                         │ │
-│ │ [Edit] [✕]              │ │
-│ └─────────────────────────┘ │
-│                             │
-│ ┌─────────────────────────┐ │
-│ │ Budi Santoso            │ │
-│ │ budi@klinik.com         │ │
-│ │                         │ │
-│ │ [Cashier]  [Nonaktif]   │ │
-│ │                         │ │
-│ │ [Edit] [✕]              │ │
-│ └─────────────────────────┘ │
-└─────────────────────────────┘
-```
-
-## 🎨 Color Usage Examples
-
-```typescript
-// Primary Actions (Teal)
-bg-[#1B9C90] text-white
-
-// Secondary Actions (Outline)
-border-[#DFE6EB] text-[#67737C]
-
-// Success Status
-bg-[#DFF6F2] text-[#3EB268]
-
-// Warning Status
-bg-[#FFF9EB] text-[#F2A618]
-
-// Background Cards
-bg-[#F9FEFC]
-
-// Text Labels
-text-[#13222D] font-semibold
-```
-
-## 🔄 User Interactions
-
-### Changing a Setting
-```
-1. User clicks tab → Tab becomes active (green)
-2. User modifies input → Real-time validation
-3. User clicks "Simpan Perubahan"
-   ├─ Button shows loading spinner
-   ├─ After save completes:
-   └─ Green success toast appears "Pengaturan berhasil disimpan"
-```
-
-### Toggle Switch Animation
-```
-Before: ○────  (Gray, unchecked)
-        ↓ click
-After:  ────●  (Green, checked)
-        With smooth 200ms transition
-```
-
-### Button States
-```
-Normal:   [Simpan Perubahan]  ← Teal bg, white text, clickable
-Hover:    [Simpan Perubahan]  ← Darker teal (#169B8A)
-Disabled: [Simpan Perubahan]  ← 50% opacity, not clickable
-Loading:  ⚙️ Menyimpan...       ← Spinner animation
-```
-
-## 📱 Responsive Breakpoints
-
-### Desktop (1200px+)
-```
-┌─────────────┬────────────────────────┐
-│  256px      │                        │
-│  Sidebar    │  Full Content          │
-│             │                        │
-└─────────────┴────────────────────────┘
-```
-
-### Tablet (768px - 1199px)
-```
-┌──┬────────────────────────────────┐
-│  │ Sidebar                        │
-│  │ (collapsed icons)              │
-│  │                                │
-│  │ Content                        │
-│  │                                │
-└──┴────────────────────────────────┘
-```
-
-### Mobile (<768px)
-```
-┌────────────────────┐
-│ [≡] Sidebar        │  ← Drawer/Menu
-├────────────────────┤
-│                    │
-│ Full-width Content │
-│                    │
-├────────────────────┤
-│ [Simpan] [Batal]   │
-└────────────────────┘
-```
-
-## 🌐 Integration with Other Components
-
-The Settings module integrates with:
-
-- **InventoryFilter** - Same color scheme and button styles
-- **PatientFilter** - Matching toggle and filter UI
-- **FilterTransaction** - Consistent dropdown patterns
-- **Header** - Aligned typography and spacing
-- **Sidebar** - Same navigation patterns
-
-## 🎯 Accessibility Features
-
-```
-┌─────────────────────────────────┐
-│ All inputs have:                │
-├─────────────────────────────────┤
-│ ✓ ARIA labels                   │
-│ ✓ Focus indicators (blue ring)  │
-│ ✓ Keyboard navigation           │
-│ ✓ Error descriptions            │
-│ ✓ Helper text                   │
-│ ✓ High contrast (WCAG AA)       │
-└─────────────────────────────────┘
-```
-
-## 📊 Performance Metrics
-
-- **Load Time**: < 200ms
-- **First Paint**: < 500ms
-- **Interactive**: < 1000ms
-- **Memory Usage**: ~2MB
-- **CSS Bundle Impact**: +0.5KB gzipped
-
-## 🔗 Navigation Flow
-
-```
-Login
-  ↓
-Kasir Dashboard
-  ├→ Kasir (Billing)
-  ├→ Riwayat Transaksi
-  ├→ Data Pasien
-  ├→ Stok Obat
-  └→ PENGATURAN ← You are here
-      ├→ Umum
-      ├→ Printer
-      ├→ Notifikasi
-      ├→ Billing
-      ├→ Keamanan
-      └→ Pengguna
+├── api/                  # Klien Axios & inisialisasi otentikasi (RME, Warehouse, POS, AI)
+├── components/           # Komponen UI global (Button, Input, Table, Sidebar, dll)
+├── features/             # Fitur utama berbasis domain-driven
+│   ├── analitik/         # Komponen dashboard analitik, chart, laporan keuangan, & data pasien
+│   ├── auth/             # Formulir login, provider otentikasi, & logika session
+│   └── kasir/            # Komponen transaksi kasir, riwayat pembayaran, & stok obat
+├── hooks/                # Custom React Hooks reusable
+├── lib/                  # Fungsi utilitas penunjang (cn, format uang, secureStorage)
+└── routes/               # Konfigurasi rute halaman dan filter ProtectedRoute
 ```
 
 ---
 
-## 🌐 Deployment
-Aplikasi ini sudah dikonfigurasi untuk dideploy ke [Vercel](https://vercel.com/) (menggunakan konfigurasi `vercel.json` untuk *rewrite* ke `index.html`).
-Untuk men-deploy, Anda hanya perlu mengimpor repositori GitHub ini di Vercel Dashboard dan menambahkan konfigurasi `.env` ke bagian *Environment Variables* di Vercel.
+## ⚙️ Komponen Pengaturan (Settings Guide)
 
-**Ready for production!** ✅ All design specifications have been implemented according to professional UI/UX standards.
+Menu Pengaturan menyediakan opsi kustomisasi lengkap bagi administrator klinik yang terbagi menjadi beberapa tab navigasi:
+
+1. **Umum (General):** Mengonfigurasi nama klinik, alamat, jam operasional, zona waktu, serta sakelar tampilan mode gelap (Dark Mode) dan suara efek notifikasi.
+2. **Printer:** Konfigurasi koneksi printer struk kasir, pilihan model printer (Thermal 80mm vs Standard A4), dan tombol uji coba print struk.
+3. **Notifikasi:** Pengaturan penerimaan notifikasi via Email atau SMS, serta pengaturan ambang batas peringatan stok obat menipis (*Low Stock Alert*).
+4. **Billing & Invoice:** Pengaturan detail identitas perusahaan (Nama, NPWP, NIK, No. Telepon), format nomor faktur (Prefix Invoice), dan template default kwitansi.
+5. **Keamanan (Security):** Opsi pergantian password akun staf dan konfigurasi Autentikasi Dua Faktor (2FA) untuk meningkatkan perlindungan data medis.
+6. **Pengguna & Akses (User Management):** Mengelola daftar staf klinik, menambahkan pengguna baru, menentukan peran (*Admin*, *Doctor*, atau *Cashier*), serta menonaktifkan akun staf.
+
+---
+
+## 🌐 Panduan Deployment
+
+Aplikasi ini siap dideploy langsung ke **Vercel**:
+1. Repositori ini sudah dilengkapi dengan file `vercel.json` yang berisi aturan rewrite rute halaman SPA ke `index.html` dan proxy backend untuk production.
+2. Hubungkan repositori GitHub Anda ke Vercel Dashboard.
+3. Masukkan seluruh konfigurasi variabel lingkungan (Environment Variables) dari file `.env.local` Anda ke pengaturan Vercel project.
+4. Klik **Deploy** dan verifikasi URL produksi Anda.
