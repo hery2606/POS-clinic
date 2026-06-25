@@ -117,12 +117,17 @@ export const initializeRmeAuth = async () => {
   try {
     console.log("🔄 Mencoba mengautentikasi Admin ke RME...");
     
-    // PERBAIKAN UTAMA: Mengubah properti 'email' menjadi 'identifier' sesuai request backend
-    const baseUrl = getRmeBaseUrl();
-    const response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
-      identifier: import.meta.env.VITE_RME_ADMIN_EMAIL, 
-      password: import.meta.env.VITE_RME_ADMIN_PASSWORD,
-    });
+    let response;
+    if (import.meta.env.DEV) {
+      const baseUrl = getRmeBaseUrl();
+      response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
+        identifier: import.meta.env.VITE_RME_ADMIN_EMAIL, 
+        password: import.meta.env.VITE_RME_ADMIN_PASSWORD,
+      });
+    } else {
+      // Di production, tembak ke Vercel serverless function proxy
+      response = await axios.post("/api/rmeLogin");
+    }
 
     // Menyesuaikan dengan Response Body sukses -> response.data.data.accessToken
     const token = response.data?.data?.accessToken;

@@ -227,10 +227,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </div>
             
             {/* Demo Button Container */}
-            <div className="mt-5 flex flex-wrap justify-center gap-1.5">
-               <button onClick={() => handleDemoCredentialClick('admin@klinik.com', 'password123')} className="text-[9px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tight border border-[#DFE6EB] cursor-pointer">Admin / Super Admin</button>
-               <button onClick={() => handleDemoCredentialClick('kasir@klinik.com', 'password123')} className="text-[9px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tight border border-[#DFE6EB] cursor-pointer">Kasir</button>
-            </div>
+            {import.meta.env.DEV && (
+              <div className="mt-5 flex flex-wrap justify-center gap-1.5">
+                 <button onClick={() => handleDemoCredentialClick('admin@klinik.com', 'password123')} className="text-[9px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tight border border-[#DFE6EB] cursor-pointer">Admin / Super Admin</button>
+                 <button onClick={() => handleDemoCredentialClick('kasir@klinik.com', 'password123')} className="text-[9px] px-2 py-1 bg-[#EFF4F8] text-[#67737C] rounded hover:bg-[#DFF6F2] hover:text-[#00736A] transition-colors font-bold uppercase tracking-tight border border-[#DFE6EB] cursor-pointer">Kasir</button>
+              </div>
+            )}
           </div>
         </div>
       </div>

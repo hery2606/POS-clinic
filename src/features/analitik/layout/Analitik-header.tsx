@@ -53,7 +53,7 @@ export const AnalitikHeader = () => {
     <>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 w-full bg-[#F9FEFC] no-print">
         <div className="flex items-center gap-3">
-          <SidebarTrigger className="md:hidden border border-[#DFE6EB] hover:bg-[#EFF4F8] text-[#13222D] p-2 h-9 w-9 shrink-0 flex items-center justify-center rounded-xl" />
+          <SidebarTrigger className="md:hidden border border-[#DFE6EB] hover:bg-[#EFF4F8] text-[#464a4c] p-2 h-10 w-10 shrink-0 flex items-center justify-center rounded-lg [&_svg]:!size-7" />
           <div className="space-y-1">
             <h1 className="text-xl font-bold text-[#13222D] tracking-wide">
               {isLaporanPage ? "Laporan Keuangan" : "Analitik Klinik"}

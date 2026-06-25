@@ -99,13 +99,18 @@ warehouseClient.interceptors.response.use(
 // Fungsi Axios murni untuk menembak login (akan dipanggil oleh React Query)
 export const loginWarehouseAdmin = async () => {
   console.log("Mencoba mengautentikasi sistem ke server Warehouse...");
-  const baseUrl = getWarehouseBaseUrl();
-  const response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
-    email: import.meta.env.VITE_WAREHOUSE_ADMIN_EMAIL,
-    password: import.meta.env.VITE_WAREHOUSE_ADMIN_PASSWORD,
-  });
+  let response;
+  if (import.meta.env.DEV) {
+    const baseUrl = getWarehouseBaseUrl();
+    response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
+      email: import.meta.env.VITE_WAREHOUSE_ADMIN_EMAIL,
+      password: import.meta.env.VITE_WAREHOUSE_ADMIN_PASSWORD,
+    });
+  } else {
+    // Di production, tembak ke Vercel serverless function proxy
+    response = await axios.post("/api/warehouseLogin");
+  }
   
-  /// PERBAIKAN: Langsung tembak ke response.data.accessToken sesuai dengan JSON body terlampir
   const token = response.data?.accessToken;
   
   if (token) {
@@ -128,11 +133,17 @@ export const initializeWarehouseAuth = async () => {
 
   try {
     console.log("🔄 Mencoba mengautentikasi Admin ke Warehouse...");
-    const baseUrl = getWarehouseBaseUrl();
-    const response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
-      email: import.meta.env.VITE_WAREHOUSE_ADMIN_EMAIL,
-      password: import.meta.env.VITE_WAREHOUSE_ADMIN_PASSWORD,
-    });
+    let response;
+    if (import.meta.env.DEV) {
+      const baseUrl = getWarehouseBaseUrl();
+      response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
+        email: import.meta.env.VITE_WAREHOUSE_ADMIN_EMAIL,
+        password: import.meta.env.VITE_WAREHOUSE_ADMIN_PASSWORD,
+      });
+    } else {
+      // Di production, tembak ke Vercel serverless function proxy
+      response = await axios.post("/api/warehouseLogin");
+    }
 
     const token = response.data?.accessToken;
     
@@ -145,7 +156,9 @@ export const initializeWarehouseAuth = async () => {
     }
   } catch (error: any) {
     console.error("❌ Gagal melakukan otomatisasi login admin Warehouse");
-    console.error("📧 Email digunakan:", import.meta.env.VITE_WAREHOUSE_ADMIN_EMAIL ?? "undefined (ENV tidak terbaca!)");
+    if (import.meta.env.DEV) {
+      console.error("📧 Email digunakan:", import.meta.env.VITE_WAREHOUSE_ADMIN_EMAIL ?? "undefined (ENV tidak terbaca!)");
+    }
     if (error.response) {
       console.error(`Status: ${error.response.status}`);
       console.error("Detail error:", JSON.stringify(error.response.data));
