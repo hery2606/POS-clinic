@@ -176,34 +176,33 @@ export const LaporanPage = () => {
     };
 
     if (selectedTab === "Pendapatan") {
-      // Fetch fresh trend data for export
-      let trendExportData = null;
-      try {
-        const trendResponse = await analitikService.getRevenueTrend();
-        trendExportData = trendResponse?.data;
-      } catch (e) {
-        console.warn("Gagal mengambil tren pendapatan dari server, menggunakan data fallback:", e);
-      }
-
-      const revTotal = trendExportData?.total_pendapatan_bulan_ini || 148500000;
-      const comparison = trendExportData?.perbandingan_bulan_ini_vs_lalu || {
-        persentase_kenaikan: 12.5,
-        bulan_lalu: 132000000
-      };
-      const dailyAverage = revTotal / 30;
-      const weeklyRevenueAmount = trendExportData?.total_pendapatan_minggu_ini || 34500000;
-
-      // Build dynamic table rows from API data (tabel_rincian_harian)
-      let tableRowsHtml = "";
-      const rincianHarian = trendExportData?.tabel_rincian_harian || [];
+      const rincianHarian = trendData?.tabel_rincian_harian || [];
       const matchedDays = rincianHarian.filter(
         (item: any) => item.tanggal && item.tanggal.startsWith(selectedPeriod)
       );
 
+      let revTotal = 0;
+      let weeklyRevenueAmount = 0;
+      let dailyAverage = 0;
+      let pctKenaikan = 0;
+      let bulanLaluTotal = 0;
+      let tableRowsHtml = "";
+
       if (matchedDays.length > 0) {
-        // Sort descending by date
-        const sortedDays = [...matchedDays].sort((a: any, b: any) => b.tanggal.localeCompare(a.tanggal));
-        tableRowsHtml = sortedDays.map((item: any, index: number) => {
+        // Data API Riil tersedia untuk periode terpilih
+        revTotal = matchedDays.reduce((sum: number, d: any) => sum + (d.total_pendapatan || 0), 0);
+        dailyAverage = revTotal / matchedDays.length;
+        
+        const sortedDays = [...matchedDays].sort((a: any, b: any) => a.tanggal.localeCompare(b.tanggal));
+        const last7 = sortedDays.slice(-7);
+        weeklyRevenueAmount = last7.reduce((sum: number, d: any) => sum + (d.total_pendapatan || 0), 0);
+        
+        pctKenaikan = trendData?.perbandingan_bulan_ini_vs_lalu?.persentase_kenaikan || 0;
+        bulanLaluTotal = trendData?.perbandingan_bulan_ini_vs_lalu?.bulan_lalu || 0;
+
+        // Urutkan terbaru dahulu untuk tabel detail
+        const sortedDaysDesc = [...matchedDays].sort((a: any, b: any) => b.tanggal.localeCompare(a.tanggal));
+        tableRowsHtml = sortedDaysDesc.map((item: any, index: number) => {
           const dateObj = new Date(item.tanggal);
           const formattedDate = dateObj.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
           const isHighlight = index === 0;
@@ -218,7 +217,13 @@ export const LaporanPage = () => {
           `;
         }).join("");
       } else {
-        // Fallback to dummy data if no API data
+        // Fallback ke data dummy jika tidak ada data dari API untuk periode terpilih
+        revTotal = 148500000;
+        weeklyRevenueAmount = 34500000;
+        dailyAverage = revTotal / 30;
+        pctKenaikan = 12.5;
+        bulanLaluTotal = 132000000;
+
         const { dummyTableData } = await import("@/features/analitik/components/laporan/pendapatan/FinancialDetailTable");
         tableRowsHtml = (dummyTableData.Pendapatan || []).map((row: any) => `
           <tr class="${row.isHighlight ? 'highlight' : ''}">
@@ -278,19 +283,19 @@ export const LaporanPage = () => {
             </thead>
             <tbody>
               <tr>
-                <td>Total Pendapatan Bulan Ini</td>
+                <td>Total Pendapatan Periode Ini</td>
                 <td class="currency" style="font-weight: bold;">Rp ${revTotal.toLocaleString("id-ID")}</td>
-                <td>Kenaikan ${(comparison?.persentase_kenaikan || 0).toFixed(1)}% vs Bulan Lalu (Rp ${(comparison?.bulan_lalu || 0).toLocaleString("id-ID")})</td>
+                <td>Pertumbuhan ${pctKenaikan.toFixed(1)}% vs Pembanding (Rp ${bulanLaluTotal.toLocaleString("id-ID")})</td>
               </tr>
               <tr>
                 <td>Rata-rata Pendapatan Harian</td>
                 <td class="currency">Rp ${Math.round(dailyAverage).toLocaleString("id-ID")}</td>
-                <td>Rata-rata estimasi harian bulan ini</td>
+                <td>Rata-rata harian pada periode terpilih</td>
               </tr>
               <tr>
                 <td>Total Pendapatan Minggu Ini</td>
                 <td class="currency">Rp ${weeklyRevenueAmount.toLocaleString("id-ID")}</td>
-                <td>Pendapatan berjalan minggu ini</td>
+                <td>Estimasi / Porsi pendapatan berjalan mingguan</td>
               </tr>
             </tbody>
           </table>
