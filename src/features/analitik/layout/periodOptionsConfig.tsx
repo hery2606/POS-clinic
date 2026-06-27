@@ -12,22 +12,17 @@ export interface PeriodOption {
 export const periodOptions: PeriodOption[] = [
   { 
     id: "daily", 
-    label: "Harian", 
+    label: "Hari Ini (Aktif)", 
     icon: <Clock className="w-4 h-4" /> 
   },
   { 
-    id: "weekly", 
-    label: "Mingguan", 
-    icon: <Calendar className="w-4 h-4" /> 
-  },
-  { 
     id: "monthly", 
-    label: "Perbandingan Bulanan", 
+    label: "Bulanan", 
     icon: <CalendarDays className="w-4 h-4" /> 
   },
   { 
     id: "yearly", 
-    label: "Perbandingan Tahunan", 
+    label: "Tahunan", 
     icon: <CalendarRange className="w-4 h-4" /> 
   },
 ];
@@ -47,4 +42,5 @@ export const monthOptions = [
   { value: "12", label: "Desember" },
 ];
 
-export const yearOptions = ["2024", "2025", "2026", "2027"];
+const currentYear = new Date().getFullYear();
+export const yearOptions = Array.from({ length: 5 }, (_, i) => String(currentYear - i)).reverse();

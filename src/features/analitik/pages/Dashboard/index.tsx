@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { KpiCards } from "@/features/analitik/components/dashboard/KPICards";
@@ -11,8 +11,60 @@ import { ChartAreaInteractive } from "@/features/analitik/components/dashboard/c
 import { Card } from "@/components/ui/card";
 import { analitikService } from "@/features/analitik/services/analitik.service";
 import { type LocalDaftarTransaksiBelumLunas } from "@/features/analitik/components/laporan/Piutang/types";
+import { useDashboardPdfData } from "@/features/analitik/hooks/useDashboardPdfData";
+import { usePdfDownload } from "@/hooks/usePdfDownload.tsx";
 
 export const DashboardPage = () => {
+  // Chart Refs
+  const refChartArea = useRef<HTMLDivElement>(null);
+  const refBarMixed = useRef<HTMLDivElement>(null);
+  const refBarStacked = useRef<HTMLDivElement>(null);
+
+  // PDF Data & Hook
+  const [activePeriodLabel, setActivePeriodLabel] = useState("Hari Ini (Aktif)");
+  const dashboardPdfData = useDashboardPdfData(activePeriodLabel);
+
+  const { downloadPdf, isLoading: isPdfLoading } = usePdfDownload({
+    chartRefs: {
+      chartArea: refChartArea,
+      chartBarMixed: refBarMixed,
+      chartBarStacked: refBarStacked,
+    },
+    data: dashboardPdfData,
+  });
+
+  // Sync loading state back to header
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("dashboard-pdf-loading", { detail: { loading: isPdfLoading } }));
+  }, [isPdfLoading]);
+
+  // Sync data readiness back to header
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("dashboard-pdf-ready", {
+        detail: { isReady: dashboardPdfData.isReady },
+      })
+    );
+  }, [dashboardPdfData.isReady]);
+
+  // Listen to download trigger
+  useEffect(() => {
+    const handleTrigger = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const label = customEvent.detail?.periodLabel || "Hari Ini (Aktif)";
+      setActivePeriodLabel(label);
+      
+      // Delay slightly to allow state to update, then call downloadPdf
+      setTimeout(() => {
+        downloadPdf();
+      }, 150);
+    };
+    window.addEventListener("trigger-dashboard-pdf-download", handleTrigger);
+    return () => {
+      window.removeEventListener("trigger-dashboard-pdf-download", handleTrigger);
+    };
+  }, [downloadPdf]);
+
   // Queries
   const pendingInvoicesQuery = useQuery({
     queryKey: ["pendingInvoices"],
@@ -76,7 +128,7 @@ export const DashboardPage = () => {
       {/* AI Insight Banner */}
       <div className="mb-8">
         <AiInsightBanner />
-        <div className="mt-6">
+        <div className="mt-6" ref={refChartArea}>
           <ChartAreaInteractive />
         </div>
       </div>
@@ -89,15 +141,19 @@ export const DashboardPage = () => {
 
       {/* Bar Charts - 2 Columns */}
       <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm">
-          <ChartBarStacked />
-        </Card>
-        <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm">
-          <ChartBarMixed />
-        </Card>
+        <div ref={refBarStacked}>
+          <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm">
+            <ChartBarStacked />
+          </Card>
+        </div>
+        <div>
+          <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm">
+            <ChartBarMixed />
+          </Card>
+        </div>
       </div>
       <div className="mt-12 grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
-        <div className="xl:col-span-5 flex">
+        <div className="xl:col-span-5 flex" ref={refBarMixed}>
           <PaymentMethodChart />
         </div>
         <div className="xl:col-span-7 flex">

@@ -11,6 +11,7 @@ import { PiutangReportSection } from "@/features/analitik/components/laporan/Piu
 import { PrintFormalReportTemplate } from "@/features/analitik/components/print/print-formal-report-template";
 import { analitikService } from "../../services/analitik.service";
 import { billingPosService } from "@/features/kasir/services/billing.pos.service";
+import { exportToExcelHelper } from "@/features/analitik/utils/excelExportHelper";
 import { cn } from "@/lib/utils";
 
 interface LocalDaftarTransaksiBelumLunas {
@@ -89,19 +90,8 @@ export const LaporanPage = () => {
   }, [trendData, selectedPeriod, isCurrentPeriod]);
 
   // ============================================================
-  // Piutang data calculations (mirrors PiutangReportSection logic)
+  // Piutang data calculations
   // ============================================================
-  const fallbackTransactions = useMemo<LocalDaftarTransaksiBelumLunas[]>(() => [
-    { no_invoice: "INV-2026-001", pasien: "Budi Santoso", total_tagihan: 120000, hari_belum_lunas: 1, status_reminder: "Belum Dikirim", wa_number: "081234567890", insurance_type: "BPJS" },
-    { no_invoice: "INV-2026-002", pasien: "Siti Aminah", total_tagihan: 100000, hari_belum_lunas: 2, status_reminder: "Belum Dikirim", wa_number: "082345678901", insurance_type: "UMUM" },
-    { no_invoice: "INV-2026-003", pasien: "Ahmad Dahlan", total_tagihan: 60000, hari_belum_lunas: 3, status_reminder: "Belum Dikirim", wa_number: "083456789012", insurance_type: "UMUM" },
-    { no_invoice: "INV-2026-004", pasien: "Dewi Lestari", total_tagihan: 40000, hari_belum_lunas: 5, status_reminder: "Belum Dikirim", wa_number: "084567890123", insurance_type: "UMUM" },
-    { no_invoice: "INV-2026-005", pasien: "Eko Prasetyo", total_tagihan: 50000, hari_belum_lunas: 8, status_reminder: "Belum Dikirim", wa_number: "085678901234", insurance_type: "BPJS" },
-    { no_invoice: "INV-2026-006", pasien: "Farhan Hakim", total_tagihan: 40000, hari_belum_lunas: 9, status_reminder: "Belum Dikirim", wa_number: "086789012345", insurance_type: "UMUM" },
-    { no_invoice: "INV-2026-007", pasien: "Gita Gutawa", total_tagihan: 20000, hari_belum_lunas: 10, status_reminder: "Belum Dikirim", wa_number: "087890123456", insurance_type: "UMUM" },
-    { no_invoice: "INV-2026-008", pasien: "Hendra Wijaya", total_tagihan: 10000, hari_belum_lunas: 12, status_reminder: "Belum Dikirim", wa_number: "088901234567", insurance_type: "BPJS" },
-  ], []);
-
   const piutangTransactions = useMemo<LocalDaftarTransaksiBelumLunas[]>(() => {
     const apiData = outstandingInvoicesQuery.data?.data;
     if (apiData && apiData.length > 0) {
@@ -115,20 +105,20 @@ export const LaporanPage = () => {
         insurance_type: item.patient?.insuranceType || "UMUM",
       }));
     }
-    return fallbackTransactions;
-  }, [outstandingInvoicesQuery.data, fallbackTransactions]);
+    return [];
+  }, [outstandingInvoicesQuery.data]);
 
   const piutangTotalPiutang = useMemo(() => {
-    return piutangTransactions.reduce((sum, t) => sum + t.total_tagihan, 0) || 440000;
+    return piutangTransactions.reduce((sum, t) => sum + t.total_tagihan, 0);
   }, [piutangTransactions]);
 
   const piutangAvgDelay = useMemo(() => {
-    if (piutangTransactions.length === 0) return 2;
-    return Math.round(piutangTransactions.reduce((sum, t) => sum + t.hari_belum_lunas, 0) / piutangTransactions.length) || 2;
+    if (piutangTransactions.length === 0) return 0;
+    return Math.round(piutangTransactions.reduce((sum, t) => sum + t.hari_belum_lunas, 0) / piutangTransactions.length);
   }, [piutangTransactions]);
 
   const piutangRatio = useMemo(() => {
-    if (totalRevenue === 0) return 0.3;
+    if (totalRevenue === 0) return 0;
     return Number(((piutangTotalPiutang / totalRevenue) * 100).toFixed(2));
   }, [piutangTotalPiutang, totalRevenue]);
 
@@ -139,10 +129,11 @@ export const LaporanPage = () => {
       else if (t.hari_belum_lunas <= 5) range2 += t.total_tagihan;
       else range3 += t.total_tagihan;
     });
-    if (range1 === 0 && range2 === 0 && range3 === 0) {
-      return [{ name: "1-2 Hari", amount: 220000 }, { name: "3-5 Hari", amount: 100000 }, { name: "> 7 Hari", amount: 120000 }];
-    }
-    return [{ name: "1-2 Hari", amount: range1 }, { name: "3-5 Hari", amount: range2 }, { name: "> 7 Hari", amount: range3 }];
+    return [
+      { name: "1-2 Hari", amount: range1 },
+      { name: "3-5 Hari", amount: range2 },
+      { name: "> 7 Hari", amount: range3 }
+    ];
   }, [piutangTransactions]);
 
   const piutangBreakdownProportion = useMemo(() => {
@@ -152,7 +143,7 @@ export const LaporanPage = () => {
       else umumAmount += t.total_tagihan;
     });
     const total = umumAmount + bpjsAmount;
-    if (total === 0) return { umumPercent: 70, bpjsPercent: 30, umumVal: 308000, bpjsVal: 132000 };
+    if (total === 0) return { umumPercent: 0, bpjsPercent: 0, umumVal: 0, bpjsVal: 0 };
     const umumPercent = Math.round((umumAmount / total) * 100);
     return { umumPercent, bpjsPercent: 100 - umumPercent, umumVal: umumAmount, bpjsVal: bpjsAmount };
   }, [piutangTransactions]);
@@ -171,332 +162,18 @@ export const LaporanPage = () => {
       minute: "2-digit"
     });
 
-    const formatCurrencyExcel = (amount: number): string => {
-      return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount || 0);
-    };
-
-    if (selectedTab === "Pendapatan") {
-      // Fetch fresh trend data for export
-      let trendExportData = null;
-      try {
-        const trendResponse = await analitikService.getRevenueTrend();
-        trendExportData = trendResponse?.data;
-      } catch (e) {
-        console.warn("Gagal mengambil tren pendapatan dari server, menggunakan data fallback:", e);
-      }
-
-      const revTotal = trendExportData?.total_pendapatan_bulan_ini || 148500000;
-      const comparison = trendExportData?.perbandingan_bulan_ini_vs_lalu || {
-        persentase_kenaikan: 12.5,
-        bulan_lalu: 132000000
-      };
-      const dailyAverage = revTotal / 30;
-      const weeklyRevenueAmount = trendExportData?.total_pendapatan_minggu_ini || 34500000;
-
-      // Build dynamic table rows from API data (tabel_rincian_harian)
-      let tableRowsHtml = "";
-      const rincianHarian = trendExportData?.tabel_rincian_harian || [];
-      const matchedDays = rincianHarian.filter(
-        (item: any) => item.tanggal && item.tanggal.startsWith(selectedPeriod)
-      );
-
-      if (matchedDays.length > 0) {
-        // Sort descending by date
-        const sortedDays = [...matchedDays].sort((a: any, b: any) => b.tanggal.localeCompare(a.tanggal));
-        tableRowsHtml = sortedDays.map((item: any, index: number) => {
-          const dateObj = new Date(item.tanggal);
-          const formattedDate = dateObj.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-          const isHighlight = index === 0;
-          return `
-            <tr class="${isHighlight ? 'highlight' : ''}">
-              <td>${formattedDate}</td>
-              <td>${item.total_transaksi || 0}</td>
-              <td>${formatCurrencyExcel(item.pendapatan_layanan || 0)}</td>
-              <td>${formatCurrencyExcel(item.pendapatan_obat || 0)}</td>
-              <td class="currency" style="font-weight: bold; color: #1B9C90;">${formatCurrencyExcel(item.total_pendapatan || 0)}</td>
-            </tr>
-          `;
-        }).join("");
-      } else {
-        // Fallback to dummy data if no API data
-        const { dummyTableData } = await import("@/features/analitik/components/laporan/pendapatan/FinancialDetailTable");
-        tableRowsHtml = (dummyTableData.Pendapatan || []).map((row: any) => `
-          <tr class="${row.isHighlight ? 'highlight' : ''}">
-            <td>${row.col1}</td>
-            <td>${row.col2}</td>
-            <td>${row.col3}</td>
-            <td>${row.col4}</td>
-            <td class="currency" style="font-weight: bold; color: #1B9C90;">${row.col5}</td>
-          </tr>
-        `).join("");
-      }
-
-      let html = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-          <!--[if gte mso 9]>
-          <xml>
-            <x:ExcelWorkbook>
-              <x:ExcelWorksheets>
-                <x:ExcelWorksheet>
-                  <x:Name>Laporan Finansial</x:Name>
-                  <x:WorksheetOptions>
-                    <x:DisplayGridlines/>
-                  </x:WorksheetOptions>
-                </x:ExcelWorksheet>
-              </x:ExcelWorksheets>
-            </x:ExcelWorkbook>
-          </xml>
-          <![endif]-->
-          <style>
-            body { font-family: Arial, sans-serif; }
-            .title { font-size: 16pt; font-weight: bold; color: #13222D; }
-            .subtitle { font-size: 11pt; color: #67737C; margin-bottom: 20px; }
-            .section-header { font-size: 12pt; font-weight: bold; background-color: #1B9C90; color: white; padding: 6px; }
-            table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
-            th { background-color: #F4F7F9; color: #67737C; font-weight: bold; font-size: 10pt; border: 1px solid #DFE6EB; padding: 8px; text-align: left; }
-            td { border: 1px solid #DFE6EB; padding: 8px; font-size: 10pt; color: #13222D; }
-            .highlight { background-color: #F9FEFC; font-weight: bold; color: #1B9C90; }
-            .currency { text-align: right; }
-          </style>
-        </head>
-        <body>
-          <div class="title">Klinik Utama Arda Medical Center</div>
-          <div class="subtitle">Laporan Analisis Finansial Terpadu<br/>Periode: ${periodLabel}<br/>Tanggal Ekspor: ${todayStr} WIB</div>
-          <br/>
-          
-          <table>
-            <thead>
-              <tr>
-                <th colspan="3" class="section-header" style="text-align: center;">1. RINGKASAN EKSEKUTIF (FINANCIAL SUMMARY)</th>
-              </tr>
-              <tr>
-                <th>METRIK FINANSIAL</th>
-                <th style="text-align: right;">NILAI</th>
-                <th>KETERANGAN / PERBANDINGAN</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Total Pendapatan Bulan Ini</td>
-                <td class="currency" style="font-weight: bold;">Rp ${revTotal.toLocaleString("id-ID")}</td>
-                <td>Kenaikan ${(comparison?.persentase_kenaikan || 0).toFixed(1)}% vs Bulan Lalu (Rp ${(comparison?.bulan_lalu || 0).toLocaleString("id-ID")})</td>
-              </tr>
-              <tr>
-                <td>Rata-rata Pendapatan Harian</td>
-                <td class="currency">Rp ${Math.round(dailyAverage).toLocaleString("id-ID")}</td>
-                <td>Rata-rata estimasi harian bulan ini</td>
-              </tr>
-              <tr>
-                <td>Total Pendapatan Minggu Ini</td>
-                <td class="currency">Rp ${weeklyRevenueAmount.toLocaleString("id-ID")}</td>
-                <td>Pendapatan berjalan minggu ini</td>
-              </tr>
-            </tbody>
-          </table>
-          <br/>
-
-          <table>
-            <thead>
-              <tr>
-                <th colspan="5" class="section-header" style="text-align: center;">2. RINCIAN PENDAPATAN HARIAN</th>
-              </tr>
-              <tr>
-                <th>TANGGAL</th>
-                <th>TOTAL TRANSAKSI</th>
-                <th>PENDAPATAN LAYANAN</th>
-                <th>PENDAPATAN OBAT</th>
-                <th style="text-align: right;">TOTAL PENDAPATAN</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${tableRowsHtml}
-            </tbody>
-          </table>
-          <br/>
-        </body>
-        </html>
-      `;
-
-      try {
-        const element = document.createElement("a");
-        const file = new Blob([html], { type: "application/vnd.ms-excel" });
-        element.href = URL.createObjectURL(file);
-        element.download = `Laporan_Keuangan_Klinik_${selectedPeriod}.xls`;
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
-      } catch (err) {
-        console.error("Gagal melakukan export excel:", err);
-        alert("Gagal melakukan export excel. Silakan periksa koneksi Anda.");
-      }
-
-    } else {
-      // export for Piutang — using calculated piutang data
-      const transactionsToExport = piutangTransactions;
-      const exportTotalPiutang = piutangTotalPiutang;
-      const exportAvgDelay = piutangAvgDelay;
-      const exportRatio = piutangRatio;
-
-      const getFormattedDate = (daysAgo: number) => {
-        const date = new Date();
-        date.setDate(date.getDate() - daysAgo);
-        const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-        return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
-      };
-
-      let age1_2 = 0;
-      let age3_5 = 0;
-      let ageMore7 = 0;
-      transactionsToExport.forEach(t => {
-        if (t.hari_belum_lunas <= 2) age1_2 += t.total_tagihan;
-        else if (t.hari_belum_lunas <= 5) age3_5 += t.total_tagihan;
-        else ageMore7 += t.total_tagihan;
-      });
-
-      let html = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-          <!--[if gte mso 9]>
-          <xml>
-            <x:ExcelWorkbook>
-              <x:ExcelWorksheets>
-                <x:ExcelWorksheet>
-                  <x:Name>Analisis Piutang Klinik</x:Name>
-                  <x:WorksheetOptions>
-                    <x:DisplayGridlines/>
-                  </x:WorksheetOptions>
-                </x:ExcelWorksheet>
-              </x:ExcelWorksheets>
-            </x:ExcelWorkbook>
-          </xml>
-            <![endif]-->
-          <style>
-            body { font-family: Arial, sans-serif; }
-            .title { font-size: 16pt; font-weight: bold; color: #13222D; }
-            .subtitle { font-size: 11pt; color: #67737C; margin-bottom: 20px; }
-            .section-header { font-size: 12pt; font-weight: bold; background-color: #1B9C90; color: white; padding: 6px; }
-            table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
-            th { background-color: #F4F7F9; color: #67737C; font-weight: bold; font-size: 10pt; border: 1px solid #DFE6EB; padding: 8px; text-align: left; }
-            td { border: 1px solid #DFE6EB; padding: 8px; font-size: 10pt; color: #13222D; }
-            .highlight { background-color: #F9FEFC; font-weight: bold; color: #1B9C90; }
-            .currency { text-align: right; }
-            .warning-text { color: #E62C2C; font-weight: bold; }
-          </style>
-        </head>
-        <body>
-          <div class="title">Klinik Utama Arda Medical Center</div>
-          <div class="subtitle">Laporan Analisis Piutang Klinik Terpadu<br/>Periode: ${periodLabel}<br/>Tanggal Ekspor: ${todayStr} WIB</div>
-          <br/>
-          
-          <table>
-            <thead>
-              <tr>
-                <th colspan="3" class="section-header" style="text-align: center;">1. RINGKASAN EKSEKUTIF PIUTANG TERTAHAN</th>
-              </tr>
-              <tr>
-                <th>METRIK ANALISIS</th>
-                <th style="text-align: right;">NILAI</th>
-                <th>STATUS / KETERANGAN</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Total Piutang (Bulan Ini)</td>
-                <td class="currency" style="font-weight: bold;">Rp ${exportTotalPiutang.toLocaleString("id-ID")}</td>
-                <td>Porsi: ${exportRatio}% dari Pendapatan Bulanan (Rp ${totalRevenue.toLocaleString("id-ID")})</td>
-              </tr>
-              <tr>
-                <td>Transaksi Pending Belum Lunas</td>
-                <td class="currency" style="font-weight: bold;">${transactionsToExport.length} Transaksi</td>
-                <td>Menunggu tindakan penagihan/WA Reminder</td>
-              </tr>
-              <tr>
-                <td>Rata-rata Keterlambatan</td>
-                <td class="currency" style="font-weight: bold;">${exportAvgDelay} Hari</td>
-                <td class="highlight">Batas toleransi: 3 Hari (Status: ${exportAvgDelay <= 3 ? "AMAN" : "KRITIS"})</td>
-              </tr>
-            </tbody>
-          </table>
-          <br/>
-
-          <table>
-            <thead>
-              <tr>
-                <th colspan="3" class="section-header" style="text-align: center;">2. AGING SCHEDULE (DISTRIBUSI UMUR PIUTANG)</th>
-              </tr>
-              <tr>
-                <th>KELOMPOK UMUR TUNGGAKAN</th>
-                <th style="text-align: right;">NOMINAL TERTAHAN</th>
-                <th>PROPORSI ESTIMASI</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>1-2 Hari (Keterlambatan Awal)</td>
-                <td class="currency">Rp ${age1_2.toLocaleString("id-ID")}</td>
-                <td>${exportTotalPiutang > 0 ? ((age1_2 / exportTotalPiutang) * 100).toFixed(0) : 0}% dari total piutang</td>
-              </tr>
-              <tr>
-                <td>3-5 Hari (Perhatian Khusus)</td>
-                <td class="currency">Rp ${age3_5.toLocaleString("id-ID")}</td>
-                <td>${exportTotalPiutang > 0 ? ((age3_5 / exportTotalPiutang) * 100).toFixed(0) : 0}% dari total piutang</td>
-              </tr>
-              <tr>
-                <td>&gt; 7 Hari (Tindakan Kritis)</td>
-                <td class="currency" style="color: #E62C2C;">Rp ${ageMore7.toLocaleString("id-ID")}</td>
-                <td class="warning-text">${exportTotalPiutang > 0 ? ((ageMore7 / exportTotalPiutang) * 100).toFixed(0) : 0}% - Prioritas WhatsApp CRM</td>
-              </tr>
-            </tbody>
-          </table>
-          <br/>
-
-          <table>
-            <thead>
-              <tr>
-                <th colspan="7" class="section-header" style="text-align: center;">3. DAFTAR INVOICE & PIUTANG TERTAHAN DETAIL</th>
-              </tr>
-              <tr>
-                <th>TANGGAL INVOICE</th>
-                <th>NO. INVOICE</th>
-                <th>NAMA PASIEN</th>
-                <th>NOMOR WHATSAPP</th>
-                <th style="text-align: right;">SISA TAGIHAN</th>
-                <th>LAMA TERTUNDA</th>
-                <th>STATUS REMINDER</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${transactionsToExport.map(row => `
-                <tr>
-                  <td>${getFormattedDate(row.hari_belum_lunas)}</td>
-                  <td style="font-family: monospace;">${row.no_invoice}</td>
-                  <td>${row.pasien}</td>
-                  <td>${row.wa_number}</td>
-                  <td class="currency" style="font-weight: bold; color: #1B9C90;">Rp ${row.total_tagihan.toLocaleString("id-ID")}</td>
-                  <td>${row.hari_belum_lunas} Hari</td>
-                  <td>${row.status_reminder}</td>
-                </tr>
-              `).join('')}
-          </tbody>
-          </table>
-        </body>
-        </html>
-      `;
-
-      try {
-        const element = document.createElement("a");
-        const file = new Blob([html], { type: "application/vnd.ms-excel" });
-        element.href = URL.createObjectURL(file);
-        element.download = `Laporan_Analisis_Piutang_Klinik_${selectedPeriod}.xls`;
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
-      } catch (err) {
-        console.error("Gagal melakukan export excel:", err);
-        alert("Gagal melakukan export excel. Silakan periksa koneksi Anda.");
-      }
-    }
+    await exportToExcelHelper({
+      selectedTab,
+      selectedPeriod,
+      periodLabel,
+      todayStr,
+      trendData,
+      piutangTransactions,
+      piutangTotalPiutang,
+      piutangAvgDelay,
+      piutangRatio,
+      totalRevenue,
+    });
   };
 
   return (
