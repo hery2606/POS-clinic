@@ -167,7 +167,7 @@ export const SessionManagementSection = () => {
           ))
         ) : (
           <>
-            <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200 p-4 rounded-lg">
+            <Card className="bg-linear-to-br from-blue-50 to-blue-100/50 border border-blue-200 p-4 rounded-lg">
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-sm font-medium text-blue-900">Total Sesi</h3>
                 <Shield className="w-4 h-4 text-blue-600" />
@@ -176,7 +176,7 @@ export const SessionManagementSection = () => {
               <p className="text-xs text-blue-700 mt-2">Sesi aktif di berbagai perangkat</p>
             </Card>
 
-            <Card className="bg-gradient-to-br from-green-50 to-green-100/50 border border-green-200 p-4 rounded-lg">
+            <Card className="bg-linear-to-br from-green-50 to-green-100/50 border border-green-200 p-4 rounded-lg">
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-sm font-medium text-green-900">Sesi Aktif</h3>
                 <CheckCircle className="w-4 h-4 text-green-600" />
@@ -185,7 +185,7 @@ export const SessionManagementSection = () => {
               <p className="text-xs text-green-700 mt-2">Perangkat sedang aktif</p>
             </Card>
 
-            <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-200 p-4 rounded-lg">
+            <Card className="bg-linear-to-br from-orange-50 to-orange-100/50 border border-orange-200 p-4 rounded-lg">
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-sm font-medium text-orange-900">Sesi Tidak Aktif</h3>
                 <AlertCircle className="w-4 h-4 text-orange-600" />
@@ -200,7 +200,7 @@ export const SessionManagementSection = () => {
       {/* Current Session Alert */}
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
         <div className="flex items-start gap-3">
-          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
           <div>
             <h3 className="font-semibold text-green-900 mb-1">Sesi Aktif</h3>
             <p className="text-sm text-green-800">Anda sedang login di sesi ini. Logout akan membuat Anda keluar dari akun admin.</p>
@@ -264,7 +264,7 @@ export const SessionManagementSection = () => {
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex items-start gap-3 flex-1 min-w-0 w-full">
-                    <div className={`p-2 rounded-lg flex-shrink-0 ${
+                    <div className={`p-2 rounded-lg shrink-0 ${
                       session.status === 'active'
                         ? 'bg-blue-100'
                         : 'bg-gray-100'
@@ -319,7 +319,7 @@ export const SessionManagementSection = () => {
 
                   {/* Action Button */}
                   {!session.isCurrent && (
-                    <div className="flex-shrink-0 w-full sm:w-auto border-t border-slate-100 sm:border-t-0 pt-3 sm:pt-0 flex justify-end">
+                    <div className="shrink-0 w-full sm:w-auto border-t border-slate-100 sm:border-t-0 pt-3 sm:pt-0 flex justify-end">
                       <Button
                         onClick={() => {
                           if (confirm('Apakah Anda yakin ingin menghentikan sesi ini?')) {
@@ -351,7 +351,7 @@ export const SessionManagementSection = () => {
       {/* Security Tips */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
         <div className="flex items-start gap-2">
-          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
           <div>
             <h3 className="font-semibold text-blue-900 mb-2">Tips Keamanan Sesi</h3>
             <ul className="text-sm text-blue-800 space-y-2 list-disc list-inside">

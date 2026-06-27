@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Users, Info, TrendingUp, Award, ActivitySquare, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { analitikService } from "../../services/analitik.service";
 
 export function PatientAnalysisDashboard() {
@@ -80,15 +81,147 @@ export function PatientAnalysisDashboard() {
   // SKELETON SCREEN LOADING STATE
   if (loading || !analytics) {
     return (
-      <div className="w-full space-y-5 animate-in fade-in duration-200">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 bg-white border border-slate-100 rounded-2xl animate-pulse" />
-          ))}
+      <div className="w-full space-y-6 animate-in fade-in duration-300">
+        {/* HEADER SKELETON */}
+        <div className="bg-white border border-[#DFE6EB] rounded-[24px] p-6 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 w-full max-w-lg">
+            <Skeleton className="w-11 h-11 rounded-xl shrink-0 bg-[#EFF4F8]" />
+            <div className="space-y-2 w-full">
+              <Skeleton className="h-4 w-1/2 bg-[#EFF4F8]" />
+              <Skeleton className="h-3 w-3/4 bg-[#EFF4F8]" />
+            </div>
+          </div>
+          <Skeleton className="w-36 h-7 rounded-xl shrink-0 bg-[#EFF4F8]" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <div className="h-80 bg-white border border-slate-100 rounded-[24px] animate-pulse" />
-          <div className="h-80 bg-white border border-slate-100 rounded-[24px] animate-pulse" />
+
+        {/* 4 STATS CARDS SKELETON */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1 */}
+          <Card className="bg-white border border-[#DFE6EB] rounded-2xl shadow-xs">
+            <CardContent className="p-5 flex flex-col justify-between h-28 space-y-3">
+              <div className="flex items-center justify-between w-full">
+                <Skeleton className="h-3 w-16 bg-[#EFF4F8]" />
+                <Skeleton className="h-4 w-4 bg-[#EFF4F8] rounded" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-16 bg-[#EFF4F8]" />
+                <Skeleton className="h-3 w-28 bg-[#EFF4F8]" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card 2 */}
+          <Card className="bg-white border border-[#DFE6EB] rounded-2xl shadow-xs">
+            <CardContent className="p-5 flex flex-col justify-between h-28 space-y-3">
+              <div className="flex items-center justify-between w-full">
+                <Skeleton className="h-3 w-20 bg-[#EFF4F8]" />
+                <Skeleton className="h-4 w-4 bg-[#EFF4F8] rounded" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-16 bg-[#EFF4F8]" />
+                <Skeleton className="h-3 w-32 bg-[#EFF4F8]" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card 3 */}
+          <Card className="bg-white border border-[#DFE6EB] rounded-2xl shadow-xs">
+            <CardContent className="p-5 flex flex-col justify-between h-28 space-y-2">
+              <div className="flex items-center justify-between w-full">
+                <Skeleton className="h-3 w-24 bg-[#EFF4F8]" />
+                <Skeleton className="h-4 w-4 bg-[#EFF4F8] rounded" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton className="h-6 w-16 bg-[#EFF4F8]" />
+                <Skeleton className="w-full h-1 bg-[#EFF4F8] rounded-full" />
+                <Skeleton className="h-3 w-20 bg-[#EFF4F8]" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card 4 */}
+          <Card className="bg-white border border-[#DFE6EB] rounded-2xl shadow-xs">
+            <CardContent className="p-5 flex flex-col justify-between h-28 space-y-3">
+              <div className="flex items-center justify-between w-full">
+                <Skeleton className="h-3 w-24 bg-[#EFF4F8]" />
+                <Skeleton className="h-4 w-4 bg-[#EFF4F8] rounded" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-28 bg-[#EFF4F8]" />
+                <Skeleton className="h-3 w-20 bg-[#EFF4F8]" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* BOTTOM AREA CHARTS & TABLES SKELETON */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+          {/* Donut Chart Skeleton */}
+          <Card className="lg:col-span-5 bg-white rounded-[24px] border border-[#DFE6EB] shadow-xs">
+            <CardContent className="p-6 flex flex-col justify-between h-full min-h-[360px] space-y-4">
+              <div className="space-y-2.5">
+                <Skeleton className="h-4 w-32 bg-[#EFF4F8]" />
+                <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-1.5">
+                  <Skeleton className="h-3 w-full bg-[#EFF4F8]" />
+                  <Skeleton className="h-3 w-4/5 bg-[#EFF4F8]" />
+                </div>
+              </div>
+
+              {/* Circular Donut Placeholder */}
+              <div className="flex items-center justify-center flex-1 py-2">
+                <div className="relative w-36 h-36 rounded-full border-8 border-dashed border-[#EFF4F8] flex items-center justify-center animate-spin duration-3000">
+                  <div className="w-24 h-24 rounded-full bg-white border border-[#DFE6EB] flex flex-col items-center justify-center">
+                    <Skeleton className="h-5 w-10 bg-[#EFF4F8]" />
+                    <Skeleton className="h-2 w-6 bg-[#EFF4F8] mt-1" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Legenda bottom */}
+              <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-4 w-full">
+                <div className="text-center space-y-1 border-r border-slate-100">
+                  <Skeleton className="h-2 w-12 bg-[#EFF4F8] mx-auto" />
+                  <Skeleton className="h-4 w-10 bg-[#EFF4F8] mx-auto" />
+                </div>
+                <div className="text-center space-y-1">
+                  <Skeleton className="h-2 w-12 bg-[#EFF4F8] mx-auto" />
+                  <Skeleton className="h-4 w-10 bg-[#EFF4F8] mx-auto" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* List Top Spender Skeleton */}
+          <Card className="lg:col-span-7 bg-white rounded-[24px] border border-[#DFE6EB] shadow-xs">
+            <CardContent className="p-6 h-full flex flex-col justify-between min-h-[360px] space-y-4">
+              <Skeleton className="h-4 w-48 bg-[#EFF4F8]" />
+
+              {/* Rows list */}
+              <div className="space-y-2.5 flex-1">
+                {[...Array(4)].map((_, index) => (
+                  <div
+                    key={index}
+                    className="p-3 rounded-xl bg-[#FAFCFD] border border-slate-100 flex items-center justify-between gap-4"
+                  >
+                    <div className="flex items-center gap-3 w-3/4">
+                      <Skeleton className="w-7 h-7 rounded-lg bg-[#EFF4F8] shrink-0" />
+                      <div className="space-y-1.5 w-full">
+                        <Skeleton className="h-3.5 w-1/3 bg-[#EFF4F8]" />
+                        <Skeleton className="h-2.5 w-1/2 bg-[#EFF4F8]" />
+                      </div>
+                    </div>
+                    <Skeleton className="w-20 h-6 rounded-lg bg-[#EFF4F8] shrink-0" />
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer */}
+              <div className="border-t border-slate-100 pt-3 flex justify-between items-center">
+                <Skeleton className="h-3.5 w-40 bg-[#EFF4F8]" />
+                <Skeleton className="h-3.5 w-24 bg-[#EFF4F8]" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );

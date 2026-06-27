@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { secureStorage } from "@/features/auth/store/authStore";
+import { secureStorage, useAuthStore } from "@/features/auth/store/authStore";
 
 
 export const posClient = axios.create({
@@ -11,10 +11,10 @@ export const posClient = axios.create({
   },
 });
 
-// Interceptor otomatis menyisipkan Token JWT Kasir dari localStorage
+// Interceptor otomatis menyisipkan Token JWT Kasir dari localStorage / authStore
 posClient.interceptors.request.use(
   (config) => {
-    const token = secureStorage.getItem('authToken'); // Ambil token dari localStorage
+    const token = useAuthStore.getState().authToken || secureStorage.getItem('authToken'); // Ambil token dari store atau localStorage
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }

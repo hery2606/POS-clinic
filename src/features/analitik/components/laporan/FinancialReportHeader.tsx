@@ -107,7 +107,29 @@ export function FinancialReportHeader({
         { type: "text/plain" }
       );
       const fileURL = URL.createObjectURL(file);
-      window.open(fileURL, "_blank");
+      
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.width = "0px";
+      iframe.style.height = "0px";
+      iframe.style.border = "none";
+      iframe.style.top = "-9999px";
+      iframe.src = fileURL;
+      document.body.appendChild(iframe);
+
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch (e) {
+          console.warn("Gagal membuka print dialog lewat iframe:", e);
+          window.open(fileURL, "_blank");
+        }
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          URL.revokeObjectURL(fileURL);
+        }, 3000);
+      };
     }
   };
 
