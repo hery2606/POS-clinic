@@ -100,18 +100,14 @@ export function FinancialReportHeader({
     if (onDownloadPDF) {
       onDownloadPDF();
     } else {
-      const element = document.createElement("a");
       const file = new Blob(
         [
           `Laporan Keuangan\n\nPeriode: ${periodValue}\nTanggal Export: ${new Date().toLocaleDateString("id-ID")}`,
         ],
         { type: "text/plain" }
       );
-      element.href = URL.createObjectURL(file);
-      element.download = `laporan-keuangan-${periodValue}.txt`;
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
+      const fileURL = URL.createObjectURL(file);
+      window.open(fileURL, "_blank");
     }
   };
 

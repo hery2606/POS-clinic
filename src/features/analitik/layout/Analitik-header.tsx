@@ -11,7 +11,11 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 
 import { ROUTES } from "@/routes/routeConfig";
 
-export const AnalitikHeader = () => {
+interface AnalitikHeaderProps {
+  onDownloadPDF?: () => void;
+}
+
+export const AnalitikHeader = ({ onDownloadPDF }: AnalitikHeaderProps = {}) => {
   const location = useLocation();
   const isLaporanPage = location.pathname.includes("laporan");
   const isDashboardPage = location.pathname === ROUTES.ADMIN.DASHBOARD;
@@ -63,11 +67,25 @@ export const AnalitikHeader = () => {
   }, []);
 
   const handleDownloadPdf = () => {
-    window.dispatchEvent(
-      new CustomEvent("trigger-dashboard-pdf-download", {
-        detail: { periodLabel: getPeriodLabel() },
-      })
-    );
+    if (onDownloadPDF) {
+      onDownloadPDF();
+    } else if (isDashboardPage) {
+      window.dispatchEvent(
+        new CustomEvent("trigger-dashboard-pdf-download", {
+          detail: { periodLabel: getPeriodLabel() },
+        })
+      );
+    } else {
+      const periodLabel = getPeriodLabel();
+      const file = new Blob(
+        [
+          `Laporan Analitik Klinik\n\nPeriode: ${periodLabel}\nTanggal Export: ${new Date().toLocaleDateString("id-ID")}`,
+        ],
+        { type: "text/plain" }
+      );
+      const fileURL = URL.createObjectURL(file);
+      window.open(fileURL, "_blank");
+    }
   };
 
   return (
