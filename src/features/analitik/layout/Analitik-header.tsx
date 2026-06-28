@@ -20,6 +20,48 @@ export const AnalitikHeader = ({ onDownloadPDF }: AnalitikHeaderProps = {}) => {
   const isLaporanPage = location.pathname.includes("laporan");
   const isDashboardPage = location.pathname === ROUTES.ADMIN.DASHBOARD;
 
+  const getHeaderInfo = () => {
+    const path = location.pathname.toLowerCase();
+    
+    if (path.includes("dashboard")) {
+      return {
+        title: "Analitik Klinik",
+        subtitle: "Ringkasan Bisnis Real-time"
+      };
+    }
+    if (path.includes("pasien")) {
+      return {
+        title: "Data Pasien",
+        subtitle: "Manajemen data pasien dan rekam medis"
+      };
+    }
+    if (path.includes("transaksi")) {
+      return {
+        title: "Data Transaksi",
+        subtitle: "Catatan transaksi pembayaran dan tagihan"
+      };
+    }
+    if (path.includes("laporan")) {
+      return {
+        title: "Laporan Keuangan",
+        subtitle: "Analisa Pendapatan, Pengeluaran, dan Arus Kas"
+      };
+    }
+    if (path.includes("settings")) {
+      return {
+        title: "Pengaturan",
+        subtitle: "Manajemen pengguna dan konfigurasi sistem"
+      };
+    }
+    
+    return {
+      title: "Analitik Klinik",
+      subtitle: "Ringkasan Bisnis Real-time"
+    };
+  };
+
+  const { title, subtitle } = getHeaderInfo();
+
   const currentYearStr = String(new Date().getFullYear());
   const prevYearStr = String(new Date().getFullYear() - 1);
 
@@ -95,10 +137,10 @@ export const AnalitikHeader = ({ onDownloadPDF }: AnalitikHeaderProps = {}) => {
           <SidebarTrigger className="md:hidden border border-[#DFE6EB] hover:bg-[#EFF4F8] text-[#464a4c] p-2 h-10 w-10 shrink-0 flex items-center justify-center rounded-lg [&_svg]:!size-7" />
           <div className="space-y-1">
             <h1 className="text-xl font-bold text-[#13222D] tracking-wide">
-              {isLaporanPage ? "Laporan Keuangan" : "Analitik Klinik"}
+              {title}
             </h1>
             <p className="text-xs font-medium text-[#67737C]">
-              {isLaporanPage ? "Analisa Pendapatan, Pengeluaran, dan Arus Kas" : "Ringkasan Bisnis Real-time"}
+              {subtitle}
             </p>
           </div>
         </div>

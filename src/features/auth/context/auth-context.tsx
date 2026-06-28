@@ -6,17 +6,13 @@ import { initializeRmeAuth, initializeWarehouseAuth } from '@/api';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => AuthService.getUser());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user is already logged in
-    const storedUser = AuthService.getUser();
-    if (storedUser) {
-      setUser(storedUser);
-      
-      const role = storedUser.role?.toUpperCase();
+    if (user) {
+      const role = user.role?.toUpperCase();
       if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
         initializeRmeAuth().catch(console.error);
       }

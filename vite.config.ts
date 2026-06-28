@@ -28,6 +28,23 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.WAREHOUSE_ADMIN_EMAIL': JSON.stringify(env.WAREHOUSE_ADMIN_EMAIL),
       'import.meta.env.WAREHOUSE_ADMIN_PASSWORD': JSON.stringify(env.WAREHOUSE_ADMIN_PASSWORD),
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('@react-pdf') || id.includes('jspdf') || id.includes('html2canvas')) {
+                return 'pdf-vendor';
+              }
+              if (id.includes('recharts') || id.includes('d3')) {
+                return 'charts-vendor';
+              }
+              return 'vendor';
+            }
+          }
+        }
+      }
+    },
 
     server: {
       proxy: {

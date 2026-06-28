@@ -1,7 +1,4 @@
 import { useState, type RefObject } from "react";
-import html2canvas from "html2canvas-pro";
-import { pdf } from "@react-pdf/renderer";
-import { DashboardPdfTemplate } from "../features/analitik/components/print/dashboard-pdf-template";
 
 interface UsePdfDownloadProps {
   chartRefs: {
@@ -61,7 +58,8 @@ export const usePdfDownload = ({ chartRefs, data }: UsePdfDownloadProps) => {
       // 4. Beri jeda kecil (150ms) agar Recharts melakukan render ulang (reflow/recalculate SVG paths)
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      // 5. Lakukan penangkapan screenshot menggunakan html2canvas-pro
+      // 5. Lakukan penangkapan screenshot menggunakan html2canvas-pro secara dinamis
+      const html2canvas = (await import("html2canvas-pro")).default;
       const canvas = await html2canvas(chartContainer, {
         scale: 2.5, // Kualitas HD
         useCORS: true,
@@ -100,6 +98,11 @@ export const usePdfDownload = ({ chartRefs, data }: UsePdfDownloadProps) => {
       const chartBarMixed = await captureChart(chartRefs.chartBarMixed, 'half');
 
       console.log("📄 Memulai generasi dokumen PDF formal...");
+      const [{ pdf }, { DashboardPdfTemplate }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("../features/analitik/components/print/dashboard-pdf-template")
+      ]);
+
       const doc = (
         <DashboardPdfTemplate
           data={data}

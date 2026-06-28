@@ -8,8 +8,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // Data dianggap "segar" selama 5 menit. Selama 5 menit ini, pindah halaman gak bakal loading ulang.
-      refetchOnWindowFocus: false, // Mematikan fitur auto-fetch ulang setiap kali user pindah tab browser
+      staleTime: 1000 * 60 * 5,
+      refetchOnWindowFocus: false,
     },
   },
 });
