@@ -5,7 +5,7 @@ export const PDF_CONFIG = {
 
 export const KLINIK_INFO = {
   nama: 'SMARTCLINIK INDONESIA',
-  alamat: 'Jl. Prof. DR. Soepomo SH No.23, Warungboto, Yogyakarta',
+  alamat: 'Jl. Prof. DR. Soepomo SH No.23, Warungboto, Umbulharjo, Yogyakarta',
   labelDokumen: 'DOKUMEN EKSEKUTIF',
 };
 

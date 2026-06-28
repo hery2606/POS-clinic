@@ -1,7 +1,4 @@
 import { useState, type RefObject } from "react";
-import html2canvas from "html2canvas-pro";
-import { pdf } from "@react-pdf/renderer";
-import { DashboardPdfTemplate } from "../features/analitik/components/print/dashboard-pdf-template";
 
 interface UsePdfDownloadProps {
   chartRefs: {
@@ -61,7 +58,8 @@ export const usePdfDownload = ({ chartRefs, data }: UsePdfDownloadProps) => {
       // 4. Beri jeda kecil (150ms) agar Recharts melakukan render ulang (reflow/recalculate SVG paths)
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      // 5. Lakukan penangkapan screenshot menggunakan html2canvas-pro
+      // 5. Lakukan penangkapan screenshot menggunakan html2canvas-pro secara dinamis
+      const html2canvas = (await import("html2canvas-pro")).default;
       const canvas = await html2canvas(chartContainer, {
         scale: 2.5, // Kualitas HD
         useCORS: true,
@@ -100,6 +98,11 @@ export const usePdfDownload = ({ chartRefs, data }: UsePdfDownloadProps) => {
       const chartBarMixed = await captureChart(chartRefs.chartBarMixed, 'half');
 
       console.log("📄 Memulai generasi dokumen PDF formal...");
+      const [{ pdf }, { DashboardPdfTemplate }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("../features/analitik/components/print/dashboard-pdf-template")
+      ]);
+
       const doc = (
         <DashboardPdfTemplate
           data={data}
@@ -112,17 +115,30 @@ export const usePdfDownload = ({ chartRefs, data }: UsePdfDownloadProps) => {
 
       const blob = await pdf(doc).toBlob();
       const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
       
-      const fileDate = new Date().toISOString().split("T")[0];
-      link.download = `laporan-dashboard-${fileDate}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      console.log("✅ Unduh laporan PDF berhasil!");
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.width = "0px";
+      iframe.style.height = "0px";
+      iframe.style.border = "none";
+      iframe.style.top = "-9999px";
+      iframe.src = url;
+      document.body.appendChild(iframe);
+
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch (e) {
+          console.warn("Gagal membuka print dialog lewat iframe:", e);
+          window.open(url, "_blank");
+        }
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          URL.revokeObjectURL(url);
+        }, 3000);
+      };
+      console.log("✅ Print preview laporan PDF berhasil dimuat!");
     } catch (error) {
       console.error("❌ Gagal mengunduh laporan PDF:", error);
       alert("Gagal mengunduh laporan PDF. Silakan coba lagi.");

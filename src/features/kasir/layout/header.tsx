@@ -2,40 +2,57 @@ import React, { useMemo } from 'react'
 import { Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
-import { useBreadcrumb } from '@/hooks/useBreadcrumb'
 import { useRightPanel } from '../context/right-panel-context'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { warehouseService } from '../services/warehouse.service'
 import type { WarehouseMedicine } from '../types/warehouse.types'
 
 export function Header() {
-  const breadcrumbs = useBreadcrumb()
   const { setContent } = useRightPanel()
   const location = useLocation()
 
-  const activeTitle = useMemo(() => {
-    switch (location.pathname) {
-      case '/kasir':
-        return 'Kasir'
-      case '/riwayat':
-        return 'Riwayat Transaksi'
-      case '/stok':
-        return 'Stok Obat'
-      case '/pengaturan':
-        return 'Pengaturan'
-      default:
-        return breadcrumbs[breadcrumbs.length - 1]?.label || 'Kasir'
+  const getHeaderInfo = () => {
+    const path = location.pathname.toLowerCase();
+    
+    if (path === '/kasir' || path === '/kasir/') {
+      return {
+        title: "Kasir",
+        subtitle: "Kelola transaksi penjualan obat dan rekam medis pasien"
+      };
     }
-  }, [location.pathname, breadcrumbs])
+    if (path.includes("riwayat")) {
+      return {
+        title: "Riwayat Transaksi",
+        subtitle: "Catatan transaksi penjualan obat"
+      };
+    }
+    if (path.includes("stok")) {
+      return {
+        title: "Stok Obat",
+        subtitle: "Manajemen ketersediaan obat dan alat kesehatan"
+      };
+    }
+    if (path.includes("pengaturan")) {
+      return {
+        title: "Pengaturan",
+        subtitle: "Konfigurasi aplikasi kasir"
+      };
+    }
+    if (path.includes("pasien")) {
+      return {
+        title: "Data Pasien",
+        subtitle: "Pencarian dan manajemen pasien klinik"
+      };
+    }
+    
+    return {
+      title: "Kasir",
+      subtitle: "Kelola transaksi penjualan obat dan rekam medis pasien"
+    };
+  };
+
+  const { title, subtitle } = getHeaderInfo();
 
 
   // Fetch medicines to count critical/low stock items
@@ -65,34 +82,14 @@ export function Header() {
     <header className="border-b border-[#DFE6EB] bg-white sticky top-0 z-10 w-full">
       <div className="px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         
-        {/* LEFT PANEL: BREADCRUMBS & TITLES */}
+        {/* LEFT PANEL: DYNAMIC TITLES */}
         <div className="space-y-1">
-          <Breadcrumb>
-            <BreadcrumbList>
-              {breadcrumbs.map((crumb, index) => (
-                <React.Fragment key={index}>
-                  {index > 0 && <BreadcrumbSeparator className="text-[#67737C]/40" />}
-                  <BreadcrumbItem>
-                    {crumb.isActive ? (
-                      <BreadcrumbPage className="text-xs font-semibold text-[#13222D]">
-                        {crumb.label}
-                      </BreadcrumbPage>
-                    ) : (
-                      <BreadcrumbLink asChild className="text-xs font-medium text-[#67737C] hover:text-[#1B9C90] transition-colors">
-                        <Link to={crumb.href || '#'}>
-                          {crumb.label}
-                        </Link>
-                      </BreadcrumbLink>
-                    )}
-                  </BreadcrumbItem>
-                </React.Fragment>
-              ))}
-            </BreadcrumbList>
-          </Breadcrumb>
-          
           <h1 className="text-xl font-bold text-[#13222D] tracking-wide">
-            {activeTitle}
+            {title}
           </h1>
+          <p className="text-xs font-medium text-[#67737C]">
+            {subtitle}
+          </p>
         </div>
 
         {/* RIGHT PANEL: ACTIONS & APP STATUS */}

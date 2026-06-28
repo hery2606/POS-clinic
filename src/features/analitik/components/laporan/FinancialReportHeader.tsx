@@ -100,18 +100,36 @@ export function FinancialReportHeader({
     if (onDownloadPDF) {
       onDownloadPDF();
     } else {
-      const element = document.createElement("a");
       const file = new Blob(
         [
           `Laporan Keuangan\n\nPeriode: ${periodValue}\nTanggal Export: ${new Date().toLocaleDateString("id-ID")}`,
         ],
         { type: "text/plain" }
       );
-      element.href = URL.createObjectURL(file);
-      element.download = `laporan-keuangan-${periodValue}.txt`;
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
+      const fileURL = URL.createObjectURL(file);
+      
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.width = "0px";
+      iframe.style.height = "0px";
+      iframe.style.border = "none";
+      iframe.style.top = "-9999px";
+      iframe.src = fileURL;
+      document.body.appendChild(iframe);
+
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch (e) {
+          console.warn("Gagal membuka print dialog lewat iframe:", e);
+          window.open(fileURL, "_blank");
+        }
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          URL.revokeObjectURL(fileURL);
+        }, 3000);
+      };
     }
   };
 

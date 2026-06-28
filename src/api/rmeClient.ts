@@ -104,6 +104,8 @@ rmeClient.interceptors.response.use(
   }
 );
 
+let rmeAuthPromise: Promise<void> | null = null;
+
 // Fungsi Otomatisasi Login Sistem/Admin ke RME
 export async function initializeRmeAuth() {
   const existingToken = secureStorage.getItem('rmeToken');
@@ -114,40 +116,51 @@ export async function initializeRmeAuth() {
     return;
   }
 
-  try {
-    console.log("🔄 Mencoba mengautentikasi Admin ke RME...");
-    
-    let response;
-    if (import.meta.env.DEV) {
-      const baseUrl = getRmeBaseUrl();
-      response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
-        identifier: import.meta.env.VITE_RME_ADMIN_EMAIL, 
-        password: import.meta.env.VITE_RME_ADMIN_PASSWORD,
-      });
-    } else {
-      // Di production, tembak ke Vercel serverless function proxy
-      response = await axios.post("/api/rmeLogin");
-    }
-
-    // Menyesuaikan dengan Response Body sukses -> response.data.data.accessToken
-    const token = response.data?.data?.accessToken;
-    
-    if (token) {
-      secureStorage.setItem('rmeToken', token);
-      console.log("✅ Autentikasi RME Berhasil! Token disimpan di localStorage.");
-    } else {
-      console.warn("⚠️ Respon login sukses, tetapi accessToken tidak ditemukan pada struktur data.");
-      console.warn("📋 Response:", response.data);
-    }
-  } catch (error: any) {
-    console.error("❌ Gagal melakukan otomatisasi login admin RME");
-    if (error.response) {
-      console.error(`Status: ${error.response.status} ${error.response.statusText}`);
-      console.error("Detail error:", error.response.data);
-    } else if (error.request) {
-      console.error("Tidak ada respon dari server:", error.request);
-    } else {
-      console.error("Error:", error.message);
-    }
+  if (rmeAuthPromise) {
+    console.log("⏳ Menunggu proses login RME yang sedang berjalan...");
+    return rmeAuthPromise;
   }
+
+  rmeAuthPromise = (async () => {
+    try {
+      console.log("🔄 Mencoba mengautentikasi Admin ke RME...");
+      
+      let response;
+      if (import.meta.env.DEV) {
+        const baseUrl = getRmeBaseUrl();
+        response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
+          identifier: import.meta.env.RME_ADMIN_EMAIL, 
+          password: import.meta.env.RME_ADMIN_PASSWORD,
+        });
+      } else {
+        // Di production, tembak ke Vercel serverless function proxy
+        response = await axios.post("/api/rmeLogin");
+      }
+
+      // Menyesuaikan dengan Response Body sukses -> response.data.data.accessToken
+      const token = response.data?.data?.accessToken;
+      
+      if (token) {
+        secureStorage.setItem('rmeToken', token);
+        console.log("✅ Autentikasi RME Berhasil! Token disimpan di localStorage.");
+      } else {
+        console.warn("⚠️ Respon login sukses, tetapi accessToken tidak ditemukan pada struktur data.");
+        console.warn("📋 Response:", response.data);
+      }
+    } catch (error: any) {
+      console.error("❌ Gagal melakukan otomatisasi login admin RME");
+      if (error.response) {
+        console.error(`Status: ${error.response.status} ${error.response.statusText}`);
+        console.error("Detail error:", error.response.data);
+      } else if (error.request) {
+        console.error("Tidak ada respon dari server:", error.request);
+      } else {
+        console.error("Error:", error.message);
+      }
+    } finally {
+      rmeAuthPromise = null;
+    }
+  })();
+
+  return rmeAuthPromise;
 };

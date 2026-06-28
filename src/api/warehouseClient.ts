@@ -104,8 +104,8 @@ export async function loginWarehouseAdmin() {
   if (import.meta.env.DEV) {
     const baseUrl = getWarehouseBaseUrl();
     response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
-      email: import.meta.env.VITE_WAREHOUSE_ADMIN_EMAIL,
-      password: import.meta.env.VITE_WAREHOUSE_ADMIN_PASSWORD,
+      email: import.meta.env.WAREHOUSE_ADMIN_EMAIL,
+      password: import.meta.env.WAREHOUSE_ADMIN_PASSWORD,
     });
   } else {
     // Di production, tembak ke Vercel serverless function proxy
@@ -122,6 +122,8 @@ export async function loginWarehouseAdmin() {
   }
 }
 
+let warehouseAuthPromise: Promise<void> | null = null;
+
 // Fungsi Otomatisasi Login Sistem/Admin ke Warehouse
 export async function initializeWarehouseAuth() {
   const existingToken = secureStorage.getItem("warehouse_auth_token");
@@ -132,39 +134,50 @@ export async function initializeWarehouseAuth() {
     return;
   }
 
-  try {
-    console.log("🔄 Mencoba mengautentikasi Admin ke Warehouse...");
-    let response;
-    if (import.meta.env.DEV) {
-      const baseUrl = getWarehouseBaseUrl();
-      response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
-        email: import.meta.env.VITE_WAREHOUSE_ADMIN_EMAIL,
-        password: import.meta.env.VITE_WAREHOUSE_ADMIN_PASSWORD,
-      });
-    } else {
-      // Di production, tembak ke Vercel serverless function proxy
-      response = await axios.post("/api/warehouseLogin");
-    }
-
-    const token = response.data?.accessToken;
-    
-    if (token) {
-      secureStorage.setItem("warehouse_auth_token", token);
-      console.log("✅ Autentikasi Warehouse Berhasil! Token disimpan di secureStorage.");
-    } else {
-      console.warn("⚠️ Respon login sukses, tetapi accessToken tidak ditemukan pada struktur data.");
-      console.warn("📋 Response:", response.data);
-    }
-  } catch (error: any) {
-    console.error("❌ Gagal melakukan otomatisasi login admin Warehouse");
-    if (import.meta.env.DEV) {
-      console.error("📧 Email digunakan:", import.meta.env.VITE_WAREHOUSE_ADMIN_EMAIL ?? "undefined (ENV tidak terbaca!)");
-    }
-    if (error.response) {
-      console.error(`Status: ${error.response.status}`);
-      console.error("Detail error:", JSON.stringify(error.response.data));
-    } else {
-      console.error("Error:", error.message);
-    }
+  if (warehouseAuthPromise) {
+    console.log("⏳ Menunggu proses login Warehouse yang sedang berjalan...");
+    return warehouseAuthPromise;
   }
-};
+
+  warehouseAuthPromise = (async () => {
+    try {
+      console.log("🔄 Mencoba mengautentikasi Admin ke Warehouse...");
+      let response;
+      if (import.meta.env.DEV) {
+        const baseUrl = getWarehouseBaseUrl();
+        response = await axios.post(`${baseUrl}/api/v1/auth/login`, {
+          email: import.meta.env.WAREHOUSE_ADMIN_EMAIL,
+          password: import.meta.env.WAREHOUSE_ADMIN_PASSWORD,
+        });
+      } else {
+        // Di production, tembak ke Vercel serverless function proxy
+        response = await axios.post("/api/warehouseLogin");
+      }
+
+      const token = response.data?.accessToken;
+      
+      if (token) {
+        secureStorage.setItem("warehouse_auth_token", token);
+        console.log("✅ Autentikasi Warehouse Berhasil! Token disimpan di secureStorage.");
+      } else {
+        console.warn("⚠️ Respon login sukses, tetapi accessToken tidak ditemukan pada struktur data.");
+        console.warn("📋 Response:", response.data);
+      }
+    } catch (error: any) {
+      console.error("❌ Gagal melakukan otomatisasi login admin Warehouse");
+      if (import.meta.env.DEV) {
+        console.error("📧 Email digunakan:", import.meta.env.WAREHOUSE_ADMIN_EMAIL ?? "undefined (ENV tidak terbaca!)");
+      }
+      if (error.response) {
+        console.error(`Status: ${error.response.status}`);
+        console.error("Detail error:", JSON.stringify(error.response.data));
+      } else {
+        console.error("Error:", error.message);
+      }
+    } finally {
+      warehouseAuthPromise = null;
+    }
+  })();
+
+  return warehouseAuthPromise;
+}
