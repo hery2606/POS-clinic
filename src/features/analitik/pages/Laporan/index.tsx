@@ -88,9 +88,6 @@ export const LaporanPage = () => {
     }
   }, [trendData, selectedPeriod, isCurrentPeriod]);
 
-  // ============================================================
-  // Piutang data calculations
-  // ============================================================
   const piutangTransactions = useMemo<LocalDaftarTransaksiBelumLunas[]>(() => {
     const apiData = outstandingInvoicesQuery.data?.data;
     if (apiData && apiData.length > 0) {
