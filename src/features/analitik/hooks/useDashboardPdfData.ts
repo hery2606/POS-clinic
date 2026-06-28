@@ -32,6 +32,13 @@ export type DashboardPdfData = {
     type: "produk" | "layanan";
   }>;
 
+  // Analisis Metode Pembayaran
+  payments: Array<{
+    method: string;
+    percentage: number;
+    amount: string;
+  }>;
+
   // Status
   isReady: boolean;
 };
@@ -78,7 +85,14 @@ export const useDashboardPdfData = (periodLabel: string, filters?: any): Dashboa
     staleTime: 5 * 60 * 1000,
   });
 
-  const isLoading = isRevenueLoading || isProductLoading;
+  // Query 3: Payments Analytics
+  const { data: paymentsResponse, isLoading: isPaymentsLoading } = useQuery({
+    queryKey: ["paymentsAnalytics"],
+    queryFn: () => analitikService.getPaymentsAnalytics(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const isLoading = isRevenueLoading || isProductLoading || isPaymentsLoading;
 
   const formattedData = useMemo<DashboardPdfData>(() => {
     const defaultData: DashboardPdfData = {
@@ -92,6 +106,7 @@ export const useDashboardPdfData = (periodLabel: string, filters?: any): Dashboa
       tanggalCetak: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
       transaksi: [],
       topProducts: [],
+      payments: [],
       isReady: false,
     };
 
@@ -197,6 +212,39 @@ export const useDashboardPdfData = (periodLabel: string, filters?: any): Dashboa
       statusBulanan = `Total Penjualan Obat (${activePeriodText})`;
     }
 
+    // Payments Mapping
+    let paymentsMapped: any[] = [];
+    if (paymentsResponse) {
+      const data = paymentsResponse.data || (paymentsResponse as any);
+      if (data && hasActiveData) {
+        let persentaseMetode = data.persentase_metode || [];
+        if (persentaseMetode.length === 0 && data.tren_metode_favorit && data.tren_metode_favorit.length > 0) {
+          const activeMonth = [...data.tren_metode_favorit].reverse().find(
+            (m: any) => (m.qris || 0) + (m.cash || 0) + (m.debit || 0) > 0
+          );
+          if (activeMonth) {
+            const qrisVal = activeMonth.qris || 0;
+            const cashVal = activeMonth.cash || 0;
+            const debitVal = activeMonth.debit || 0;
+            const total = qrisVal + cashVal + debitVal;
+            if (total > 0) {
+              persentaseMetode = [
+                { metode: 'QRIS', persentase: Math.round((qrisVal / total) * 100), total_nominal: qrisVal },
+                { metode: 'CASH', persentase: Math.round((cashVal / total) * 100), total_nominal: cashVal },
+                { metode: 'DEBIT', persentase: Math.round((debitVal / total) * 100), total_nominal: debitVal }
+              ].filter(item => item.total_nominal > 0);
+            }
+          }
+        }
+        
+        paymentsMapped = persentaseMetode.map((p: any) => ({
+          method: p.metode.toUpperCase() === "CASH" || p.metode.toUpperCase() === "TUNAI" ? "Tunai" : p.metode,
+          percentage: Math.round(p.persentase),
+          amount: formatToRupiah(p.total_nominal)
+        }));
+      }
+    }
+
     return {
       pendapatanHariIni,
       pendapatanMingguIni,
@@ -208,9 +256,10 @@ export const useDashboardPdfData = (periodLabel: string, filters?: any): Dashboa
       tanggalCetak: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
       transaksi: transaksiMapped,
       topProducts: topProductsMapped,
+      payments: paymentsMapped,
       isReady: true,
     };
-  }, [response, productResponse, periodLabel, filters]);
+  }, [response, productResponse, paymentsResponse, periodLabel, filters]);
 
   return isLoading ? {
     pendapatanHariIni: "Rp 0",
@@ -223,6 +272,7 @@ export const useDashboardPdfData = (periodLabel: string, filters?: any): Dashboa
     tanggalCetak: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
     transaksi: [],
     topProducts: [],
+    payments: [],
     isReady: false,
   } : formattedData;
 };

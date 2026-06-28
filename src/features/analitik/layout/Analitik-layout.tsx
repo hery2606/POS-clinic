@@ -21,8 +21,8 @@ export const AnalitikLayout: React.FC = () => {
     <SidebarProvider>
       <AppSidebar />
       
-      <div className="flex flex-col flex-1 min-w-0 h-screen overflow-hidden bg-[#F9FEFC]">
-        <div className="sticky top-0 z-20 bg-[#F9FEFC] px-6 lg:px-8 pt-6 border-b-2 ">
+      <div className="flex flex-col flex-1 min-w-0 h-screen overflow-hidden bg-[#F9FEFC] dark:bg-[#0B131A]">
+        <div className="sticky top-0 z-20 bg-[#F9FEFC] dark:bg-[#0B131A] px-6 lg:px-8 pt-6 border-b-2 border-slate-100 dark:border-slate-800">
           <AnalitikHeader 
             selectedPeriod={selectedPeriod}
             setSelectedPeriod={setSelectedPeriod}
@@ -39,7 +39,7 @@ export const AnalitikLayout: React.FC = () => {
           />
         </div>
 
-        <SidebarInset className="flex-1 overflow-hidden bg-[#EFF4F8]">
+        <SidebarInset className="flex-1 overflow-hidden bg-[#EFF4F8] dark:bg-[#080F14] text-slate-900 dark:text-slate-100">
           <main className="h-full overflow-y-auto px-6 lg:px-8 py-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <Outlet context={{ selectedPeriod, monthlyYear, startMonth, endMonth, startYear, endYear }} />
           </main>
