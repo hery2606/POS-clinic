@@ -136,22 +136,97 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function ChartAreaInteractive() {
+interface ChartAreaInteractiveProps {
+  filters?: {
+    selectedPeriod: string;
+    monthlyYear: string;
+    startMonth: string;
+    endMonth: string;
+    startYear: string;
+    endYear: string;
+  };
+}
+
+export function ChartAreaInteractive({ filters }: ChartAreaInteractiveProps = {}) {
+  const selectedPeriod = filters?.selectedPeriod ?? "daily";
+  const monthlyYear = filters?.monthlyYear ?? "2026";
+  const startMonth = filters?.startMonth ?? "3";
+  const endMonth = filters?.endMonth ?? "6";
+  const startYear = filters?.startYear ?? "2025";
+  const endYear = filters?.endYear ?? "2026";
+
   const [timeRange, setTimeRange] = React.useState("90d")
 
-  const filteredData = chartData.filter((item) => {
-    const date = new Date(item.date)
-    const referenceDate = new Date("2024-06-30")
-    let daysToSubtract = 90
-    if (timeRange === "30d") {
-      daysToSubtract = 30
-    } else if (timeRange === "7d") {
-      daysToSubtract = 7
+  const filteredData = React.useMemo(() => {
+    if (selectedPeriod === "daily") {
+      return chartData.filter((item) => {
+        const date = new Date(item.date)
+        const referenceDate = new Date("2024-06-30")
+        let daysToSubtract = 90
+        if (timeRange === "30d") {
+          daysToSubtract = 30
+        } else if (timeRange === "7d") {
+          daysToSubtract = 7
+        }
+        const startDate = new Date(referenceDate)
+        startDate.setDate(startDate.getDate() - daysToSubtract)
+        return date >= startDate
+      });
     }
-    const startDate = new Date(referenceDate)
-    startDate.setDate(startDate.getDate() - daysToSubtract)
-    return date >= startDate
-  })
+
+    if (selectedPeriod === "monthly") {
+      // If selected year is 2024, filter the actual static data
+      if (monthlyYear === "2024") {
+        return chartData.filter((item) => {
+          const date = new Date(item.date);
+          const m = date.getMonth() + 1;
+          return m >= Number(startMonth) && m <= Number(endMonth);
+        });
+      }
+      
+      // Otherwise, generate 0 values
+      const resultData = [];
+      const sM = Number(startMonth);
+      const eM = Number(endMonth);
+      const year = Number(monthlyYear);
+      for (let m = sM; m <= eM; m++) {
+        for (let day = 1; day <= 28; day += 3) {
+          const dateStr = `${year}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          resultData.push({
+            date: dateStr,
+            desktop: 0,
+            mobile: 0
+          });
+        }
+      }
+      return resultData;
+    }
+
+    if (selectedPeriod === "yearly") {
+      const sY = Number(startYear);
+      const eY = Number(endYear);
+      
+      // If 2024 falls within the year range, include 2024 data and generate 0s for other years
+      const resultData = [];
+      for (let y = sY; y <= eY; y++) {
+        if (y === 2024) {
+          resultData.push(...chartData);
+        } else {
+          for (let m = 1; m <= 12; m += 3) {
+            const dateStr = `${y}-${String(m).padStart(2, '0')}-01`;
+            resultData.push({
+              date: dateStr,
+              desktop: 0,
+              mobile: 0
+            });
+          }
+        }
+      }
+      return resultData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }
+
+    return [];
+  }, [timeRange, selectedPeriod, monthlyYear, startMonth, endMonth, startYear, endYear]);
 
   return (
     <Card className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full">

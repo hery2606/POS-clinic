@@ -13,9 +13,35 @@ import { ROUTES } from "@/routes/routeConfig";
 
 interface AnalitikHeaderProps {
   onDownloadPDF?: () => void;
+  selectedPeriod?: PeriodType;
+  setSelectedPeriod?: (period: PeriodType) => void;
+  monthlyYear?: string;
+  setMonthlyYear?: (year: string) => void;
+  startMonth?: string;
+  setStartMonth?: (month: string) => void;
+  endMonth?: string;
+  setEndMonth?: (month: string) => void;
+  startYear?: string;
+  setStartYear?: (year: string) => void;
+  endYear?: string;
+  setEndYear?: (year: string) => void;
 }
 
-export const AnalitikHeader = ({ onDownloadPDF }: AnalitikHeaderProps = {}) => {
+export const AnalitikHeader = ({
+  onDownloadPDF,
+  selectedPeriod: propSelectedPeriod,
+  setSelectedPeriod: propSetSelectedPeriod,
+  monthlyYear: propMonthlyYear,
+  setMonthlyYear: propSetSelectedPeriodYear,
+  startMonth: propStartMonth,
+  setStartMonth: propSetStartMonth,
+  endMonth: propEndMonth,
+  setEndMonth: propSetEndMonth,
+  startYear: propStartYear,
+  setStartYear: propSetStartYear,
+  endYear: propEndYear,
+  setEndYear: propSetEndYear,
+}: AnalitikHeaderProps = {}) => {
   const location = useLocation();
   const isLaporanPage = location.pathname.includes("laporan");
   const isDashboardPage = location.pathname === ROUTES.ADMIN.DASHBOARD;
@@ -69,22 +95,35 @@ export const AnalitikHeader = ({ onDownloadPDF }: AnalitikHeaderProps = {}) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isPdfReady, setIsPdfReady] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("daily");
 
-  const [monthlyYear, setMonthlyYear] = useState(currentYearStr);
-  const [startMonth, setStartMonth] = useState("3"); 
-  const [endMonth, setEndMonth] = useState("6"); 
-  const [startYear, setStartYear] = useState(prevYearStr);
-  const [endYear, setEndYear] = useState(currentYearStr);
+  // Fallback local states if props not supplied
+  const [localSelectedPeriod, localSetSelectedPeriod] = useState<PeriodType>("daily");
+  const [localMonthlyYear, localSetMonthlyYear] = useState(currentYearStr);
+  const [localStartMonth, localSetStartMonth] = useState("6"); 
+  const [localEndMonth, localSetEndMonth] = useState("6"); 
+  const [localStartYear, localSetStartYear] = useState(currentYearStr);
+  const [localEndYear, localSetEndYear] = useState(currentYearStr);
+
+  const selectedPeriod = propSelectedPeriod ?? localSelectedPeriod;
+  const setSelectedPeriod = propSetSelectedPeriod ?? localSetSelectedPeriod;
+  const monthlyYear = propMonthlyYear ?? localMonthlyYear;
+  const setMonthlyYear = propSetSelectedPeriodYear ?? localSetMonthlyYear;
+  const startMonth = propStartMonth ?? localStartMonth;
+  const setStartMonth = propSetStartMonth ?? localSetStartMonth;
+  const endMonth = propEndMonth ?? localEndMonth;
+  const setEndMonth = propSetEndMonth ?? localSetEndMonth;
+  const startYear = propStartYear ?? localStartYear;
+  const setStartYear = propSetStartYear ?? localSetStartYear;
+  const endYear = propEndYear ?? localEndYear;
+  const setEndYear = propSetEndYear ?? localSetEndYear;
 
   const getPeriodLabel = () => {
     if (selectedPeriod === "monthly") {
-      const startLabel = monthOptions.find(m => m.value === startMonth)?.label;
-      const endLabel = monthOptions.find(m => m.value === endMonth)?.label;
-      return `${startLabel} - ${endLabel} ${monthlyYear}`;
+      const label = monthOptions.find(m => m.value === startMonth)?.label;
+      return `${label} ${monthlyYear}`;
     }
     if (selectedPeriod === "yearly") {
-      return `${startYear} vs ${endYear}`;
+      return `Tahun ${startYear}`;
     }
     return periodOptions.find(p => p.id === selectedPeriod)?.label || "Hari Ini (Aktif)";
   };
@@ -193,50 +232,32 @@ export const AnalitikHeader = ({ onDownloadPDF }: AnalitikHeaderProps = {}) => {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-[#67737C] uppercase tracking-wide">Dari Bulan</label>
-                            <Select value={startMonth} onValueChange={setStartMonth}>
-                              <SelectTrigger className="h-9 rounded-xl border-[#DFE6EB] text-xs font-semibold text-[#13222D] shadow-none bg-[#F4F7F9]/50"><SelectValue /></SelectTrigger>
-                              <SelectContent className="rounded-xl border-[#DFE6EB]">
-                                {monthOptions.map((m) => <SelectItem key={m.value} value={m.value} className="text-xs rounded-lg">{m.label}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-[#67737C] uppercase tracking-wide">Sampai Bulan</label>
-                            <Select value={endMonth} onValueChange={setEndMonth}>
-                              <SelectTrigger className="h-9 rounded-xl border-[#DFE6EB] text-xs font-semibold text-[#13222D] shadow-none bg-[#F4F7F9]/50"><SelectValue /></SelectTrigger>
-                              <SelectContent className="rounded-xl border-[#DFE6EB]">
-                                {monthOptions.map((m) => (
-                                  <SelectItem key={m.value} value={m.value} className="text-xs rounded-lg" disabled={Number(m.value) < Number(startMonth)}>{m.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-[#67737C] uppercase tracking-wide">Pilih Bulan</label>
+                          <Select value={startMonth} onValueChange={(val) => {
+                            setStartMonth(val);
+                            setEndMonth(val);
+                          }}>
+                            <SelectTrigger className="h-9 rounded-xl border-[#DFE6EB] text-xs font-semibold text-[#13222D] shadow-none bg-[#F4F7F9]/50"><SelectValue /></SelectTrigger>
+                            <SelectContent className="rounded-xl border-[#DFE6EB]">
+                              {monthOptions.map((m) => <SelectItem key={m.value} value={m.value} className="text-xs rounded-lg">{m.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     )}
 
                     {selectedPeriod === "yearly" && (
-                      <div className="grid grid-cols-2 gap-3 p-1">
+                      <div className="space-y-3 p-1">
                         <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-[#67737C] uppercase tracking-wide">Tahun Basis</label>
-                          <Select value={startYear} onValueChange={setStartYear}>
+                          <label className="text-[10px] font-bold text-[#67737C] uppercase tracking-wide">Pilih Tahun</label>
+                          <Select value={startYear} onValueChange={(val) => {
+                            setStartYear(val);
+                            setEndYear(val);
+                          }}>
                             <SelectTrigger className="h-9 rounded-xl border-[#DFE6EB] text-xs font-semibold text-[#13222D] shadow-none bg-[#F4F7F9]/50"><SelectValue /></SelectTrigger>
                             <SelectContent className="rounded-xl border-[#DFE6EB]">
                               {yearOptions.map((year) => <SelectItem key={year} value={year} className="text-xs rounded-lg">{year}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-[#67737C] uppercase tracking-wide">Pembanding</label>
-                          <Select value={endYear} onValueChange={setEndYear}>
-                            <SelectTrigger className="h-9 rounded-xl border-[#DFE6EB] text-xs font-semibold text-[#13222D] shadow-none bg-[#F4F7F9]/50"><SelectValue /></SelectTrigger>
-                            <SelectContent className="rounded-xl border-[#DFE6EB]">
-                              {yearOptions.map((year) => (
-                                <SelectItem key={year} value={year} className="text-xs rounded-lg" disabled={Number(year) <= Number(startYear)}>{year}</SelectItem>
-                              ))}
                             </SelectContent>
                           </Select>
                         </div>

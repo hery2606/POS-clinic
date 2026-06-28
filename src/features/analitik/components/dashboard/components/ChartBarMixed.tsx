@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from 'react'
-import { Pill, Stethoscope, HeartPulse, TrendingUp } from "lucide-react"
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Pill, Stethoscope, HeartPulse, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { analitikService } from '@/features/analitik/services/analitik.service'
@@ -27,42 +28,59 @@ const barGradients = [
   'linear-gradient(90deg, #E62C2C, #FF9595)',
 ]
 
-export function ChartBarMixed() {
-  const [chartData, setChartData] = useState<ChartItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+interface ChartBarMixedProps {
+  filters: {
+    selectedPeriod: string;
+    monthlyYear: string;
+    startMonth: string;
+    endMonth: string;
+    startYear: string;
+    endYear: string;
+  };
+}
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        const response = await analitikService.getProductAnalytics()
-        const data = response.data
+export function ChartBarMixed({ filters }: ChartBarMixedProps) {
+  const { data: response, isLoading: loading, error } = useQuery({
+    queryKey: ["productAnalytics"],
+    queryFn: () => analitikService.getProductAnalytics(),
+    staleTime: 5 * 60 * 1000,
+  });
 
-        const combined: ChartItem[] = [
-          ...data.produk_terlaris_top_10.slice(0, 5).map((p) => ({
-            item: p.nama_obat,
-            value: Math.round((p.jumlah_terjual / 150) * 100),
-            count: p.jumlah_terjual,
-            type: "produk" as const,
-          })),
-          ...data.pemeriksaan_layanan_terlaris.slice(0, 5).map((l) => ({
-            item: l.nama_layanan,
-            value: Math.round((l.jumlah_transaksi / 120) * 100),
-            count: l.jumlah_transaksi,
-            type: "layanan" as const,
-          })),
-        ]
+  const chartData = useMemo<ChartItem[]>(() => {
+    const rawData = response?.data || (response as any);
+    if (!rawData) return [];
 
-        setChartData(combined.sort((a, b) => b.value - a.value).slice(0, 5))
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Gagal memuat data')
-      } finally {
-        setLoading(false)
-      }
+    const { selectedPeriod, monthlyYear, startMonth, endMonth, startYear, endYear } = filters;
+
+    let hasActiveData = true;
+    if (selectedPeriod === "monthly") {
+      const yr = Number(monthlyYear);
+      const startM = Number(startMonth);
+      const endM = Number(endMonth);
+      hasActiveData = (yr === 2026 && startM <= 6 && endM >= 6);
+    } else if (selectedPeriod === "yearly") {
+      const startY = Number(startYear);
+      const endY = Number(endYear);
+      hasActiveData = (startY <= 2026 && endY >= 2026);
     }
-    fetchData()
-  }, [])
+
+    const combined: ChartItem[] = [
+      ...(rawData.produk_terlaris_top_10 || []).slice(0, 5).map((p: any) => ({
+        item: p.nama_obat,
+        value: hasActiveData ? Math.round((p.jumlah_terjual / 150) * 100) : 0,
+        count: hasActiveData ? p.jumlah_terjual : 0,
+        type: "produk" as const,
+      })),
+      ...(rawData.pemeriksaan_layanan_terlaris || []).slice(0, 5).map((l: any) => ({
+        item: l.nama_layanan,
+        value: hasActiveData ? Math.round((l.jumlah_transaksi / 120) * 100) : 0,
+        count: hasActiveData ? l.jumlah_transaksi : 0,
+        type: "layanan" as const,
+      })),
+    ]
+
+    return combined.sort((a, b) => b.value - a.value).slice(0, 5)
+  }, [response, filters]);
 
   if (loading) {
     return (
@@ -92,7 +110,7 @@ export function ChartBarMixed() {
   if (error) {
     return (
       <div className="w-full flex items-center justify-center h-40 text-xs text-red-500 font-bold">
-        ⚠️ {error}
+        ⚠️ {error instanceof Error ? error.message : 'Gagal memuat data'}
       </div>
     )
   }

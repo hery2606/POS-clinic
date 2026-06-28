@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useOutletContext } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { KpiCards } from "@/features/analitik/components/dashboard/KPICards";
 import { AiInsightBanner } from "@/features/analitik/components/dashboard/components/AiInsightBanner";
@@ -13,8 +14,28 @@ import { analitikService } from "@/features/analitik/services/analitik.service";
 import { type LocalDaftarTransaksiBelumLunas } from "@/features/analitik/components/laporan/Piutang/types";
 import { useDashboardPdfData } from "@/features/analitik/hooks/useDashboardPdfData";
 import { usePdfDownload } from "@/hooks/usePdfDownload.tsx";
+import { type PeriodType } from "@/features/analitik/layout/periodOptionsConfig";
 
 export const DashboardPage = () => {
+  // Get active filters from AnalitikLayout context
+  const context = useOutletContext<{
+    selectedPeriod: PeriodType;
+    monthlyYear: string;
+    startMonth: string;
+    endMonth: string;
+    startYear: string;
+    endYear: string;
+  }>();
+
+  const filters = {
+    selectedPeriod: context?.selectedPeriod ?? "daily",
+    monthlyYear: context?.monthlyYear ?? String(new Date().getFullYear()),
+    startMonth: context?.startMonth ?? "3",
+    endMonth: context?.endMonth ?? "6",
+    startYear: context?.startYear ?? String(new Date().getFullYear() - 1),
+    endYear: context?.endYear ?? String(new Date().getFullYear()),
+  };
+
   // Chart Refs
   const refChartArea = useRef<HTMLDivElement>(null);
   const refBarMixed = useRef<HTMLDivElement>(null);
@@ -22,7 +43,7 @@ export const DashboardPage = () => {
 
   // PDF Data & Hook
   const [activePeriodLabel, setActivePeriodLabel] = useState("Hari Ini (Aktif)");
-  const dashboardPdfData = useDashboardPdfData(activePeriodLabel);
+  const dashboardPdfData = useDashboardPdfData(activePeriodLabel, filters);
 
   const { downloadPdf, isLoading: isPdfLoading } = usePdfDownload({
     chartRefs: {
@@ -129,32 +150,32 @@ export const DashboardPage = () => {
       <div className="mb-8">
         <AiInsightBanner />
         <div className="mt-6" ref={refChartArea}>
-          <ChartAreaInteractive />
+          <ChartAreaInteractive filters={filters} />
         </div>
       </div>
 
       {/* KPI Card */}
       <div>
         <h2 className="text-xl font-bold text-[#13222D] mb-4">Metrik Utama</h2>
-        <KpiCards />
+        <KpiCards filters={filters} />
       </div>
 
       {/* Bar Charts - 2 Columns */}
       <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div ref={refBarStacked}>
           <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm">
-            <ChartBarStacked />
+            <ChartBarStacked filters={filters} />
           </Card>
         </div>
         <div>
           <Card className="bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm">
-            <ChartBarMixed />
+            <ChartBarMixed filters={filters} />
           </Card>
         </div>
       </div>
       <div className="mt-12 grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
         <div className="xl:col-span-5 flex" ref={refBarMixed}>
-          <PaymentMethodChart />
+          <PaymentMethodChart filters={filters} />
         </div>
         <div className="xl:col-span-7 flex">
           {pendingInvoicesQuery.isLoading ? (

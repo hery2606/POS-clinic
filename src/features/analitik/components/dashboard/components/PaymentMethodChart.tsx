@@ -1,6 +1,5 @@
-'use client';
-
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { 
   ResponsiveContainer, 
   PieChart, 
@@ -21,6 +20,14 @@ interface PaymentData {
 
 interface PaymentMethodChartProps {
   className?: string;
+  filters: {
+    selectedPeriod: string;
+    monthlyYear: string;
+    startMonth: string;
+    endMonth: string;
+    startYear: string;
+    endYear: string;
+  };
 }
 
 const colorPalette = [
@@ -71,73 +78,67 @@ const ChartSkeleton = () => (
   </Card>
 );
 
-export const PaymentMethodChart: React.FC<PaymentMethodChartProps> = ({ className }) => {
-  const [paymentData, setPaymentData] = useState<PaymentData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export const PaymentMethodChart = ({ className, filters }: PaymentMethodChartProps) => {
+  const { data: response, isLoading, error } = useQuery({
+    queryKey: ["paymentsAnalytics"],
+    queryFn: () => analitikService.getPaymentsAnalytics(),
+    staleTime: 5 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+  const paymentData = useMemo<PaymentData[]>(() => {
+    const data = response?.data || (response as any);
+    if (!data) return [];
+
+    const { selectedPeriod, monthlyYear, startMonth, endMonth, startYear, endYear } = filters;
+
+    // Filter check: our dataset covers June 2026
+    let hasActiveData = true;
+    if (selectedPeriod === "monthly") {
+      const yr = Number(monthlyYear);
+      const startM = Number(startMonth);
+      const endM = Number(endMonth);
+      hasActiveData = (yr === 2026 && startM <= 6 && endM >= 6);
+    } else if (selectedPeriod === "yearly") {
+      const startY = Number(startYear);
+      const endY = Number(endYear);
+      hasActiveData = (startY <= 2026 && endY >= 2026);
+    }
+
+    if (!hasActiveData) return [];
+
+    let persentaseMetode = data.persentase_metode || [];
+    
+    // Fallback: If empty, calculate from tren_metode_favorit
+    if (persentaseMetode.length === 0 && data.tren_metode_favorit && data.tren_metode_favorit.length > 0) {
+      // Find the most recent month with active transactions
+      const activeMonth = [...data.tren_metode_favorit].reverse().find(
+        (m: any) => (m.qris || 0) + (m.cash || 0) + (m.debit || 0) > 0
+      );
+      
+      if (activeMonth) {
+        const qrisVal = activeMonth.qris || 0;
+        const cashVal = activeMonth.cash || 0;
+        const debitVal = activeMonth.debit || 0;
+        const total = qrisVal + cashVal + debitVal;
         
-        const response = await analitikService.getPaymentsAnalytics();
-        
-        if (response.status === 'success' && response.data) {
-          const data = response.data;
-          
-          let persentaseMetode = data.persentase_metode || [];
-          
-          // Fallback: If empty, calculate from tren_metode_favorit
-          if (persentaseMetode.length === 0 && data.tren_metode_favorit && data.tren_metode_favorit.length > 0) {
-            // Find the most recent month with active transactions
-            const activeMonth = [...data.tren_metode_favorit].reverse().find(
-              m => (m.qris || 0) + (m.cash || 0) + (m.debit || 0) > 0
-            );
-            
-            if (activeMonth) {
-              const qrisVal = activeMonth.qris || 0;
-              const cashVal = activeMonth.cash || 0;
-              const debitVal = activeMonth.debit || 0;
-              const total = qrisVal + cashVal + debitVal;
-              
-              if (total > 0) {
-                persentaseMetode = [
-                  { metode: 'QRIS', persentase: Math.round((qrisVal / total) * 1000) / 10, total_nominal: qrisVal },
-                  { metode: 'CASH', persentase: Math.round((cashVal / total) * 1000) / 10, total_nominal: cashVal },
-                  { metode: 'DEBIT', persentase: Math.round((debitVal / total) * 1000) / 10, total_nominal: debitVal }
-                ].filter(item => item.total_nominal > 0);
-              }
-            }
-          }
-          
-          if (persentaseMetode.length === 0) {
-            setPaymentData([]);
-          } else {
-            // Map API data to PaymentData
-            const mappedPaymentData: PaymentData[] = persentaseMetode.map((item, index) => ({
-              name: item.metode,
-              value: item.persentase,
-              amount: formatCurrency(item.total_nominal),
-              color: getColorForMethod(item.metode, index),
-              count: Math.round(item.total_nominal / 10000) // Estimasi count dari nominal
-            }));
-            
-            setPaymentData(mappedPaymentData);
-          }
+        if (total > 0) {
+          persentaseMetode = [
+            { metode: 'QRIS', persentase: Math.round((qrisVal / total) * 1000) / 10, total_nominal: qrisVal },
+            { metode: 'CASH', persentase: Math.round((cashVal / total) * 1000) / 10, total_nominal: cashVal },
+            { metode: 'DEBIT', persentase: Math.round((debitVal / total) * 1000) / 10, total_nominal: debitVal }
+          ].filter(item => item.total_nominal > 0);
         }
-      } catch (err) {
-        console.error('Error fetching payments analytics:', err);
-        setError('Gagal memuat data metode pembayaran');
-        setPaymentData([]);
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    fetchData();
-  }, []);
+    }
+    
+    return persentaseMetode.map((item: any, index: number) => ({
+      name: item.metode,
+      value: item.persentase,
+      amount: formatCurrency(item.total_nominal),
+      color: getColorForMethod(item.metode, index),
+      count: Math.round(item.total_nominal / 10000)
+    }));
+  }, [response, filters]);
 
   if (isLoading) {
     return <ChartSkeleton />;
@@ -147,7 +148,7 @@ export const PaymentMethodChart: React.FC<PaymentMethodChartProps> = ({ classNam
     return (
       <Card className={`bg-white rounded-[24px] border border-[#DFE6EB] p-6 shadow-sm w-full flex flex-col justify-between ${className}`}>
         <div className="flex items-center justify-center h-64">
-          <p className="text-red-500">{error}</p>
+          <p className="text-red-500">{error.message}</p>
         </div>
       </Card>
     );

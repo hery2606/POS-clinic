@@ -44,7 +44,18 @@ const KPISkeleton = ({ className }: { className?: string }) => (
   </Card>
 );
 
-export const KpiCards = () => {
+interface KPICardsProps {
+  filters: {
+    selectedPeriod: string;
+    monthlyYear: string;
+    startMonth: string;
+    endMonth: string;
+    startYear: string;
+    endYear: string;
+  };
+}
+
+export const KpiCards = ({ filters }: KPICardsProps) => {
   // 🟢 OPTIMALISASI SENIOR: Konsumsi shared-cache dari TanStack Query tanpa memicu request API ganda
   const { data: response, isLoading, error } = useQuery({
     queryKey: ['revenueTrend'],
@@ -56,77 +67,188 @@ export const KpiCards = () => {
     const rawData = (response?.data || response) as any;
     if (!rawData) return [];
 
-    // Mapping parameter sesuai dengan skema JSON response body
-    const hariIni = rawData.total_pendapatan_hari_ini ?? rawData.totalPendapatanHariIni ?? 0;
-    const mingguIni = rawData.total_pendapatan_minggu_ini ?? rawData.totalPendapatanMingguIni ?? 0;
-    const bulanIni = rawData.total_pendapatan_bulan_ini ?? rawData.totalPendapatanBulanIni ?? 0;
+    const { selectedPeriod, monthlyYear, startMonth, endMonth, startYear, endYear } = filters;
+    const rincianHarian = rawData.tabel_rincian_harian || rawData.tabelRincianHarian || [];
 
-    const comparison = rawData.perbandingan_bulan_ini_vs_lalu || rawData.perbandinganBulanIniVsLalu || {
-      bulan_ini: bulanIni,
-      bulan_lalu: rawData.target_bulan_lalu ?? 0,
-      persentase_kenaikan: 0,
-      status: "Stabil"
-    };
+    if (selectedPeriod === "daily") {
+      const hariIni = rawData.total_pendapatan_hari_ini ?? rawData.totalPendapatanHariIni ?? 0;
+      const mingguIni = rawData.total_pendapatan_minggu_ini ?? rawData.totalPendapatanMingguIni ?? 0;
+      const bulanIni = rawData.total_pendapatan_bulan_ini ?? rawData.totalPendapatanBulanIni ?? 0;
 
-    // Hitung akumulasi kuantitas transaksi dari rincian harian secara aman
-    const totalTransaksi = typeof rawData.total_transaksi === 'number'
-      ? rawData.total_transaksi
-      : (rawData.totalTransaksi ?? (rawData.tabel_rincian_harian
-          ? rawData.tabel_rincian_harian.reduce((sum: number, item: any) => sum + (item.total_transaksi || 0), 0)
-          : 0));
+      const comparison = rawData.perbandingan_bulan_ini_vs_lalu || rawData.perbandinganBulanIniVsLalu || {
+        bulan_ini: bulanIni,
+        bulan_lalu: rawData.target_bulan_lalu ?? 0,
+        persentase_kenaikan: 0,
+        status: "Stabil"
+      };
 
-    // Formatter tren performa rata-rata periodik berjalan
-    const avgHarianMingguan = mingguIni / 7;
-    const trendHariIniText = avgHarianMingguan > 0 
-      ? `${(hariIni / avgHarianMingguan * 100 - 100).toFixed(1)}% vs rata-rata`
-      : "0.0% vs rata-rata";
+      const totalTransaksi = typeof rawData.total_transaksi === 'number'
+        ? rawData.total_transaksi
+        : (rawData.totalTransaksi ?? rincianHarian.reduce((sum: number, item: any) => sum + (item.total_transaksi || 0), 0));
 
-    const avgMingguanBulanan = bulanIni / 4;
-    const trendMingguIniText = avgMingguanBulanan > 0
-      ? `${(mingguIni / avgMingguanBulanan * 100 - 100).toFixed(1)}% vs rata-rata`
-      : "0.0% vs rata-rata";
+      const avgHarianMingguan = mingguIni / 7;
+      const trendHariIniText = avgHarianMingguan > 0 
+        ? `${(hariIni / avgHarianMingguan * 100 - 100).toFixed(1)}% vs rata-rata`
+        : "0.0% vs rata-rata";
 
-    const pKenaikan = comparison.persentase_kenaikan ?? comparison.persentaseKenaikan ?? 0;
-    const isBulanIniNaik = comparison.status === 'Naik' || pKenaikan >= 0;
+      const avgMingguanBulanan = bulanIni / 4;
+      const trendMingguIniText = avgMingguanBulanan > 0
+        ? `${(mingguIni / avgMingguanBulanan * 100 - 100).toFixed(1)}% vs rata-rata`
+        : "0.0% vs rata-rata";
 
-    return [
-      {
-        title: "Pendapatan Hari Ini",
-        value: formatCurrency(hariIni),
-        trend: trendHariIniText,
-        isPositive: hariIni >= avgHarianMingguan,
-        icon: Coins
-      },
-      {
-        title: "Pendapatan Minggu Ini",
-        value: formatCurrency(mingguIni),
-        trend: trendMingguIniText,
-        isPositive: mingguIni >= avgMingguanBulanan,
-        icon: Calendar
-      },
-      {
-        title: "Pendapatan Bulan Ini",
-        value: formatCurrency(bulanIni),
-        trend: `${pKenaikan >= 0 ? '+' : ''}${pKenaikan.toFixed(0)}% vs bulan lalu`,
-        isPositive: isBulanIniNaik,
-        icon: Receipt
-      },
-      {
-        title: "Total Transaksi",
-        value: `${totalTransaksi} Nota`,
-        trend: "Periode riwayat berjalan aktif",
-        isPositive: true,
-        icon: Users
-      },
-      {
-        title: "Target Bulan Lalu",
-        value: formatCurrency(comparison.bulan_lalu || comparison.bulanLalu || 0),
-        trend: `Status Target: ${comparison.status || 'Stabil'}`,
-        isPositive: isBulanIniNaik,
-        icon: Clock
+      const pKenaikan = comparison.persentase_kenaikan ?? comparison.persentaseKenaikan ?? 0;
+      const isBulanIniNaik = comparison.status === 'Naik' || pKenaikan >= 0;
+
+      return [
+        {
+          title: "Pendapatan Hari Ini",
+          value: formatCurrency(hariIni),
+          trend: trendHariIniText,
+          isPositive: hariIni >= avgHarianMingguan,
+          icon: Coins
+        },
+        {
+          title: "Pendapatan Minggu Ini",
+          value: formatCurrency(mingguIni),
+          trend: trendMingguIniText,
+          isPositive: mingguIni >= avgMingguanBulanan,
+          icon: Calendar
+        },
+        {
+          title: "Pendapatan Bulan Ini",
+          value: formatCurrency(bulanIni),
+          trend: `${pKenaikan >= 0 ? '+' : ''}${pKenaikan.toFixed(0)}% vs bulan lalu`,
+          isPositive: isBulanIniNaik,
+          icon: Receipt
+        },
+        {
+          title: "Total Transaksi",
+          value: `${totalTransaksi} Nota`,
+          trend: "Periode riwayat berjalan aktif",
+          isPositive: true,
+          icon: Users
+        },
+        {
+          title: "Target Bulan Lalu",
+          value: formatCurrency(comparison.bulan_lalu || comparison.bulanLalu || 0),
+          trend: `Status Target: ${comparison.status || 'Stabil'}`,
+          isPositive: isBulanIniNaik,
+          icon: Clock
+        }
+      ];
+    }
+
+    // 🟢 Filter rincian harian berdasarkan tahun & bulan yang dipilih
+    const filtered = rincianHarian.filter((item: any) => {
+      const itemDate = new Date(item.tanggal);
+      if (isNaN(itemDate.getTime())) return false;
+      const yr = itemDate.getFullYear();
+      const mo = itemDate.getMonth() + 1; // 1-indexed
+
+      if (selectedPeriod === "monthly") {
+        return yr === Number(monthlyYear) && mo >= Number(startMonth) && mo <= Number(endMonth);
       }
-    ];
-  }, [response]);
+      if (selectedPeriod === "yearly") {
+        return yr >= Number(startYear) && yr <= Number(endYear);
+      }
+      return true;
+    });
+
+    const totalRevenue = filtered.reduce((sum: number, item: any) => sum + (item.total_pendapatan || 0), 0);
+    const totalTransaksi = filtered.reduce((sum: number, item: any) => sum + (item.total_transaksi || 0), 0);
+    const totalLayanan = filtered.reduce((sum: number, item: any) => sum + (item.pendapatan_layanan || 0), 0);
+    const totalObat = filtered.reduce((sum: number, item: any) => sum + (item.pendapatan_obat || 0), 0);
+
+    if (selectedPeriod === "monthly") {
+      const activeMonthsCount = Number(endMonth) - Number(startMonth) + 1;
+      const avgMonthly = totalRevenue / Math.max(activeMonthsCount, 1);
+      const isPositive = totalRevenue > 0;
+
+      return [
+        {
+          title: "Total Pendapatan",
+          value: formatCurrency(totalRevenue),
+          trend: "Periode terpilih",
+          isPositive,
+          icon: Coins
+        },
+        {
+          title: "Pendapatan Layanan",
+          value: formatCurrency(totalLayanan),
+          trend: "Total tindakan medis",
+          isPositive,
+          icon: Calendar
+        },
+        {
+          title: "Farmasi & Obat",
+          value: formatCurrency(totalObat),
+          trend: "Total penjualan obat",
+          isPositive,
+          icon: Receipt
+        },
+        {
+          title: "Total Transaksi",
+          value: `${totalTransaksi} Nota`,
+          trend: `${filtered.length} Hari aktif`,
+          isPositive: true,
+          icon: Users
+        },
+        {
+          title: "Rata-rata Bulanan",
+          value: formatCurrency(avgMonthly),
+          trend: `Rentang ${activeMonthsCount} Bulan`,
+          isPositive,
+          icon: Clock
+        }
+      ];
+    }
+
+    if (selectedPeriod === "yearly") {
+      const activeYearsCount = Number(endYear) - Number(startYear) + 1;
+      const avgYearly = totalRevenue / Math.max(activeYearsCount, 1);
+      const isPositive = totalRevenue > 0;
+
+      return [
+        {
+          title: "Total Pendapatan",
+          value: formatCurrency(totalRevenue),
+          trend: "Kolektif tahunan",
+          isPositive,
+          icon: Coins
+        },
+        {
+          title: "Pendapatan Layanan",
+          value: formatCurrency(totalLayanan),
+          trend: "Total tindakan medis",
+          isPositive,
+          icon: Calendar
+        },
+        {
+          title: "Farmasi & Obat",
+          value: formatCurrency(totalObat),
+          trend: "Total penjualan obat",
+          isPositive,
+          icon: Receipt
+        },
+        {
+          title: "Total Transaksi",
+          value: `${totalTransaksi} Nota`,
+          trend: `Tahun ${startYear} - ${endYear}`,
+          isPositive: true,
+          icon: Users
+        },
+        {
+          title: "Rata-rata Tahunan",
+          value: formatCurrency(avgYearly),
+          trend: `Rentang ${activeYearsCount} Tahun`,
+          isPositive,
+          icon: Clock
+        }
+      ];
+    }
+
+    return [];
+  }, [response, filters]);
 
   if (isLoading) {
     return (

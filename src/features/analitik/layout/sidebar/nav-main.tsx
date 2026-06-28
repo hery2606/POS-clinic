@@ -14,6 +14,7 @@ export function NavMain({
     title: string
     url: string
     icon?: React.ReactNode
+    badge?: number
   }[]
 }) {
   const location = useLocation()
@@ -39,7 +40,7 @@ export function NavMain({
                   : "text-slate-400 hover:text-white hover:bg-white/5"
               )}
             >
-              <Link to={item.url} className="flex items-center w-full h-full">
+              <Link to={item.url} className="flex items-center w-full h-full pr-2">
                 {/* Indikator vertikal aktif di sisi paling kiri */}
                 {isActive(item.url) && (
                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#1B9C90] rounded-r-md" />
@@ -53,6 +54,12 @@ export function NavMain({
                 </div>
                 
                 <span className="group-data-[collapse=icon]:hidden">{item.title}</span>
+
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-5 h-5 flex items-center justify-center animate-pulse group-data-[collapse=icon]:hidden">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
