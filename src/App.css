@@ -169,3 +169,69 @@
     @apply font-mono;
   }
 }
+
+/* Dark mode global overrides for dashboard widgets and elements */
+.dark {
+  /* Override white card backgrounds */
+  .bg-white,
+  [class*="bg-white"],
+  .bg-card {
+    background-color: #111e29 !important; /* Elegant dark card background */
+  }
+  
+  /* Override light layout backgrounds */
+  .bg-\[\#F9FEFC\],
+  .bg-\[\#EFF4F8\],
+  .bg-\[\#F4F7F9\] {
+    background-color: #081015 !important;
+  }
+  
+  /* Override text colors */
+  .text-\[\#13222D\],
+  .text-slate-900,
+  .text-slate-800,
+  .text-slate-700,
+  .text-gray-900 {
+    color: #e2e8f0 !important;
+  }
+  
+  .text-\[\#67737C\],
+  .text-slate-500,
+  .text-slate-600,
+  .text-gray-500 {
+    color: #94a3b8 !important;
+  }
+
+  /* Tables and list items */
+  .divide-y > *,
+  .border-b,
+  .border {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Form inputs and select dropdown options */
+  input,
+  select,
+  textarea {
+    background-color: #111e29 !important;
+    color: #e2e8f0 !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
+
+  /* Apexcharts or custom charts font colors override */
+  .recharts-text {
+    fill: #94a3b8 !important;
+  }
+  .recharts-cartesian-grid-horizontal line,
+  .recharts-cartesian-grid-vertical line {
+    stroke: rgba(255, 255, 255, 0.08) !important;
+  }
+  
+  /* Select and popover dropdown items styling */
+  [data-slot="select-content"],
+  [data-slot="popover-content"],
+  .absolute-dropdown {
+    background-color: #111e29 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+}

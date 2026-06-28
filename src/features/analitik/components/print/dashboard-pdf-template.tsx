@@ -39,9 +39,13 @@ interface DashboardPdfTemplateProps {
       value: number;
       type: "produk" | "layanan";
     }>;
+    payments: Array<{
+      method: string;
+      percentage: number;
+      amount: string;
+    }>;
   };
   charts?: {
-    chartBarMixed?: string;
     chartBarStacked?: string;
   };
 }
@@ -65,8 +69,8 @@ export const DashboardPdfTemplate = ({ data, charts }: DashboardPdfTemplateProps
         <PdfOperationalAnalysis transaksi={data.transaksi} />
 
         <PdfChartSection
-          chartBarMixedBase64={charts?.chartBarMixed}
           chartBarStackedBase64={charts?.chartBarStacked}
+          payments={data.payments}
         />
 
         <PdfProductTable topProducts={data.topProducts} />

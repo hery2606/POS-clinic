@@ -95,7 +95,6 @@ export const usePdfDownload = ({ chartRefs, data }: UsePdfDownloadProps) => {
       console.log("🔄 Memulai pengambilan screenshot chart...");
       // Ambil gambar secara berurutan dengan tipe layout ideal masing-masing
       const chartBarStacked = await captureChart(chartRefs.chartBarStacked, 'half');
-      const chartBarMixed = await captureChart(chartRefs.chartBarMixed, 'half');
 
       console.log("📄 Memulai generasi dokumen PDF formal...");
       const [{ pdf }, { DashboardPdfTemplate }] = await Promise.all([
@@ -107,7 +106,6 @@ export const usePdfDownload = ({ chartRefs, data }: UsePdfDownloadProps) => {
         <DashboardPdfTemplate
           data={data}
           charts={{
-            chartBarMixed,
             chartBarStacked,
           }}
         />
