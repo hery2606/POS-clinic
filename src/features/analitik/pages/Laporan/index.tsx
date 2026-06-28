@@ -48,7 +48,6 @@ export const LaporanPage = () => {
     queryKey: ["outstandingInvoices"],
     queryFn: () => billingPosService.getOutstandingInvoices(),
     staleTime: 5 * 60 * 1000,
-    enabled: selectedTab === "Piutang",
   });
 
   const trendData = revenueResponse?.data;
@@ -190,23 +189,32 @@ export const LaporanPage = () => {
 
       {/* TABS SELECTION BAR */}
       <div className="flex items-center gap-6 border-b border-[#DFE6EB] pb-px overflow-x-auto scrollbar-none">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setSelectedTab(tab)}
-            className={cn(
-              "text-sm font-semibold pb-3 transition-all relative whitespace-nowrap",
-              selectedTab === tab
-                ? "text-[#1B9C90]"
-                : "text-[#67737C] hover:text-[#13222D]",
-            )}
-          >
-            {tab}
-            {selectedTab === tab && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1B9C90]" />
-            )}
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const isPiutang = tab === "Piutang";
+          const pendingCount = outstandingInvoicesQuery.data?.data?.length || 0;
+          return (
+            <button
+              key={tab}
+              onClick={() => setSelectedTab(tab)}
+              className={cn(
+                "text-sm font-semibold pb-3 transition-all relative whitespace-nowrap flex items-center gap-2",
+                selectedTab === tab
+                  ? "text-[#1B9C90]"
+                  : "text-[#67737C] hover:text-[#13222D]",
+              )}
+            >
+              <span>{tab}</span>
+              {isPiutang && pendingCount > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-5 h-5 flex items-center justify-center animate-pulse">
+                  {pendingCount}
+                </span>
+              )}
+              {selectedTab === tab && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1B9C90]" />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* CONDITIONAL CONTENT RENDERING */}
