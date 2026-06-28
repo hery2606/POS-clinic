@@ -109,3 +109,105 @@ Sebagai tindak lanjut dari *Lighthouse Audit* (yang terdokumentasi di `planning.
    * Menyematkan atribut `aria-label` yang informatif pada tombol-tombol berbasis ikon saja (tanpa teks deskripsi) seperti pemicu bilah samping, tombol unduh PDF, dan tombol toggle tema untuk membantu pengguna pembaca layar (*screen-reader*).
 3. **Kontras Warna**:
    * Melakukan kalibrasi warna latar belakang gelap di mode malam menggunakan warna kontras tinggi (#081015 & #111e29) untuk memenuhi standar rasio kontras WCAG AA.
+
+---
+
+## 6. Detail Endpoint API & Autentikasi Backend
+
+Aplikasi berkomunikasi dengan berbagai layanan mikro (*microservices*) melalui HTTP Client Axios yang dikonfigurasi secara modular. Semua request menyisipkan token JWT Bearer pada header `Authorization`.
+
+### 6.1. Rekam Medis Elektronik (RME) API
+* **Base URL**: `/proxy/rme` (Prod) / `https://smartclinic-rekam-medis.onrender.com` (Dev)
+* **Autentikasi**: JWT Bearer Token (`rmeToken` di localStorage). Sistem melakukan otomatisasi login admin pada saat startup jika token belum tersedia.
+* **Endpoint Penting**:
+  * `POST /api/v1/auth/login` — Login admin RME.
+  * `GET /api/v1/patients` — Mengambil daftar data pasien dengan filter pencarian dan paginasi.
+* **Struktur Response**:
+  ```json
+  {
+    "status": "success",
+    "data": {
+      "data": [
+        {
+          "id": "patient-uuid",
+          "namaLengkap": "Pasien",
+          "isActive": true
+        }
+      ],
+      "meta": { "total": 100, "page": 1 }
+    }
+  }
+  ```
+
+### 6.2. AI Analytics & CRM API
+* **Base URL**: `/proxy/ai` (Prod) / `https://dashboard-ai-9k65.onrender.com` (Dev)
+* **Autentikasi**: JWT Bearer Token (`authToken` di localStorage).
+* **Endpoint Penting**:
+  * `GET /api/v1/ai/revenue/trend` — Data historis tren pendapatan.
+  * `GET /api/v1/ai/payments/analytics` — Persentase dan tren penggunaan metode pembayaran.
+  * `GET /api/v1/ai/products/analytics` — Produk dan layanan kesehatan terlaris.
+  * `POST /api/v1/ai/invoice/send-wa` — Mengirim pengingat tagihan piutang via WhatsApp.
+
+### 6.3. Internal Core POS API
+* **Base URL**: `/proxy/internal` (Prod) / `https://db-posqris-cpgii-production.up.railway.app` (Dev)
+* **Autentikasi**: JWT Bearer Token (`authToken` di localStorage).
+* **Endpoint Penting**:
+  * `POST /api/payment/tokenizer` — Membuat token Snap Midtrans untuk transaksi kasir.
+  * `GET /api/payment/status/{transactionId}` — Cek status pembayaran Midtrans.
+  * `GET /api/billing/{transactionId}/payments` — Histori split-bill kasir.
+
+### 6.4. Warehouse Management System (WMS) API
+* **Base URL**: `/proxy/warehouse` (Prod)
+* **Autentikasi**: JWT Bearer Token (`warehouse_auth_token` di localStorage).
+
+---
+
+## 7. Integrasi Gateway Pembayaran Midtrans
+
+Sistem pembayaran digital kasir menggunakan solusi **Midtrans Snap SDK** dalam lingkungan **Sandbox** untuk mempermudah simulasi transaksi:
+
+* **SDK Integration**: Skrip Snap UI dimuat secara dinamis dari `https://app.sandbox.midtrans.com/snap/snap.js`.
+* **Alur Polling Status**:
+  1. Kasir memicu pembayaran QRIS, aplikasi meminta `snapToken` melalui API `/api/payment/tokenizer`.
+  2. Modal Snap UI (`QrisPaymentModal`) terbuka menampilkan jendela melayang berisi kode QR.
+  3. Aplikasi mengaktifkan **Background Polling** (`setInterval` setiap 3 detik) ke endpoint status backend `/api/payment/status/{transactionId}`.
+  4. Begitu status berubah menjadi `settlement` atau `lunas` di server backend, polling mendeteksi perubahan tersebut, menutup Pop-up Snap secara otomatis, dan langsung mencatat transaksi sebagai lunas tanpa memerlukan interaksi tambahan dari kasir.
+
+---
+
+## 8. Integrasi WhatsApp CRM & Penagihan Piutang
+
+Fitur pengingat otomatis pembayaran piutang (`PiutangActionTable`) terhubung dengan layanan pengiriman pesan WhatsApp terautomatisasi:
+* **Mekanisme**: Permintaan pengiriman dikirim melalui POST ke endpoint `/api/v1/ai/invoice/send-wa`.
+* **Payload Request**:
+  ```json
+  {
+    "target": "628123456789",
+    "nama_pasien": "Ahmad Kurniawan",
+    "attachment_url": "https://invoice-pdf-link...",
+    "filename": "invoice_Klinik.pdf",
+    "status_pembayaran": "PIUTANG"
+  }
+  ```
+* **Engine WhatsApp**: API backend bertindak sebagai jembatan ke provider gateway WhatsApp untuk meneruskan template pesan penagihan formal beserta lampiran PDF invoice langsung ke nomor pasien.
+
+---
+
+## 9. Konfigurasi Deployment & Environment
+
+### 9.1. Deployment Platform: Vercel
+* Konfigurasi routing CORS dilakukan melalui berkas `vercel.json` dengan menyematkan aturan rewrite rute `/proxy/*` menuju masing-masing API Server backend guna menghindari kendala *Cross-Origin Resource Sharing* di sisi klien.
+
+### 9.2. Environment Variables (.env)
+Aplikasi memanfaatkan konfigurasi environment berikut:
+* `VITE_API_RME_URL`: Endpoint API Rekam Medis Elektronik.
+* `VITE_API_AI_URL`: Endpoint API AI Analytics.
+* `VITE_API_WAREHOUSE_URL`: Endpoint API Gudang Farmasi.
+* `VITE_API_INTERNAL_URL`: Base URL database core POS kasir.
+* `VITE_MIDTRANS_CLIENT_KEY`: Kunci klien Midtrans Sandbox.
+* `RME_ADMIN_EMAIL` / `RME_ADMIN_PASSWORD`: Akun sistem admin RME.
+* `WAREHOUSE_ADMIN_EMAIL` / `WAREHOUSE_ADMIN_PASSWORD`: Akun sistem apoteker.
+
+### 9.3. Versi Node.js & Package Manager
+* **Node.js**: Direkomendasikan versi **v18+** atau **v20+** (LTS).
+* **Package Manager**: **npm** (dengan dependensi terikat di `package-lock.json`).
