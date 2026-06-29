@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { billingPosService } from "@/features/kasir/services/billing.pos.service";
 import { paymentService } from "@/features/kasir/services/payment.service";
 import { cn } from "@/lib/utils";
+import { logActivity } from '@/features/analitik/utils/activityLogger';
 
 interface TransactionDetailPanelProps {
   transactionId: string | null;
@@ -319,7 +320,21 @@ export function TransactionDetailPanel({
         
         <div className="grid grid-cols-2 gap-3">
           <Button
-            onClick={onPrintReceipt}
+            onClick={() => {
+              // 1. Tembak API log
+              logActivity({
+                action: 'EXPORT_PDF',
+                module: 'KASIR',
+                detail: `Mencetak struk transaksi: ${billing?.noInvoice || transactionId}`,
+                target_name: 'Transaksi',
+                target_id: transactionId ?? undefined,
+              });
+              
+              // 2. Delay sebelum print dialog yang membekukan thread
+              setTimeout(() => {
+                onPrintReceipt?.();
+              }, 300);
+            }}
             variant="outline"
             className="border-[#DFE6EB] text-[#13222D] hover:bg-[#F4F7F9] font-bold h-11 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-none cursor-pointer"
           >
@@ -327,7 +342,16 @@ export function TransactionDetailPanel({
             <span>Cetak Struk</span>
           </Button>
           <Button
-            onClick={onSendWhatsApp}
+            onClick={() => {
+              onSendWhatsApp?.();
+              logActivity({
+                action: 'SEND_WA_REMINDER',
+                module: 'KASIR',
+                detail: `Mengirim notifikasi WhatsApp untuk transaksi: ${billing?.noInvoice || transactionId}`,
+                target_name: 'Transaksi',
+                target_id: transactionId ?? undefined,
+              });
+            }}
             variant="outline"
             className="border-[#DFE6EB] text-[#13222D] hover:bg-[#F4F7F9] font-bold h-11 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-none cursor-pointer"
           >

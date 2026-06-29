@@ -11,6 +11,7 @@ import {
   ChevronDown,
   AlertCircle
 } from 'lucide-react';
+import { logActivity } from '@/features/analitik/utils/activityLogger';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { AddUserModal } from './modals/AddUserModal';
@@ -108,19 +109,36 @@ export const UserManagementSection = () => {
 
   // Action Handlers
   const handleToggleStatus = (id: string) => {
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+    const newStatus = user.status === 'AKTIF' ? 'NONAKTIF' : 'AKTIF';
+    
     setUsers(prev => 
-      prev.map(u => 
-        u.id === id 
-          ? { ...u, status: u.status === 'AKTIF' ? 'NONAKTIF' : 'AKTIF' } 
-          : u
-      )
+      prev.map(u => u.id === id ? { ...u, status: newStatus } : u)
     );
+    
+    logActivity({
+      action: 'CHANGE_SETTINGS',
+      module: 'SETTINGS',
+      detail: `Mengubah status pengguna ${user.name} menjadi ${newStatus}`,
+      target_name: 'User',
+    });
   };
 
   const handleDeleteUser = () => {
     if (deleteTargetId) {
+      const user = users.find(u => u.id === deleteTargetId);
       setUsers(prev => prev.filter(u => u.id !== deleteTargetId));
       setDeleteTargetId(null);
+      
+      if (user) {
+        logActivity({
+          action: 'CHANGE_SETTINGS',
+          module: 'SETTINGS',
+          detail: `Menghapus pengguna ${user.name}`,
+          target_name: 'User',
+        });
+      }
     }
   };
 

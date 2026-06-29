@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Download, RotateCw, Trash2, Calendar, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { logActivity } from '@/features/analitik/utils/activityLogger';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
@@ -69,16 +70,22 @@ export const BackupDataSection = () => {
           clearInterval(interval);
           setIsBackingUp(false);
           // Add new backup to list
-          const newBackup: BackupItem = {
-            id: Date.now().toString(),
-            name: `Backup_2026_06_08_Full_${Date.now()}`,
-            size: '248.3 MB',
-            date: new Date().toLocaleString('id-ID'),
-            status: 'success',
-            type: 'full'
-          };
-          setBackups(prev => [newBackup, ...prev]);
-          return 100;
+            const newBackup: BackupItem = {
+              id: Date.now().toString(),
+              name: `Backup_2026_06_08_Full_${Date.now()}`,
+              size: '248.3 MB',
+              date: new Date().toLocaleString('id-ID'),
+              status: 'success',
+              type: 'full'
+            };
+            setBackups(prev => [newBackup, ...prev]);
+            logActivity({
+              action: 'CHANGE_SETTINGS',
+              module: 'SETTINGS',
+              detail: `Membuat backup penuh data sistem: ${newBackup.name}`,
+              target_name: 'Backup',
+            });
+            return 100;
         }
         return prev + Math.random() * 30;
       });
@@ -94,11 +101,27 @@ export const BackupDataSection = () => {
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
+
+    logActivity({
+      action: 'EXPORT_PDF',
+      module: 'SETTINGS',
+      detail: `Mengunduh backup: ${backup.name}`,
+      target_name: 'Backup',
+    });
   };
 
   const handleDeleteBackup = (id: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus backup ini?')) {
+      const backup = backups.find(b => b.id === id);
       setBackups(prev => prev.filter(b => b.id !== id));
+      if (backup) {
+        logActivity({
+          action: 'CHANGE_SETTINGS',
+          module: 'SETTINGS',
+          detail: `Menghapus backup: ${backup.name}`,
+          target_name: 'Backup',
+        });
+      }
     }
   };
 
