@@ -5,7 +5,7 @@ import { secureStorage, useAuthStore } from "@/features/auth/store/authStore";
 export const posClient = axios.create({
   // 🌐 Membaca env khusus sesuai request-mu
   baseURL: '/proxy/internal', 
-  withCredentials: false, // MUTLAK: Agar session cookie/token aman dari backend ikut terkirim
+  withCredentials: false, 
   headers: {
     'Content-Type': 'application/json',
   },

@@ -3,188 +3,39 @@
 import { Filter, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-export interface FilterState {
-  status: string[];
-  gender: string[];
-  hasBpjs: string[];
-}
+export interface FilterState { status: string[]; gender: string[]; hasBpjs: string[]; }
 
-interface PatientFilterProps {
-  filters: FilterState;
-  onFilterChange: (type: keyof FilterState, value: string) => void;
-  onClearAll: () => void;
-}
-
-export const PatientFilter = ({
-  filters,
-  onFilterChange,
-  onClearAll,
-}: PatientFilterProps) => {
-  const isFiltered = filters.status.length > 0 || filters.gender.length > 0 || filters.hasBpjs.length > 0;
-  const totalFilters = filters.status.length + filters.gender.length + filters.hasBpjs.length;
-
-  const getFilterLabel = (type: keyof FilterState, value: string) => {
-    if (type === 'status') {
-      return value;
-    } else if (type === 'gender') {
-      return value === 'LAKI_LAKI' ? 'Laki-laki' : 'Perempuan';
-    } else {
-      return value === 'ADA' ? 'Ada BPJS' : 'Tanpa BPJS';
-    }
-  };
-
-  const getFilterColor = (type: keyof FilterState) => {
-    switch (type) {
-      case 'status':
-        return 'bg-green-100 text-green-700 border-green-300';
-      case 'gender':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-      case 'hasBpjs':
-        return 'bg-blue-100 text-blue-700 border-blue-300';
-    }
-  };
+export const PatientFilter = ({ filters: f, onFilterChange: chg, onClearAll: clr }: { filters: FilterState; onFilterChange: (t: keyof FilterState, v: string) => void; onClearAll: () => void; }) => {
+  const iF = f.status.length > 0 || f.gender.length > 0 || f.hasBpjs.length > 0, tF = f.status.length + f.gender.length + f.hasBpjs.length;
+  const c = { status: 'bg-green-100 text-green-700 border-green-300', gender: 'bg-yellow-100 text-yellow-700 border-yellow-300', hasBpjs: 'bg-blue-100 text-blue-700 border-blue-300' };
 
   return (
     <div className="flex flex-col gap-3 w-full md:w-auto">
-      {/* FILTER DROPDOWN BUTTON */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant={isFiltered ? "default" : "outline"}
-            className={cn(
-              "gap-2 h-10 rounded-lg whitespace-nowrap",
-              isFiltered && "bg-teal-600 hover:bg-teal-700 border-teal-600"
-            )}
-          >
-            <Filter className="w-4 h-4" />
-            Filter
-            {isFiltered && (
-              <Badge variant="secondary" className="ml-1 bg-white/20 text-white border-0">
-                {totalFilters}
-              </Badge>
-            )}
-          </Button>
+          <Button variant={iF ? "default" : "outline"} className={cn("gap-2 h-10 rounded-lg whitespace-nowrap", iF && "bg-teal-600 hover:bg-teal-700 border-teal-600")}><Filter className="w-4 h-4" />Filter {iF && <Badge variant="secondary" className="ml-1 bg-white/20 text-white border-0">{tF}</Badge>}</Button>
         </DropdownMenuTrigger>
-
         <DropdownMenuContent align="end" className="w-56">
-          {/* STATUS SECTION */}
           <DropdownMenuLabel className="text-xs font-semibold uppercase">Status Pasien</DropdownMenuLabel>
-          {['AKTIF', 'TIDAK AKTIF'].map(status => (
-            <DropdownMenuCheckboxItem
-              key={status}
-              checked={filters.status.includes(status)}
-              onCheckedChange={() => onFilterChange('status', status)}
-              className="cursor-pointer text-sm"
-            >
-              {status}
-            </DropdownMenuCheckboxItem>
-          ))}
-
+          {['AKTIF', 'TIDAK AKTIF'].map(s => <DropdownMenuCheckboxItem key={s} checked={f.status.includes(s)} onCheckedChange={() => chg('status', s)} className="cursor-pointer text-sm">{s}</DropdownMenuCheckboxItem>)}
           <DropdownMenuSeparator className="my-2" />
-
-          {/* GENDER SECTION */}
           <DropdownMenuLabel className="text-xs font-semibold uppercase">Jenis Kelamin</DropdownMenuLabel>
-          {[
-            { value: 'LAKI_LAKI', label: 'Laki-laki' },
-            { value: 'PEREMPUAN', label: 'Perempuan' }
-          ].map(option => (
-            <DropdownMenuCheckboxItem
-              key={option.value}
-              checked={filters.gender.includes(option.value)}
-              onCheckedChange={() => onFilterChange('gender', option.value)}
-              className="cursor-pointer text-sm"
-            >
-              {option.label}
-            </DropdownMenuCheckboxItem>
-          ))}
-
+          {[{ v: 'LAKI_LAKI', l: 'Laki-laki' }, { v: 'PEREMPUAN', l: 'Perempuan' }].map(x => <DropdownMenuCheckboxItem key={x.v} checked={f.gender.includes(x.v)} onCheckedChange={() => chg('gender', x.v)} className="cursor-pointer text-sm">{x.l}</DropdownMenuCheckboxItem>)}
           <DropdownMenuSeparator className="my-2" />
-
-          {/* BPJS SECTION */}
           <DropdownMenuLabel className="text-xs font-semibold uppercase">Asuransi BPJS</DropdownMenuLabel>
-          {[
-            { value: 'ADA', label: 'Ada BPJS' },
-            { value: 'TIDAK_ADA', label: 'Tanpa BPJS' }
-          ].map(option => (
-            <DropdownMenuCheckboxItem
-              key={option.value}
-              checked={filters.hasBpjs.includes(option.value)}
-              onCheckedChange={() => onFilterChange('hasBpjs', option.value)}
-              className="cursor-pointer text-sm"
-            >
-              {option.label}
-            </DropdownMenuCheckboxItem>
-          ))}
-
-          {isFiltered && (
-            <>
-              <DropdownMenuSeparator className="my-2" />
-              <button
-                onClick={onClearAll}
-                className="w-full px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
-              >
-                Hapus Semua Filter
-              </button>
-            </>
-          )}
+          {[{ v: 'ADA', l: 'Ada BPJS' }, { v: 'TIDAK_ADA', l: 'Tanpa BPJS' }].map(x => <DropdownMenuCheckboxItem key={x.v} checked={f.hasBpjs.includes(x.v)} onCheckedChange={() => chg('hasBpjs', x.v)} className="cursor-pointer text-sm">{x.l}</DropdownMenuCheckboxItem>)}
+          {iF && <><DropdownMenuSeparator className="my-2" /><button onClick={clr} className="w-full px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors">Hapus Semua Filter</button></>}
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* ACTIVE FILTER BADGES */}
-      {isFiltered && (
+      {iF && (
         <div className="flex flex-wrap gap-2">
-          {filters.status.map(value => (
-            <Badge
-              key={`status-${value}`}
-              variant="outline"
-              className={cn(
-                "px-2.5 py-1 text-xs font-medium border cursor-pointer transition-all hover:shadow-md rounded-full",
-                getFilterColor('status')
-              )}
-              onClick={() => onFilterChange('status', value)}
-            >
-              {getFilterLabel('status', value)}
-              <X className="w-3 h-3 ml-1.5" />
-            </Badge>
-          ))}
-          {filters.gender.map(value => (
-            <Badge
-              key={`gender-${value}`}
-              variant="outline"
-              className={cn(
-                "px-2.5 py-1 text-xs font-medium border cursor-pointer transition-all hover:shadow-md rounded-full",
-                getFilterColor('gender')
-              )}
-              onClick={() => onFilterChange('gender', value)}
-            >
-              {getFilterLabel('gender', value)}
-              <X className="w-3 h-3 ml-1.5" />
-            </Badge>
-          ))}
-          {filters.hasBpjs.map(value => (
-            <Badge
-              key={`bpjs-${value}`}
-              variant="outline"
-              className={cn(
-                "px-2.5 py-1 text-xs font-medium border cursor-pointer transition-all hover:shadow-md rounded-full",
-                getFilterColor('hasBpjs')
-              )}
-              onClick={() => onFilterChange('hasBpjs', value)}
-            >
-              {getFilterLabel('hasBpjs', value)}
-              <X className="w-3 h-3 ml-1.5" />
-            </Badge>
-          ))}
+          {f.status.map(v => <Badge key={`s-${v}`} variant="outline" className={`px-2.5 py-1 text-xs font-medium border cursor-pointer transition-all hover:shadow-md rounded-full ${c.status}`} onClick={() => chg('status', v)}>{v} <X className="w-3 h-3 ml-1.5" /></Badge>)}
+          {f.gender.map(v => <Badge key={`g-${v}`} variant="outline" className={`px-2.5 py-1 text-xs font-medium border cursor-pointer transition-all hover:shadow-md rounded-full ${c.gender}`} onClick={() => chg('gender', v)}>{v === 'LAKI_LAKI' ? 'Laki-laki' : 'Perempuan'} <X className="w-3 h-3 ml-1.5" /></Badge>)}
+          {f.hasBpjs.map(v => <Badge key={`b-${v}`} variant="outline" className={`px-2.5 py-1 text-xs font-medium border cursor-pointer transition-all hover:shadow-md rounded-full ${c.hasBpjs}`} onClick={() => chg('hasBpjs', v)}>{v === 'ADA' ? 'Ada BPJS' : 'Tanpa BPJS'} <X className="w-3 h-3 ml-1.5" /></Badge>)}
         </div>
       )}
     </div>

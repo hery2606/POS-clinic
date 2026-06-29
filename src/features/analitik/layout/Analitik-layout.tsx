@@ -4,6 +4,7 @@ import { AppSidebar } from "./sidebar/app-sidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AnalitikHeader } from "./Analitik-header";
 import { type PeriodType } from "./periodOptionsConfig";
+import { ClinicBot } from "@/features/analitik/components/Chatbot/ClinicBot";
 
 export const AnalitikLayout: React.FC = () => {
   const currentYearStr = String(new Date().getFullYear());
@@ -45,6 +46,7 @@ export const AnalitikLayout: React.FC = () => {
           </main>
         </SidebarInset>
       </div>
+      <ClinicBot />
     </SidebarProvider>
   );
 };
