@@ -48,15 +48,15 @@ export const ActivityLogSection = () => {
   });
 
   const logs = (apiData as any)?.status === 'success' ? ((apiData as any).data?.data || []).map(mapLog) : [];
-  const filtered = logs.filter(a => 
+  const filtered = logs.filter((a: any) => 
     (filterType === 'all' || a.type === filterType) && 
     (filterStatus === 'all' || a.status === filterStatus) &&
     (!search || [a.user, a.desc, a.action, a.ip, a.module].some(s => s.toLowerCase().includes(search.toLowerCase())))
   );
 
   const handleExport = () => {
-    const csv = [['Waktu', 'User', 'Aksi', 'Deskripsi', 'IP Address', 'Status'], ...filtered.map(a => [a.timestamp, a.user, a.action, a.desc, a.ip, a.status])]
-      .map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const csv = [['Waktu', 'User', 'Aksi', 'Deskripsi', 'IP Address', 'Status'], ...filtered.map((a: any) => [a.timestamp, a.user, a.action, a.desc, a.ip, a.status])]
+      .map(row => row.map((cell: any) => `"${cell}"`).join(',')).join('\n');
     const a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
     a.download = `activity_log_${new Date().toISOString().split('T')[0]}.csv`;
@@ -74,9 +74,9 @@ export const ActivityLogSection = () => {
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <Card key={i} className="p-4 rounded-lg bg-slate-50"><Skeleton className="h-4 w-24 mb-2"/><Skeleton className="h-8 w-12"/></Card>) : (
           <>
             <Card className="bg-blue-50 border-blue-200 p-4"><div className="text-xs text-blue-600 font-medium mb-1">Total Aktivitas</div><div className="text-2xl font-bold text-blue-900">{logs.length}</div></Card>
-            <Card className="bg-green-50 border-green-200 p-4"><div className="text-xs text-green-600 font-medium mb-1">Berhasil</div><div className="text-2xl font-bold text-green-900">{logs.filter(a => a.status === 'success').length}</div></Card>
-            <Card className="bg-red-50 border-red-200 p-4"><div className="text-xs text-red-600 font-medium mb-1">Gagal</div><div className="text-2xl font-bold text-red-900">{logs.filter(a => a.status === 'failed').length}</div></Card>
-            <Card className="bg-purple-50 border-purple-200 p-4"><div className="text-xs text-purple-600 font-medium mb-1">Keamanan</div><div className="text-2xl font-bold text-purple-900">{logs.filter(a => a.type === 'security').length}</div></Card>
+            <Card className="bg-green-50 border-green-200 p-4"><div className="text-xs text-green-600 font-medium mb-1">Berhasil</div><div className="text-2xl font-bold text-green-900">{logs.filter((a: any) => a.status === 'success').length}</div></Card>
+            <Card className="bg-red-50 border-red-200 p-4"><div className="text-xs text-red-600 font-medium mb-1">Gagal</div><div className="text-2xl font-bold text-red-900">{logs.filter((a: any) => a.status === 'failed').length}</div></Card>
+            <Card className="bg-purple-50 border-purple-200 p-4"><div className="text-xs text-purple-600 font-medium mb-1">Keamanan</div><div className="text-2xl font-bold text-purple-900">{logs.filter((a: any) => a.type === 'security').length}</div></Card>
           </>
         )}
       </div>
@@ -106,7 +106,7 @@ export const ActivityLogSection = () => {
         <div className="space-y-2 max-h-[500px] overflow-y-auto">
           {isLoading ? Array.from({ length: 4 }).map((_, i) => <div key={i} className="p-4 border rounded-lg flex gap-3"><Skeleton className="h-9 w-9" /><div className="flex-1 space-y-2"><Skeleton className="h-4 w-1/4" /><Skeleton className="h-3 w-3/4" /></div></div>)
           : isError ? <div className="text-center py-8"><p className="text-red-500 text-sm mb-2">Gagal memuat log.</p><Button onClick={() => refetch()} size="sm" variant="outline">Coba Lagi</Button></div>
-          : filtered.length ? filtered.map(a => (
+          : filtered.length ? filtered.map((a: any) => (
             <div key={a.id} className={`p-4 border rounded-lg flex items-start gap-3 ${a.status === 'success' ? 'bg-white' : 'bg-red-50 border-red-200'}`}>
               <div className={`p-2 rounded-lg border ${colors[a.type] || colors.default}`}>{icons[a.type] || icons.default}</div>
               <div className="flex-1 min-w-0">
