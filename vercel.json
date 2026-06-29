@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/proxy/chatbot/:path*",
+      "destination": "/api/chatbotProxy?targetPath=:path*"
+    },
+    {
       "source": "/proxy/warehouse/:path*",
       "destination": "/api/warehouseProxy?targetPath=:path*"
     },

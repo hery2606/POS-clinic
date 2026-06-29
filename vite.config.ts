@@ -77,6 +77,12 @@ export default defineConfig(({ mode }) => {
           secure: false,
           rewrite: (path) => path.replace(/^\/proxy\/internal/, ''),
         },
+        '/proxy/chatbot': {
+          target: process.env.API_BASE_URL || 'https://clinic-analytics-api-production.up.railway.app',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/proxy\/chatbot/, ''),
+        },
       }
     }
   };
