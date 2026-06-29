@@ -1,351 +1,63 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { useState, useMemo } from "react";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+// Compressed mock data (April 1 to June 30, 2024)
+const md = [222,150,97,180,167,120,242,260,373,290,301,340,245,180,409,320,59,110,261,190,327,350,292,210,342,380,137,220,120,170,138,190,446,360,364,410,243,180,89,150,137,200,224,170,138,230,387,290,215,250,75,130,383,420,122,180,315,240,454,380,165,220,293,310,247,190,385,420,481,390,498,520,388,300,149,210,227,180,293,330,335,270,197,240,197,160,448,490,473,380,338,400,499,420,315,350,235,180,177,230,82,140,81,120,252,290,294,220,201,250,213,170,420,460,233,190,78,130,340,280,178,230,178,200,470,410,103,160,439,380,88,140,294,250,323,370,385,320,438,480,155,200,92,150,492,420,81,130,426,380,307,350,371,310,475,520,107,170,341,290,408,450,169,210,317,270,480,530,132,180,141,190,434,380,448,490,149,200,103,160,446,400];
+const cd = Array.from({ length: 91 }, (_, i) => { const d = new Date(2024, 3, 1 + i); return { date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, desktop: md[i * 2], mobile: md[i * 2 + 1] }; });
 
-export const description = "An interactive area chart for Mireco Dashboard"
+const cfg = { visitors: { label: "Total Kunjungan" }, desktop: { label: "Layanan Medis", color: "#1B9C90" }, mobile: { label: "Farmasi & Obat", color: "#4F46E5" } };
 
-const chartData = [
-  { date: "2024-04-01", desktop: 222, mobile: 150 },
-  { date: "2024-04-02", desktop: 97, mobile: 180 },
-  { date: "2024-04-03", desktop: 167, mobile: 120 },
-  { date: "2024-04-04", desktop: 242, mobile: 260 },
-  { date: "2024-04-05", desktop: 373, mobile: 290 },
-  { date: "2024-04-06", desktop: 301, mobile: 340 },
-  { date: "2024-04-07", desktop: 245, mobile: 180 },
-  { date: "2024-04-08", desktop: 409, mobile: 320 },
-  { date: "2024-04-09", desktop: 59, mobile: 110 },
-  { date: "2024-04-10", desktop: 261, mobile: 190 },
-  { date: "2024-04-11", desktop: 327, mobile: 350 },
-  { date: "2024-04-12", desktop: 292, mobile: 210 },
-  { date: "2024-04-13", desktop: 342, mobile: 380 },
-  { date: "2024-04-14", desktop: 137, mobile: 220 },
-  { date: "2024-04-15", desktop: 120, mobile: 170 },
-  { date: "2024-04-16", desktop: 138, mobile: 190 },
-  { date: "2024-04-17", desktop: 446, mobile: 360 },
-  { date: "2024-04-18", desktop: 364, mobile: 410 },
-  { date: "2024-04-19", desktop: 243, mobile: 180 },
-  { date: "2024-04-20", desktop: 89, mobile: 150 },
-  { date: "2024-04-21", desktop: 137, mobile: 200 },
-  { date: "2024-04-22", desktop: 224, mobile: 170 },
-  { date: "2024-04-23", desktop: 138, mobile: 230 },
-  { date: "2024-04-24", desktop: 387, mobile: 290 },
-  { date: "2024-04-25", desktop: 215, mobile: 250 },
-  { date: "2024-04-26", desktop: 75, mobile: 130 },
-  { date: "2024-04-27", desktop: 383, mobile: 420 },
-  { date: "2024-04-28", desktop: 122, mobile: 180 },
-  { date: "2024-04-29", desktop: 315, mobile: 240 },
-  { date: "2024-04-30", desktop: 454, mobile: 380 },
-  { date: "2024-05-01", desktop: 165, mobile: 220 },
-  { date: "2024-05-02", desktop: 293, mobile: 310 },
-  { date: "2024-05-03", desktop: 247, mobile: 190 },
-  { date: "2024-05-04", desktop: 385, mobile: 420 },
-  { date: "2024-05-05", desktop: 481, mobile: 390 },
-  { date: "2024-05-06", desktop: 498, mobile: 520 },
-  { date: "2024-05-07", desktop: 388, mobile: 300 },
-  { date: "2024-05-08", desktop: 149, mobile: 210 },
-  { date: "2024-05-09", desktop: 227, mobile: 180 },
-  { date: "2024-05-10", desktop: 293, mobile: 330 },
-  { date: "2024-05-11", desktop: 335, mobile: 270 },
-  { date: "2024-05-12", desktop: 197, mobile: 240 },
-  { date: "2024-05-13", desktop: 197, mobile: 160 },
-  { date: "2024-05-14", desktop: 448, mobile: 490 },
-  { date: "2024-05-15", desktop: 473, mobile: 380 },
-  { date: "2024-05-16", desktop: 338, mobile: 400 },
-  { date: "2024-05-17", desktop: 499, mobile: 420 },
-  { date: "2024-05-18", desktop: 315, mobile: 350 },
-  { date: "2024-05-19", desktop: 235, mobile: 180 },
-  { date: "2024-05-20", desktop: 177, mobile: 230 },
-  { date: "2024-05-21", desktop: 82, mobile: 140 },
-  { date: "2024-05-22", desktop: 81, mobile: 120 },
-  { date: "2024-05-23", desktop: 252, mobile: 290 },
-  { date: "2024-05-24", desktop: 294, mobile: 220 },
-  { date: "2024-05-25", desktop: 201, mobile: 250 },
-  { date: "2024-05-26", desktop: 213, mobile: 170 },
-  { date: "2024-05-27", desktop: 420, mobile: 460 },
-  { date: "2024-05-28", desktop: 233, mobile: 190 },
-  { date: "2024-05-29", desktop: 78, mobile: 130 },
-  { date: "2024-05-30", desktop: 340, mobile: 280 },
-  { date: "2024-05-31", desktop: 178, mobile: 230 },
-  { date: "2024-06-01", desktop: 178, mobile: 200 },
-  { date: "2024-06-02", desktop: 470, mobile: 410 },
-  { date: "2024-06-03", desktop: 103, mobile: 160 },
-  { date: "2024-06-04", desktop: 439, mobile: 380 },
-  { date: "2024-06-05", desktop: 88, mobile: 140 },
-  { date: "2024-06-06", desktop: 294, mobile: 250 },
-  { date: "2024-06-07", desktop: 323, mobile: 370 },
-  { date: "2024-06-08", desktop: 385, mobile: 320 },
-  { date: "2024-06-09", desktop: 438, mobile: 480 },
-  { date: "2024-06-10", desktop: 155, mobile: 200 },
-  { date: "2024-06-11", desktop: 92, mobile: 150 },
-  { date: "2024-06-12", desktop: 492, mobile: 420 },
-  { date: "2024-06-13", desktop: 81, mobile: 130 },
-  { date: "2024-06-14", desktop: 426, mobile: 380 },
-  { date: "2024-06-15", desktop: 307, mobile: 350 },
-  { date: "2024-06-16", desktop: 371, mobile: 310 },
-  { date: "2024-06-17", desktop: 475, mobile: 520 },
-  { date: "2024-06-18", desktop: 107, mobile: 170 },
-  { date: "2024-06-19", desktop: 341, mobile: 290 },
-  { date: "2024-06-20", desktop: 408, mobile: 450 },
-  { date: "2024-06-21", desktop: 169, mobile: 210 },
-  { date: "2024-06-22", desktop: 317, mobile: 270 },
-  { date: "2024-06-23", desktop: 480, mobile: 530 },
-  { date: "2024-06-24", desktop: 132, mobile: 180 },
-  { date: "2024-06-25", desktop: 141, mobile: 190 },
-  { date: "2024-06-26", desktop: 434, mobile: 380 },
-  { date: "2024-06-27", desktop: 448, mobile: 490 },
-  { date: "2024-06-28", desktop: 149, mobile: 200 },
-  { date: "2024-06-29", desktop: 103, mobile: 160 },
-  { date: "2024-06-30", desktop: 446, mobile: 400 },
-]
+export const ChartAreaInteractive = ({ filters: f = { selectedPeriod: "daily", monthlyYear: "2026", startMonth: "3", endMonth: "6", startYear: "2025", endYear: "2026" } }: any) => {
+  const [tr, setTr] = useState("90d");
 
-const chartConfig = {
-  visitors: {
-    label: "Total Kunjungan",
-  },
-  desktop: {
-    label: "Layanan Medis",
-    color: "#1B9C90", 
-  },
-  mobile: {
-    label: "Farmasi & Obat",
-    color: "#4F46E5", 
-  },
-} satisfies ChartConfig
-
-interface ChartAreaInteractiveProps {
-  filters?: {
-    selectedPeriod: string;
-    monthlyYear: string;
-    startMonth: string;
-    endMonth: string;
-    startYear: string;
-    endYear: string;
-  };
-}
-
-export function ChartAreaInteractive({ filters }: ChartAreaInteractiveProps = {}) {
-  const selectedPeriod = filters?.selectedPeriod ?? "daily";
-  const monthlyYear = filters?.monthlyYear ?? "2026";
-  const startMonth = filters?.startMonth ?? "3";
-  const endMonth = filters?.endMonth ?? "6";
-  const startYear = filters?.startYear ?? "2025";
-  const endYear = filters?.endYear ?? "2026";
-
-  const [timeRange, setTimeRange] = React.useState("90d")
-
-  const filteredData = React.useMemo(() => {
-    if (selectedPeriod === "daily") {
-      return chartData.filter((item) => {
-        const date = new Date(item.date)
-        const referenceDate = new Date("2024-06-30")
-        let daysToSubtract = 90
-        if (timeRange === "30d") {
-          daysToSubtract = 30
-        } else if (timeRange === "7d") {
-          daysToSubtract = 7
-        }
-        const startDate = new Date(referenceDate)
-        startDate.setDate(startDate.getDate() - daysToSubtract)
-        return date >= startDate
-      });
+  const fd = useMemo(() => {
+    if (f.selectedPeriod === "daily") {
+      const p = tr === "30d" ? 30 : tr === "7d" ? 7 : 90;
+      return cd.filter(i => new Date(i.date) >= new Date(new Date("2024-06-30").setDate(new Date("2024-06-30").getDate() - p)));
     }
-
-    if (selectedPeriod === "monthly") {
-      // If selected year is 2024, filter the actual static data
-      if (monthlyYear === "2024") {
-        return chartData.filter((item) => {
-          const date = new Date(item.date);
-          const m = date.getMonth() + 1;
-          return m >= Number(startMonth) && m <= Number(endMonth);
-        });
-      }
-      
-      // Otherwise, generate 0 values
-      const resultData = [];
-      const sM = Number(startMonth);
-      const eM = Number(endMonth);
-      const year = Number(monthlyYear);
-      for (let m = sM; m <= eM; m++) {
-        for (let day = 1; day <= 28; day += 3) {
-          const dateStr = `${year}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          resultData.push({
-            date: dateStr,
-            desktop: 0,
-            mobile: 0
-          });
-        }
-      }
-      return resultData;
+    if (f.selectedPeriod === "monthly") {
+      if (f.monthlyYear === "2024") return cd.filter(i => { const m = new Date(i.date).getMonth() + 1; return m >= +f.startMonth && m <= +f.endMonth; });
+      return Array.from({ length: (+f.endMonth - +f.startMonth + 1) * 10 }, (_, i) => { const m = +f.startMonth + Math.floor(i / 10), d = (i % 10) * 3 + 1; return { date: `${f.monthlyYear}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`, desktop: 0, mobile: 0 }; });
     }
-
-    if (selectedPeriod === "yearly") {
-      const sY = Number(startYear);
-      const eY = Number(endYear);
-      
-      // If 2024 falls within the year range, include 2024 data and generate 0s for other years
-      const resultData = [];
-      for (let y = sY; y <= eY; y++) {
-        if (y === 2024) {
-          resultData.push(...chartData);
-        } else {
-          for (let m = 1; m <= 12; m += 3) {
-            const dateStr = `${y}-${String(m).padStart(2, '0')}-01`;
-            resultData.push({
-              date: dateStr,
-              desktop: 0,
-              mobile: 0
-            });
-          }
-        }
-      }
-      return resultData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    if (f.selectedPeriod === "yearly") {
+      const res: any[] = [];
+      for (let y = +f.startYear; y <= +f.endYear; y++) y === 2024 ? res.push(...cd) : Array.from({ length: 4 }).forEach((_, i) => res.push({ date: `${y}-${String(i * 3 + 1).padStart(2, '0')}-01`, desktop: 0, mobile: 0 }));
+      return res.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }
-
     return [];
-  }, [timeRange, selectedPeriod, monthlyYear, startMonth, endMonth, startYear, endYear]);
+  }, [tr, f]);
 
   return (
     <Card className="bg-white rounded-[24px] border border-[#DFE6EB] shadow-sm overflow-hidden w-full">
       <CardHeader className="flex flex-col items-start gap-4 space-y-0 border-b border-[#DFE6EB] p-6 sm:flex-row sm:items-center">
-        <div className="grid flex-1 gap-1">
-          <CardTitle className="text-base font-bold text-[#13222D]">
-            Tren Analitik Kunjungan
-          </CardTitle>
-          <CardDescription className="text-xs font-medium text-[#67737C]">
-            Komparasi volume transaksi tindakan medis dan penebusan obat
-          </CardDescription>
-        </div>
-        <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger
-            className="w-[160px] h-10 rounded-md border-[#DFE6EB] text-xs font-bold text-[#13222D] bg-[#F9FEFC] sm:ml-auto"
-            aria-label="Select a value"
-          >
-            <SelectValue placeholder="3 Bulan Terakhir" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl border-[#DFE6EB] bg-white text-xs font-semibold text-[#13222D]">
-            <SelectItem value="90d" className="rounded-lg">
-              3 Bulan Terakhir
-            </SelectItem>
-            <SelectItem value="30d" className="rounded-lg">
-              30 Hari Terakhir
-            </SelectItem>
-            <SelectItem value="7d" className="rounded-lg">
-              7 Hari Terakhir
-            </SelectItem>
-          </SelectContent>
+        <div className="grid flex-1 gap-1"><CardTitle className="text-base font-bold text-[#13222D]">Tren Analitik Kunjungan</CardTitle><CardDescription className="text-xs font-medium text-[#67737C]">Komparasi volume transaksi tindakan medis dan penebusan obat</CardDescription></div>
+        <Select value={tr} onValueChange={setTr}>
+          <SelectTrigger className="w-[160px] h-10 rounded-md border-[#DFE6EB] text-xs font-bold text-[#13222D] bg-[#F9FEFC] sm:ml-auto"><SelectValue placeholder="3 Bulan Terakhir" /></SelectTrigger>
+          <SelectContent className="rounded-xl border-[#DFE6EB] bg-white text-xs font-semibold text-[#13222D]"><SelectItem value="90d">3 Bulan Terakhir</SelectItem><SelectItem value="30d">30 Hari Terakhir</SelectItem><SelectItem value="7d">7 Hari Terakhir</SelectItem></SelectContent>
         </Select>
       </CardHeader>
-      
       <CardContent className="px-2 pt-6 sm:px-6">
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-[280px] w-full"
-        >
-          {/* Mengubah margin kiri agar angka YAxis terlihat rapi */}
-          <AreaChart data={filteredData} margin={{ left: -15, right: 10, top: 10, bottom: 5 }}>
+        <ChartContainer config={cfg} className="aspect-auto h-[280px] w-full">
+          <AreaChart data={fd} margin={{ left: -15, right: 10, top: 10, bottom: 5 }}>
             <defs>
-              <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#1B9C90" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#1B9C90" stopOpacity={0.0} />
-              </linearGradient>
-              <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#4F46E5" stopOpacity={0.0} />
-              </linearGradient>
+              <linearGradient id="fd" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#1B9C90" stopOpacity={0.2} /><stop offset="95%" stopColor="#1B9C90" stopOpacity={0} /></linearGradient>
+              <linearGradient id="fm" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#4F46E5" stopOpacity={0.2} /><stop offset="95%" stopColor="#4F46E5" stopOpacity={0} /></linearGradient>
             </defs>
-            
-            {/* PERBAIKAN UTAMA: Stroke warna border solid lembut untuk garis horizontal */}
-          <CartesianGrid vertical={false} stroke="#CBD5E1" strokeDasharray="6 6" strokeWidth={1} opacity={0.8} />
-            
-            {/* SEKARANG SUDAH ADA YAXIS AGAR GARIS GRID MUNCUL */}
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickMargin={12}
-              className="text-[10px] font-bold text-[#67737C]"
-            />
-
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={12}
-              minTickGap={40}
-              className="text-[11px] font-bold text-[#67737C]"
-              tickFormatter={(value) => {
-                const date = new Date(value)
-                return date.toLocaleDateString("id-ID", {
-                  month: "short",
-                  day: "numeric",
-                })
-              }}
-            />
-            
-            <ChartTooltip
-              cursor={{ stroke: '#DFE6EB', strokeWidth: 1 }}
-              content={
-                <ChartTooltipContent
-                  className="bg-white border-[#DFE6EB] rounded-xl shadow-lg p-3 text-xs font-semibold"
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("id-ID", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })
-                  }}
-                  indicator="dot"
-                />
-              }
-            />
-            
-            <Area
-              dataKey="mobile"
-              type="monotone"
-              fill="url(#fillMobile)"
-              stroke="#4F46E5"
-              strokeWidth={2}
-              stackId="a"
-            />
-            <Area
-              dataKey="desktop"
-              type="monotone"
-              fill="url(#fillDesktop)"
-              stroke="#1B9C90"
-              strokeWidth={2}
-              stackId="a"
-            />
-            
-            <ChartLegend 
-              content={<ChartLegendContent className="text-xs font-bold text-[#13222D] mt-6" />} 
-            />
+            <CartesianGrid vertical={false} stroke="#CBD5E1" strokeDasharray="6 6" strokeWidth={1} opacity={0.8} />
+            <YAxis tickLine={false} axisLine={false} tickMargin={12} className="text-[10px] font-bold text-[#67737C]" />
+            <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={12} minTickGap={40} className="text-[11px] font-bold text-[#67737C]" tickFormatter={v => new Date(v).toLocaleDateString("id-ID", { month: "short", day: "numeric" })} />
+            <ChartTooltip cursor={{ stroke: '#DFE6EB', strokeWidth: 1 }} content={<ChartTooltipContent className="bg-white border-[#DFE6EB] rounded-xl shadow-lg p-3 text-xs font-semibold" labelFormatter={v => new Date(v).toLocaleDateString("id-ID", { weekday: "long", year: "numeric", month: "long", day: "numeric" })} indicator="dot" />} />
+            <Area dataKey="mobile" type="monotone" fill="url(#fm)" stroke="#4F46E5" strokeWidth={2} stackId="a" />
+            <Area dataKey="desktop" type="monotone" fill="url(#fd)" stroke="#1B9C90" strokeWidth={2} stackId="a" />
+            <ChartLegend content={<ChartLegendContent className="text-xs font-bold text-[#13222D] mt-6" />} />
           </AreaChart>
         </ChartContainer>
       </CardContent>
     </Card>
-  )
-}
+  );
+};

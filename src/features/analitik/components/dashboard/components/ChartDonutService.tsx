@@ -1,119 +1,44 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Pie, PieChart, Label } from "recharts"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
+import { useMemo } from "react";
+import { Pie, PieChart, Label } from "recharts";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
-export const description = "Donut chart untuk Distribusi Layanan Klinik"
+const d = [
+  { s: "konsultasi", v: 450, fill: "#10b981" },
+  { s: "laboratorium", v: 280, fill: "#34d399" },
+  { s: "tindakan", v: 180, fill: "#6ee7b7" },
+  { s: "radiologi", v: 95, fill: "#a7f3d0" },
+  { s: "lainnya", v: 50, fill: "#f1f5f9" },
+];
 
-// Data distribusi layanan berdasarkan transaksi
-const chartData = [
-  { service: "konsultasi", value: 450, fill: "#10b981" }, // Hijau Emerald (Dominan)
-  { service: "laboratorium", value: 280, fill: "#34d399" }, // Hijau Medium
-  { service: "tindakan", value: 180, fill: "#6ee7b7" },     // Hijau Medium-Light
-  { service: "radiologi", value: 95, fill: "#a7f3d0" },     // Hijau Light
-  { service: "lainnya", value: 50, fill: "#f1f5f9" },       // Abu-abu terang
-]
+const c = {
+  value: { label: "Total" },
+  konsultasi: { label: "Konsultasi Umum" },
+  laboratorium: { label: "Cek Darah & Lab" },
+  tindakan: { label: "Tindakan Medis" },
+  radiologi: { label: "USG & Radiologi" },
+  lainnya: { label: "Layanan Lainnya" },
+};
 
-const chartConfig = {
-  value: {
-    label: "Total",
-  },
-  konsultasi: {
-    label: "Konsultasi Umum",
-  },
-  laboratorium: {
-    label: "Cek Darah & Lab",
-  },
-  tindakan: {
-    label: "Tindakan Medis",
-  },
-  radiologi: {
-    label: "USG & Radiologi",
-  },
-  lainnya: {
-    label: "Layanan Lainnya",
-  },
-} satisfies ChartConfig
-
-export function ChartDonutService() {
-  // Menghitung total seluruh layanan untuk ditampilkan di tengah lingkaran
-  const totalLayanan = React.useMemo(() => {
-    return chartData.reduce((acc, curr) => acc + curr.value, 0)
-  }, [])
-
-  return (
-    <Card className="border-none shadow-sm flex flex-col">
-      <CardHeader className="items-start pb-0">
-        <CardTitle className="text-lg font-bold text-slate-800">
-          Distribusi Layanan
-        </CardTitle>
-        <CardDescription>Porsi transaksi berdasarkan kategori tindakan</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 pb-0">
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square max-h-62.5"
-        >
-          <PieChart>
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
-            />
-            <Pie
-              data={chartData}
-              dataKey="value"
-              nameKey="service"
-              innerRadius={60} 
-              outerRadius={80}
-              strokeWidth={5}
-              stroke="#ffffff" 
-            >
-              <Label
-                content={({ viewBox }) => {
-                  if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                    return (
-                      <text
-                        x={viewBox.cx}
-                        y={viewBox.cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                      >
-                        <tspan
-                          x={viewBox.cx}
-                          y={viewBox.cy}
-                          className="fill-slate-800 text-3xl font-extrabold"
-                        >
-                          {totalLayanan.toLocaleString()}
-                        </tspan>
-                        <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy || 0) + 24}
-                          className="fill-muted-foreground text-xs uppercase tracking-wider"
-                        >
-                          Transaksi
-                        </tspan>
-                      </text>
-                    )
-                  }
-                }}
-              />
-            </Pie>
-          </PieChart>
-        </ChartContainer>
-      </CardContent>
-    </Card>
-  )
-}
+export const ChartDonutService = () => (
+  <Card className="border-none shadow-sm flex flex-col">
+    <CardHeader className="items-start pb-0"><CardTitle className="text-lg font-bold text-slate-800">Distribusi Layanan</CardTitle><CardDescription>Porsi transaksi berdasarkan kategori tindakan</CardDescription></CardHeader>
+    <CardContent className="flex-1 pb-0">
+      <ChartContainer config={c} className="mx-auto aspect-square max-h-62.5">
+        <PieChart>
+          <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+          <Pie data={d} dataKey="v" nameKey="s" innerRadius={60} outerRadius={80} strokeWidth={5} stroke="#ffffff">
+            <Label content={({ viewBox: b }: any) => b?.cx ? (
+              <text x={b.cx} y={b.cy} textAnchor="middle" dominantBaseline="middle">
+                <tspan x={b.cx} y={b.cy} className="fill-slate-800 text-3xl font-extrabold">{d.reduce((a, c) => a + c.v, 0).toLocaleString()}</tspan>
+                <tspan x={b.cx} y={b.cy + 24} className="fill-muted-foreground text-xs uppercase tracking-wider">Transaksi</tspan>
+              </text>
+            ) : null} />
+          </Pie>
+        </PieChart>
+      </ChartContainer>
+    </CardContent>
+  </Card>
+);

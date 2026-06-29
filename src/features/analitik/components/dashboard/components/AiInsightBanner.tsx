@@ -184,7 +184,7 @@ export const AiInsightBanner = () => {
       <AiInsightDetailModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        insights={insights} 
+        insightText={insights.map((i: any) => `### ${i.judul || 'Insight'}\n\n${i.pesan_tindakan || i.pesan || i.message || ''}`).join('\n\n---\n\n')}
         onRefresh={() => handleRefetch()}
         isLoading={showLoading}
       />
