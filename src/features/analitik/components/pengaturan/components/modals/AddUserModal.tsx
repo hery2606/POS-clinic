@@ -3,6 +3,7 @@ import { User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle, X, UserPlus } 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { settingService } from '@/features/analitik/services/setting.service';
+import { logActivity } from '@/features/analitik/utils/activityLogger';
 
 interface UserItem {
   id: string;
@@ -88,6 +89,14 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
         role: formData.role
       });
 
+      logActivity({
+        action: 'CHANGE_SETTINGS',
+        module: 'SETTINGS',
+        detail: `Berhasil menambahkan user baru: ${formData.name} (${fullEmail}) sebagai ${formData.role}`,
+        target_name: 'User',
+        target_id: response.user?.id
+      });
+
       const newUser: UserItem = {
         id: response.user?.id || `USR-${String(existingUsersCount + 1).padStart(3, '0')}`,
         name: response.user?.name || formData.name,
@@ -117,6 +126,14 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || error.message || 'Gagal menambahkan user baru.';
       setFormErrors([{ field: 'submit', message: errorMsg }]);
+      logActivity({
+        action: 'CHANGE_SETTINGS',
+        module: 'SETTINGS',
+        status: 'FAILED',
+        detail: `Gagal menambahkan user baru: ${formData.name} (${fullEmail}) sebagai ${formData.role}`,
+        error_message: errorMsg,
+        target_name: 'User',
+      });
     } finally {
       setIsSaving(false);
     }

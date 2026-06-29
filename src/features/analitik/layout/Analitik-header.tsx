@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { VisualSummaryModal } from "@/features/analitik/components/modals/VisualSummaryModal";
 import { periodOptions, monthOptions, yearOptions, type PeriodType } from "./periodOptionsConfig";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-
 import { ROUTES } from "@/routes/routeConfig";
+import { logActivity } from '@/features/analitik/utils/activityLogger';
 
 interface AnalitikHeaderProps {
   onDownloadPDF?: () => void;
@@ -165,25 +165,37 @@ export const AnalitikHeader = ({
   }, []);
 
   const handleDownloadPdf = () => {
-    if (onDownloadPDF) {
-      onDownloadPDF();
-    } else if (isDashboardPage) {
-      window.dispatchEvent(
-        new CustomEvent("trigger-dashboard-pdf-download", {
-          detail: { periodLabel: getPeriodLabel() },
-        })
-      );
-    } else {
-      const periodLabel = getPeriodLabel();
-      const file = new Blob(
-        [
-          `Laporan Analitik Klinik\n\nPeriode: ${periodLabel}\nTanggal Export: ${new Date().toLocaleDateString("id-ID")}`,
-        ],
-        { type: "text/plain" }
-      );
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL, "_blank");
-    }
+    // 1. Tembak API log pertama kali
+    logActivity({
+      action: 'EXPORT_PDF',
+      module: 'LAPORAN',
+      detail: `Export PDF laporan analitik periode: ${getPeriodLabel()}`,
+      target_name: 'Laporan Analitik',
+    });
+
+    // 2. Beri waktu (300ms) agar request jaringan API log selesai terkirim
+    // sebelum dialog window.print() muncul dan membekukan thread browser
+    setTimeout(() => {
+      if (onDownloadPDF) {
+        onDownloadPDF();
+      } else if (isDashboardPage) {
+        window.dispatchEvent(
+          new CustomEvent("trigger-dashboard-pdf-download", {
+            detail: { periodLabel: getPeriodLabel() },
+          })
+        );
+      } else {
+        const periodLabel = getPeriodLabel();
+        const file = new Blob(
+          [
+            `Laporan Analitik Klinik\n\nPeriode: ${periodLabel}\nTanggal Export: ${new Date().toLocaleDateString("id-ID")}`,
+          ],
+          { type: "text/plain" }
+        );
+        const fileURL = URL.createObjectURL(file);
+        window.open(fileURL, "_blank");
+      }
+    }, 300);
   };
 
   return (
@@ -201,14 +213,14 @@ export const AnalitikHeader = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto relative justify-end">
+        <div className="flex items-center gap-2 w-full sm:w-auto relative justify-end flex-wrap sm:flex-nowrap">
           {/* Toggle Dark Mode Button */}
           <Button 
             onClick={() => setIsDarkMode(!isDarkMode)} 
             variant="ghost" 
             size="icon" 
             aria-label="Ganti Tema"
-            className="rounded-xl h-11 w-11 border border-[#DFE6EB] dark:border-slate-800 text-[#67737C] dark:text-slate-400 hover:bg-[#EFF4F8] dark:hover:bg-slate-800 flex items-center justify-center bg-white dark:bg-slate-900 cursor-pointer shadow-none transition-all"
+            className="rounded-xl h-11 w-11 border border-[#DFE6EB] dark:border-slate-800 text-[#67737C] dark:text-slate-400 hover:bg-[#EFF4F8] dark:hover:bg-slate-800 flex items-center justify-center bg-white dark:bg-slate-900 cursor-pointer shadow-none transition-all shrink-0"
           >
             {isDarkMode ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5" />}
           </Button>
@@ -218,17 +230,17 @@ export const AnalitikHeader = ({
               <div className="relative">
                 <Button 
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="rounded-xl h-11 px-4 border-[#DFE6EB] dark:border-slate-800 text-[#13222D] dark:text-white font-bold bg-white dark:bg-slate-900 hover:bg-[#EFF4F8] dark:hover:bg-slate-800 flex items-center gap-2 shadow-none border cursor-pointer transition-all text-xs"
+                  className="rounded-xl h-11 px-3 sm:px-4 border-[#DFE6EB] dark:border-slate-800 text-[#13222D] dark:text-white font-bold bg-white dark:bg-slate-900 hover:bg-[#EFF4F8] dark:hover:bg-slate-800 flex items-center gap-1.5 sm:gap-2 shadow-none border cursor-pointer transition-all text-xs"
                 >
-                  <CalendarIcon className="w-4 h-4 text-[#67737C] dark:text-slate-400" />
-                  <span>{getPeriodLabel()}</span>
-                  <ChevronDown className={`w-4 h-4 text-[#67737C] dark:text-slate-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`} />
+                  <CalendarIcon className="w-4 h-4 text-[#67737C] dark:text-slate-400 shrink-0" />
+                  <span className="max-w-[100px] xs:max-w-[130px] sm:max-w-none truncate">{getPeriodLabel()}</span>
+                  <ChevronDown className={`w-4 h-4 text-[#67737C] dark:text-slate-400 transition-transform duration-200 shrink-0 ${isDropdownOpen ? "rotate-180" : ""}`} />
                 </Button>
 
                 {isDropdownOpen && (
                   <>
                     <div onClick={() => setIsDropdownOpen(false)} className="fixed inset-0 z-10" />
-                    <div className="absolute top-full mt-2 right-0 bg-white dark:bg-slate-900 rounded-2xl border border-[#DFE6EB] dark:border-slate-800 shadow-lg z-50 min-w-[320px] sm:min-w-[360px] p-4 flex flex-col gap-4 absolute-dropdown">
+                    <div className="absolute top-full mt-2 right-0 bg-white dark:bg-slate-900 rounded-2xl border border-[#DFE6EB] dark:border-slate-800 shadow-lg z-50 min-w-[280px] sm:min-w-[360px] max-w-[calc(100vw-32px)] p-4 flex flex-col gap-4 absolute-dropdown">
                       <div className="grid grid-cols-3 gap-1 bg-[#F4F7F9] dark:bg-slate-950 p-1 rounded-xl">
                         {periodOptions.map((option) => (
                           <button
@@ -303,12 +315,22 @@ export const AnalitikHeader = ({
                 )}
               </div>
 
-              <Button onClick={() => setIsModalOpen(true)} className="rounded-xl h-11 px-4 bg-[#1B9C90] hover:bg-[#157A71] text-white font-bold flex items-center gap-2 shadow-none border-none cursor-pointer transition-colors text-xs">
-                <Sparkles className="w-4 h-4" />
-                <span>Visual Summary</span>
+              <Button 
+                onClick={() => setIsModalOpen(true)} 
+                className="rounded-xl h-11 px-3 sm:px-4 bg-[#1B9C90] hover:bg-[#157A71] text-white font-bold flex items-center justify-center gap-2 shadow-none border-none cursor-pointer transition-colors text-xs"
+              >
+                <Sparkles className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Visual Summary</span>
               </Button>
 
-              <Button onClick={handleDownloadPdf} variant="ghost" size="icon" aria-label="Unduh Laporan PDF" disabled={isExporting || !isPdfReady} className="rounded-xl h-11 w-11 bg-[#DFF6F2] dark:bg-teal-950/40 text-[#1B9C90] dark:text-[#29B5A8] hover:bg-[#c9ece6] dark:hover:bg-teal-900/40 flex items-center justify-center border-none shadow-none cursor-pointer transition-colors disabled:opacity-50">
+              <Button 
+                onClick={handleDownloadPdf} 
+                variant="ghost" 
+                size="icon" 
+                aria-label="Unduh Laporan PDF" 
+                disabled={isExporting || !isPdfReady} 
+                className="rounded-xl h-11 w-11 bg-[#DFF6F2] dark:bg-teal-950/40 text-[#1B9C90] dark:text-[#29B5A8] hover:bg-[#c9ece6] dark:hover:bg-teal-900/40 flex items-center justify-center border-none shadow-none cursor-pointer transition-colors disabled:opacity-50 shrink-0"
+              >
                 {isExporting ? <Loader2 className="w-4 h-4 animate-spin text-[#1B9C90]" /> : <Download className="w-4 h-4" />}
               </Button>
             </>
@@ -317,7 +339,6 @@ export const AnalitikHeader = ({
       </div>
 
       <VisualSummaryModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-
     </>
   );
 };

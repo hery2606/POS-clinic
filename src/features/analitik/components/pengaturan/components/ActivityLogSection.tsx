@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Filter, Download, Clock, User, Shield, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { settingService } from '@/features/analitik/services/setting.service';
-import { type ActivityLogItem, type ActivityLogMetrics } from '@/features/analitik/types/setting.types';
+import { type ActivityLogItem } from '@/features/analitik/types/setting.types';
 
 interface ActivityLog {
   id: string;
@@ -17,6 +18,11 @@ interface ActivityLog {
   description: string;
   ipAddress: string;
   status: 'success' | 'failed';
+  module: string;
+  targetName: string;
+  targetId: string;
+  errorMessage: string | null;
+  userAgent: string;
 }
 
 const getActivityIcon = (type: ActivityLog['type']) => {
@@ -41,19 +47,54 @@ const getActivityColor = (type: ActivityLog['type']) => {
   }
 };
 
+const getActionBadgeStyle = (action: string) => {
+  const baseStyle = "text-[11px] px-2.5 py-1 rounded-md font-bold tracking-wide border shadow-sm uppercase";
+  const actionUpper = (action || '').toUpperCase();
+
+  if (actionUpper.includes('LOGIN') || actionUpper.includes('LOGOUT')) {
+    return `${baseStyle} bg-blue-50/80 text-blue-700 border-blue-200`;
+  }
+  if (actionUpper.includes('EXPORT') || actionUpper.includes('DOWNLOAD')) {
+    return `${baseStyle} bg-indigo-50/80 text-indigo-700 border-indigo-200`;
+  }
+  if (actionUpper.includes('WA_REMINDER') || actionUpper.includes('WHATSAPP')) {
+    return `${baseStyle} bg-emerald-50/80 text-emerald-700 border-emerald-200`;
+  }
+  if (actionUpper.includes('CREATE') || actionUpper.includes('TAMBAH')) {
+    return `${baseStyle} bg-green-50/80 text-green-700 border-green-200`;
+  }
+  if (actionUpper.includes('UPDATE') || actionUpper.includes('EDIT') || actionUpper.includes('CHANGE')) {
+    return `${baseStyle} bg-amber-50/80 text-amber-700 border-amber-200`;
+  }
+  if (actionUpper.includes('DELETE') || actionUpper.includes('VOID') || actionUpper.includes('HAPUS')) {
+    return `${baseStyle} bg-rose-50/80 text-rose-700 border-rose-200`;
+  }
+  
+  // Default style
+  return `${baseStyle} bg-slate-50 text-slate-700 border-slate-200`;
+};
+
 const mapApiLogToInternal = (item: ActivityLogItem, index: number): ActivityLog => {
-  const modulLower = (item.modul || '').toLowerCase();
-  const aksiLower = (item.aksi || '').toLowerCase();
+  const modulLower = (item.module || '').toLowerCase();
+  const aksiLower = (item.action || '').toLowerCase();
   
   let type: ActivityLog['type'] = 'system';
-  if (modulLower === 'login') {
+
+  // Cek security TERLEBIH DAHULU sebelum login/logout
+  // AUTH + FAILED = ancaman keamanan
+  const isAuthFailed = (modulLower === 'auth') && item.status?.toLowerCase() === 'failed';
+  const isSecurityKeyword = aksiLower.includes('password') || aksiLower.includes('keamanan') || aksiLower.includes('security');
+  // Fallback: cek detail atau nama admin mengandung penanda security
+  const isSecurityAlert = (item.detail || '').includes('[SECURITY ALERT]') || item.admin_name === 'ATTACKER';
+  
+  if (isAuthFailed || isSecurityKeyword || isSecurityAlert) {
+    type = 'security';
+  } else if (modulLower === 'login' || modulLower === 'auth') {
     if (aksiLower.includes('logout')) {
       type = 'logout';
     } else {
       type = 'login';
     }
-  } else if (aksiLower.includes('password') || aksiLower.includes('keamanan') || (modulLower === 'login' && item.status.toLowerCase() === 'gagal')) {
-    type = 'security';
   } else if (aksiLower.includes('edit') || aksiLower.includes('ubah') || aksiLower.includes('update')) {
     type = 'edit';
   } else if (aksiLower.includes('hapus') || aksiLower.includes('delete') || aksiLower.includes('remove')) {
@@ -61,74 +102,53 @@ const mapApiLogToInternal = (item: ActivityLogItem, index: number): ActivityLog 
   }
   
   return {
-    id: index.toString(),
-    timestamp: item.waktu,
-    user: item.user,
-    action: item.aksi,
+    id: item.id || index.toString(),
+    timestamp: item.created_at,
+    user: item.admin_name,
+    action: item.action,
     type,
-    description: `${item.user} melakukan ${item.aksi} pada modul ${item.modul}`,
-    ipAddress: '192.168.1.105', // IP fallback since it's not present in log item
-    status: item.status.toLowerCase() === 'berhasil' ? 'success' : 'failed'
+    description: item.detail || `${item.admin_name} melakukan ${item.action} pada modul ${item.module}`,
+    ipAddress: item.ip_address || '-',
+    status: item.status?.toLowerCase() === 'success' ? 'success' : 'failed',
+    module: item.module || '-',
+    targetName: item.target_name || '-',
+    targetId: item.target_id || '-',
+    errorMessage: item.error_message || null,
+    userAgent: item.user_agent || '-'
   };
 };
 
 export const ActivityLogSection = () => {
-  const [activities, setActivities] = useState<ActivityLog[]>([]);
-  const [filteredActivities, setFilteredActivities] = useState<ActivityLog[]>([]);
-  const [metrics, setMetrics] = useState<ActivityLogMetrics | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
-  
   const [filterType, setFilterType] = useState<ActivityLog['type'] | 'all'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'success' | 'failed'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchLogs = async () => {
-    try {
-      setIsLoading(true);
-      setIsError(false);
-      const res = await settingService.getActivityLogs();
-      if (res.status === 'success' && res.data) {
-        setMetrics(res.data.metrik_aktivitas);
-        const mapped = res.data.riwayat_aktivitas.map(mapApiLogToInternal);
-        setActivities(mapped);
-        setFilteredActivities(mapped);
-      }
-    } catch (err) {
-      console.error("Gagal mengambil activity logs:", err);
-      setIsError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: apiData, isLoading, isError, refetch } = useQuery({
+    queryKey: ['activityLogs'],
+    queryFn: () => settingService.getActivityLogs(),
+    refetchInterval: 5000,
+    staleTime: 5000,
+  });
 
-  useEffect(() => {
-    fetchLogs();
-  }, []);
+  const activities = apiData?.status === 'success' && apiData.data?.data 
+    ? apiData.data.data.map(mapApiLogToInternal) 
+    : [];
 
-  // Filter activities
-  useEffect(() => {
-    let result = activities;
-
-    if (filterType !== 'all') {
-      result = result.filter(a => a.type === filterType);
-    }
-
-    if (filterStatus !== 'all') {
-      result = result.filter(a => a.status === filterStatus);
-    }
-
+  const filteredActivities = activities.filter(a => {
+    if (filterType !== 'all' && a.type !== filterType) return false;
+    if (filterStatus !== 'all' && a.status !== filterStatus) return false;
     if (searchQuery) {
-      result = result.filter(a =>
-        a.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.ipAddress.includes(searchQuery)
+      const q = searchQuery.toLowerCase();
+      return (
+        a.user.toLowerCase().includes(q) ||
+        a.description.toLowerCase().includes(q) ||
+        a.action.toLowerCase().includes(q) ||
+        a.ipAddress.includes(q) ||
+        a.module.toLowerCase().includes(q)
       );
     }
-
-    setFilteredActivities(result);
-  }, [activities, filterType, filterStatus, searchQuery]);
+    return true;
+  });
 
   const handleExport = () => {
     const csv = [
@@ -174,15 +194,15 @@ export const ActivityLogSection = () => {
           <>
             <Card className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
               <div className="text-xs text-blue-600 font-medium mb-1">Total Aktivitas</div>
-              <div className="text-2xl font-bold text-blue-900">{metrics?.total_aktivitas ?? activities.length}</div>
+              <div className="text-2xl font-bold text-blue-900">{activities.length}</div>
             </Card>
             <Card className="bg-green-50 border border-green-200 p-4 rounded-lg">
               <div className="text-xs text-green-600 font-medium mb-1">Berhasil</div>
-              <div className="text-2xl font-bold text-green-900">{metrics?.aktivitas_berhasil ?? activities.filter(a => a.status === 'success').length}</div>
+              <div className="text-2xl font-bold text-green-900">{activities.filter(a => a.status === 'success').length}</div>
             </Card>
             <Card className="bg-red-50 border border-red-200 p-4 rounded-lg">
               <div className="text-xs text-red-600 font-medium mb-1">Gagal</div>
-              <div className="text-2xl font-bold text-red-900">{metrics?.aktivitas_gagal ?? activities.filter(a => a.status === 'failed').length}</div>
+              <div className="text-2xl font-bold text-red-900">{activities.filter(a => a.status === 'failed').length}</div>
             </Card>
             <Card className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
               <div className="text-xs text-purple-600 font-medium mb-1">Keamanan</div>
@@ -294,7 +314,7 @@ export const ActivityLogSection = () => {
           ) : isError ? (
             <div className="text-center py-8 text-[#67737C]">
               <p className="text-sm text-red-500 font-semibold mb-2">Gagal memuat log aktivitas.</p>
-              <Button onClick={fetchLogs} size="sm" variant="outline" className="mx-auto cursor-pointer">Coba Lagi</Button>
+              <Button onClick={() => refetch()} size="sm" variant="outline" className="mx-auto cursor-pointer">Coba Lagi</Button>
             </div>
           ) : filteredActivities.length > 0 ? (
             filteredActivities.map((activity) => (
@@ -312,9 +332,9 @@ export const ActivityLogSection = () => {
                       {getActivityIcon(activity.type)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="font-semibold text-sm text-[#13222D]">
-                          {activity.action}
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <span className={getActionBadgeStyle(activity.action)}>
+                          {activity.action.replace(/_/g, ' ')}
                         </span>
                         <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
                           activity.status === 'success'
@@ -323,14 +343,29 @@ export const ActivityLogSection = () => {
                         }`}>
                           {activity.status === 'success' ? 'Berhasil' : 'Gagal'}
                         </span>
+                        <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded font-medium">
+                          Modul: {activity.module}
+                        </span>
                       </div>
                       <p className="text-xs text-[#67737C] mb-2">{activity.description}</p>
-                      <div className="flex items-center gap-3 text-xs text-[#67737C] flex-wrap">
+                      
+                      <div className="flex flex-col gap-1 mb-3">
+                        <span className="text-xs text-slate-500">Target: {activity.targetName} ({activity.targetId})</span>
+                        {activity.errorMessage && (
+                          <span className="text-xs text-red-600 bg-red-50 p-1.5 rounded font-mono break-all border border-red-100">
+                            Error: {activity.errorMessage}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-3 text-[10px] text-slate-400 flex-wrap border-t border-slate-100 pt-2">
                         <span>👤 {activity.user}</span>
                         <span>•</span>
-                        <span>🕐 {activity.timestamp}</span>
+                        <span>🕐 {new Date(activity.timestamp).toLocaleString('id-ID')}</span>
                         <span>•</span>
                         <span>🌐 {activity.ipAddress}</span>
+                        <span>•</span>
+                        <span className="max-w-[200px] truncate" title={activity.userAgent}>💻 {activity.userAgent}</span>
                       </div>
                     </div>
                   </div>

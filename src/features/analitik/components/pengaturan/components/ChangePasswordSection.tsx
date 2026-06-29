@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Eye, EyeOff, AlertCircle, CheckCircle, Lock, Zap } from 'lucide-react';
+import { logActivity } from '@/features/analitik/utils/activityLogger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -81,8 +82,23 @@ export const ChangePasswordSection = () => {
       setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       setErrors([]);
       setTimeout(() => setSuccess(false), 3000);
+      
+      logActivity({
+        action: 'CHANGE_SETTINGS',
+        module: 'SETTINGS',
+        detail: 'Berhasil mengubah password akun',
+        target_name: 'Account',
+      });
     } catch (error) {
       setErrors([{ field: 'submit', message: 'Gagal mengubah password' }]);
+      logActivity({
+        action: 'CHANGE_SETTINGS',
+        module: 'SETTINGS',
+        status: 'FAILED',
+        error_message: 'Gagal mengubah password',
+        detail: 'Gagal mengubah password akun',
+        target_name: 'Account',
+      });
     } finally {
       setLoading(false);
     }
