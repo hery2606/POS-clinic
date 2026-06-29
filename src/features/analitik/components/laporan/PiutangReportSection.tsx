@@ -44,19 +44,7 @@ export function PiutangReportSection() {
     message: string;
   } | null>(null);
 
-  // Fallback / mockup data as requested by USER
-  const fallbackTransactions = useMemo<LocalDaftarTransaksiBelumLunas[]>(() => [
-    { no_invoice: "INV-2026-001", pasien: "Budi Santoso", total_tagihan: 120000, hari_belum_lunas: 1, status_reminder: "Belum Dikirim", wa_number: "081234567890", insurance_type: "BPJS" },
-    { no_invoice: "INV-2026-002", pasien: "Siti Aminah", total_tagihan: 100000, hari_belum_lunas: 2, status_reminder: "Belum Dikirim", wa_number: "082345678901", insurance_type: "UMUM" },
-    { no_invoice: "INV-2026-003", pasien: "Ahmad Dahlan", total_tagihan: 60000, hari_belum_lunas: 3, status_reminder: "Belum Dikirim", wa_number: "083456789012", insurance_type: "UMUM" },
-    { no_invoice: "INV-2026-004", pasien: "Dewi Lestari", total_tagihan: 40000, hari_belum_lunas: 5, status_reminder: "Belum Dikirim", wa_number: "084567890123", insurance_type: "UMUM" },
-    { no_invoice: "INV-2026-005", pasien: "Eko Prasetyo", total_tagihan: 50000, hari_belum_lunas: 8, status_reminder: "Belum Dikirim", wa_number: "085678901234", insurance_type: "BPJS" },
-    { no_invoice: "INV-2026-006", pasien: "Farhan Hakim", total_tagihan: 40000, hari_belum_lunas: 9, status_reminder: "Belum Dikirim", wa_number: "086789012345", insurance_type: "UMUM" },
-    { no_invoice: "INV-2026-007", pasien: "Gita Gutawa", total_tagihan: 20000, hari_belum_lunas: 10, status_reminder: "Belum Dikirim", wa_number: "087890123456", insurance_type: "UMUM" },
-    { no_invoice: "INV-2026-008", pasien: "Hendra Wijaya", total_tagihan: 10000, hari_belum_lunas: 12, status_reminder: "Belum Dikirim", wa_number: "088901234567", insurance_type: "BPJS" },
-  ], []);
-
-  // Initialize transactions state from query or fallback
+  // Initialize transactions state from query
   useEffect(() => {
     const apiData = outstandingInvoicesQuery.data?.data;
     if (apiData && apiData.length > 0) {
@@ -72,32 +60,30 @@ export function PiutangReportSection() {
       }));
       setTransactions(mapped);
     } else {
-      // Empty API data or error -> use fallback data
-      setTransactions(fallbackTransactions);
+      setTransactions([]);
     }
-  }, [outstandingInvoicesQuery.data, fallbackTransactions]);
+  }, [outstandingInvoicesQuery.data]);
 
   // Derived Metrik (Top Cards)
   const totalPiutang = useMemo(() => {
-    if (transactions.length === 0) return 440000;
     return transactions.reduce((sum, item) => sum + item.total_tagihan, 0);
   }, [transactions]);
 
   const totalPendingTransactions = transactions.length;
 
   const averageDelayDays = useMemo(() => {
-    if (transactions.length === 0) return 2;
+    if (transactions.length === 0) return 0;
     const sumDays = transactions.reduce((sum, item) => sum + item.hari_belum_lunas, 0);
-    return Math.round(sumDays / transactions.length) || 2;
+    return Math.round(sumDays / transactions.length);
   }, [transactions]);
 
   // Total Pendapatan from API to calculate percentage
   const totalRevenue = useMemo(() => {
-    return revenueTrendQuery.data?.data?.total_pendapatan_bulan_ini || 148500000;
+    return revenueTrendQuery.data?.data?.total_pendapatan_bulan_ini || 0;
   }, [revenueTrendQuery.data]);
 
   const piutangRatioPercentage = useMemo(() => {
-    if (totalRevenue === 0) return 0.3;
+    if (!totalRevenue || totalRevenue === 0) return 0;
     return Number(((totalPiutang / totalRevenue) * 100).toFixed(2));
   }, [totalPiutang, totalRevenue]);
 
@@ -117,19 +103,13 @@ export function PiutangReportSection() {
 
     const total = umumAmount + bpjsAmount;
     if (total === 0) {
-      return { umumPercent: 70, bpjsPercent: 30, umumVal: 308000, bpjsVal: 132000 };
-    }
-
-    const isFallback = transactions.length === fallbackTransactions.length &&
-      transactions[0].no_invoice === fallbackTransactions[0].no_invoice;
-    if (isFallback) {
-      return { umumPercent: 70, bpjsPercent: 30, umumVal: 308000, bpjsVal: 132000 };
+      return { umumPercent: 0, bpjsPercent: 0, umumVal: 0, bpjsVal: 0 };
     }
 
     const umumPercent = Math.round((umumAmount / total) * 100);
     const bpjsPercent = 100 - umumPercent;
     return { umumPercent, bpjsPercent, umumVal: umumAmount, bpjsVal: bpjsAmount };
-  }, [transactions, fallbackTransactions]);
+  }, [transactions]);
 
   // Aging Schedule calculation: 1-2 Hari, 3-5 Hari, >7 Hari
   const agingData = useMemo(() => {
@@ -146,14 +126,6 @@ export function PiutangReportSection() {
         range3 += t.total_tagihan;
       }
     });
-
-    if (range1 === 0 && range2 === 0 && range3 === 0) {
-      return [
-        { name: "1-2 Hari", amount: 220000 },
-        { name: "3-5 Hari", amount: 100000 },
-        { name: "> 7 Hari", amount: 120000 }
-      ];
-    }
 
     return [
       { name: "1-2 Hari", amount: range1 },

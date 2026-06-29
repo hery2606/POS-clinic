@@ -14,6 +14,7 @@ export function NavMain({
     title: string
     url: string
     icon?: React.ReactNode
+    badge?: number
   }[]
 }) {
   const location = useLocation()
@@ -39,20 +40,36 @@ export function NavMain({
                   : "text-slate-400 hover:text-white hover:bg-white/5"
               )}
             >
-              <Link to={item.url} className="flex items-center w-full h-full">
+              <Link to={item.url} className="flex items-center w-full h-full pr-2">
                 {/* Indikator vertikal aktif di sisi paling kiri */}
                 {isActive(item.url) && (
                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#1B9C90] rounded-r-md" />
                 )}
                 
                 <div className={cn(
-                  "shrink-0 transition-colors flex items-center justify-center",
+                  "shrink-0 transition-colors flex items-center justify-center relative",
                   isActive(item.url) ? "text-[#29B5A8]" : "text-slate-400 group-hover/btn:text-white"
                 )}>
                   {item.icon}
+                  {/* Dot when collapsed */}
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-1.5 h-1.5 rounded-full bg-rose-500 border-2 border-[#0D1A23] hidden group-data-[collapse=icon]:block animate-pulse" />
+                  )}
                 </div>
                 
                 <span className="group-data-[collapse=icon]:hidden">{item.title}</span>
+
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="ml-auto flex items-center gap-1.5 group-data-[collapse=icon]:hidden">
+                    <span className="relative flex h-1 w-1">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1 w-1 bg-rose-500"></span>
+                    </span>
+                    <span className="  from-rose-400 to-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full min-w-5 h-5 flex items-center justify-center shadow-md shadow-red-500/25 border border-white/10">
+                      {item.badge}
+                    </span>
+                  </span>
+                )}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

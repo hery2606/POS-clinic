@@ -2,20 +2,46 @@
 
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { Calendar as CalendarIcon, Sparkles, Download, ChevronDown, Check, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Sparkles, Download, ChevronDown, Check, Loader2, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { VisualSummaryModal } from "@/features/analitik/components/modals/VisualSummaryModal";
 import { periodOptions, monthOptions, yearOptions, type PeriodType } from "./periodOptionsConfig";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-
 import { ROUTES } from "@/routes/routeConfig";
+import { logActivity } from '@/features/analitik/utils/activityLogger';
 
 interface AnalitikHeaderProps {
   onDownloadPDF?: () => void;
+  selectedPeriod?: PeriodType;
+  setSelectedPeriod?: (period: PeriodType) => void;
+  monthlyYear?: string;
+  setMonthlyYear?: (year: string) => void;
+  startMonth?: string;
+  setStartMonth?: (month: string) => void;
+  endMonth?: string;
+  setEndMonth?: (month: string) => void;
+  startYear?: string;
+  setStartYear?: (year: string) => void;
+  endYear?: string;
+  setEndYear?: (year: string) => void;
 }
 
-export const AnalitikHeader = ({ onDownloadPDF }: AnalitikHeaderProps = {}) => {
+export const AnalitikHeader = ({
+  onDownloadPDF,
+  selectedPeriod: propSelectedPeriod,
+  setSelectedPeriod: propSetSelectedPeriod,
+  monthlyYear: propMonthlyYear,
+  setMonthlyYear: propSetSelectedPeriodYear,
+  startMonth: propStartMonth,
+  setStartMonth: propSetStartMonth,
+  endMonth: propEndMonth,
+  setEndMonth: propSetEndMonth,
+  startYear: propStartYear,
+  setStartYear: propSetStartYear,
+  endYear: propEndYear,
+  setEndYear: propSetEndYear,
+}: AnalitikHeaderProps = {}) => {
   const location = useLocation();
   const isLaporanPage = location.pathname.includes("laporan");
   const isDashboardPage = location.pathname === ROUTES.ADMIN.DASHBOARD;
@@ -69,22 +95,52 @@ export const AnalitikHeader = ({ onDownloadPDF }: AnalitikHeaderProps = {}) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isPdfReady, setIsPdfReady] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("daily");
 
-  const [monthlyYear, setMonthlyYear] = useState(currentYearStr);
-  const [startMonth, setStartMonth] = useState("3"); 
-  const [endMonth, setEndMonth] = useState("6"); 
-  const [startYear, setStartYear] = useState(prevYearStr);
-  const [endYear, setEndYear] = useState(currentYearStr);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("theme") === "dark";
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [isDarkMode]);
+
+  // Fallback local states if props not supplied
+  const [localSelectedPeriod, localSetSelectedPeriod] = useState<PeriodType>("daily");
+  const [localMonthlyYear, localSetMonthlyYear] = useState(currentYearStr);
+  const [localStartMonth, localSetStartMonth] = useState("6"); 
+  const [localEndMonth, localSetEndMonth] = useState("6"); 
+  const [localStartYear, localSetStartYear] = useState(currentYearStr);
+  const [localEndYear, localSetEndYear] = useState(currentYearStr);
+
+  const selectedPeriod = propSelectedPeriod ?? localSelectedPeriod;
+  const setSelectedPeriod = propSetSelectedPeriod ?? localSetSelectedPeriod;
+  const monthlyYear = propMonthlyYear ?? localMonthlyYear;
+  const setMonthlyYear = propSetSelectedPeriodYear ?? localSetMonthlyYear;
+  const startMonth = propStartMonth ?? localStartMonth;
+  const setStartMonth = propSetStartMonth ?? localSetStartMonth;
+  const endMonth = propEndMonth ?? localEndMonth;
+  const setEndMonth = propSetEndMonth ?? localSetEndMonth;
+  const startYear = propStartYear ?? localStartYear;
+  const setStartYear = propSetStartYear ?? localSetStartYear;
+  const endYear = propEndYear ?? localEndYear;
+  const setEndYear = propSetEndYear ?? localSetEndYear;
 
   const getPeriodLabel = () => {
     if (selectedPeriod === "monthly") {
-      const startLabel = monthOptions.find(m => m.value === startMonth)?.label;
-      const endLabel = monthOptions.find(m => m.value === endMonth)?.label;
-      return `${startLabel} - ${endLabel} ${monthlyYear}`;
+      const label = monthOptions.find(m => m.value === startMonth)?.label;
+      return `${label} ${monthlyYear}`;
     }
     if (selectedPeriod === "yearly") {
-      return `${startYear} vs ${endYear}`;
+      return `Tahun ${startYear}`;
     }
     return periodOptions.find(p => p.id === selectedPeriod)?.label || "Hari Ini (Aktif)";
   };
@@ -109,165 +165,180 @@ export const AnalitikHeader = ({ onDownloadPDF }: AnalitikHeaderProps = {}) => {
   }, []);
 
   const handleDownloadPdf = () => {
-    if (onDownloadPDF) {
-      onDownloadPDF();
-    } else if (isDashboardPage) {
-      window.dispatchEvent(
-        new CustomEvent("trigger-dashboard-pdf-download", {
-          detail: { periodLabel: getPeriodLabel() },
-        })
-      );
-    } else {
-      const periodLabel = getPeriodLabel();
-      const file = new Blob(
-        [
-          `Laporan Analitik Klinik\n\nPeriode: ${periodLabel}\nTanggal Export: ${new Date().toLocaleDateString("id-ID")}`,
-        ],
-        { type: "text/plain" }
-      );
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL, "_blank");
-    }
+    // 1. Tembak API log pertama kali
+    logActivity({
+      action: 'EXPORT_PDF',
+      module: 'LAPORAN',
+      detail: `Export PDF laporan analitik periode: ${getPeriodLabel()}`,
+      target_name: 'Laporan Analitik',
+    });
+
+    // 2. Beri waktu (300ms) agar request jaringan API log selesai terkirim
+    // sebelum dialog window.print() muncul dan membekukan thread browser
+    setTimeout(() => {
+      if (onDownloadPDF) {
+        onDownloadPDF();
+      } else if (isDashboardPage) {
+        window.dispatchEvent(
+          new CustomEvent("trigger-dashboard-pdf-download", {
+            detail: { periodLabel: getPeriodLabel() },
+          })
+        );
+      } else {
+        const periodLabel = getPeriodLabel();
+        const file = new Blob(
+          [
+            `Laporan Analitik Klinik\n\nPeriode: ${periodLabel}\nTanggal Export: ${new Date().toLocaleDateString("id-ID")}`,
+          ],
+          { type: "text/plain" }
+        );
+        const fileURL = URL.createObjectURL(file);
+        window.open(fileURL, "_blank");
+      }
+    }, 300);
   };
 
   return (
     <>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 w-full bg-[#F9FEFC] no-print">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 w-full bg-[#F9FEFC] dark:bg-[#0B131A] no-print">
         <div className="flex items-center gap-3">
-          <SidebarTrigger className="md:hidden border border-[#DFE6EB] hover:bg-[#EFF4F8] text-[#464a4c] p-2 h-10 w-10 shrink-0 flex items-center justify-center rounded-lg [&_svg]:!size-7" />
+          <SidebarTrigger aria-label="Buka Menu Navigasi" className="md:hidden border border-[#DFE6EB] dark:border-slate-800 hover:bg-[#EFF4F8] dark:hover:bg-slate-800 text-[#464a4c] dark:text-slate-300 p-2 h-10 w-10 shrink-0 flex items-center justify-center rounded-lg [&_svg]:!size-7 bg-white dark:bg-slate-900" />
           <div className="space-y-1">
-            <h1 className="text-xl font-bold text-[#13222D] tracking-wide">
+            <h1 className="text-xl font-bold text-[#13222D] dark:text-white tracking-wide">
               {title}
             </h1>
-            <p className="text-xs font-medium text-[#67737C]">
+            <p className="text-xs font-medium text-[#67737C] dark:text-slate-400">
               {subtitle}
             </p>
           </div>
         </div>
 
-        {isDashboardPage && (
-          <div className="flex items-center gap-3 w-full sm:w-auto relative">
-            <div className="relative">
-              <Button 
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="rounded-xl h-11 px-4 border-[#DFE6EB] text-[#13222D] font-bold bg-white hover:bg-[#EFF4F8] flex items-center gap-2 shadow-none border cursor-pointer transition-all text-xs"
+        <div className="flex items-center gap-2 w-full sm:w-auto relative justify-end flex-wrap sm:flex-nowrap">
+          {/* Toggle Dark Mode Button */}
+          <Button 
+            onClick={() => setIsDarkMode(!isDarkMode)} 
+            variant="ghost" 
+            size="icon" 
+            aria-label="Ganti Tema"
+            className="rounded-xl h-11 w-11 border border-[#DFE6EB] dark:border-slate-800 text-[#67737C] dark:text-slate-400 hover:bg-[#EFF4F8] dark:hover:bg-slate-800 flex items-center justify-center bg-white dark:bg-slate-900 cursor-pointer shadow-none transition-all shrink-0"
+          >
+            {isDarkMode ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5" />}
+          </Button>
+
+          {isDashboardPage && (
+            <>
+              <div className="relative">
+                <Button 
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="rounded-xl h-11 px-3 sm:px-4 border-[#DFE6EB] dark:border-slate-800 text-[#13222D] dark:text-white font-bold bg-white dark:bg-slate-900 hover:bg-[#EFF4F8] dark:hover:bg-slate-800 flex items-center gap-1.5 sm:gap-2 shadow-none border cursor-pointer transition-all text-xs"
                 >
-             
-                <CalendarIcon className="w-4 h-4 text-[#67737C]" />
-                <span>{getPeriodLabel()}</span>
-                <ChevronDown className={`w-4 h-4 text-[#67737C] transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`} />
-              </Button>
+                  <CalendarIcon className="w-4 h-4 text-[#67737C] dark:text-slate-400 shrink-0" />
+                  <span className="max-w-[100px] xs:max-w-[130px] sm:max-w-none truncate">{getPeriodLabel()}</span>
+                  <ChevronDown className={`w-4 h-4 text-[#67737C] dark:text-slate-400 transition-transform duration-200 shrink-0 ${isDropdownOpen ? "rotate-180" : ""}`} />
+                </Button>
 
-              {isDropdownOpen && (
-                <>
-                  <div onClick={() => setIsDropdownOpen(false)} className="fixed inset-0 z-10" />
-                  <div className="absolute top-full mt-2 right-0 bg-white rounded-2xl border border-[#DFE6EB] shadow-lg z-50 min-w-[320px] sm:min-w-[360px] p-4 flex flex-col gap-4 absolute-dropdown">
-                    <div className="grid grid-cols-3 gap-1 bg-[#F4F7F9] p-1 rounded-xl">
-                      {periodOptions.map((option) => (
-                        <button
-                          key={option.id}
-                          onClick={() => setSelectedPeriod(option.id)}
-                          className={`py-2 px-1 rounded-lg text-[11px] font-bold transition-all text-center flex flex-col items-center justify-center gap-1 cursor-pointer ${
-                            selectedPeriod === option.id ? "bg-white text-[#1B9C90] shadow-sm" : "text-[#67737C] hover:text-[#13222D]"
-                          }`}
-                        >
-                          {option.icon}
-                          <span className="flex items-center gap-1">
-                            {option.id === "daily" ? "Hari Ini" : option.label}
-                            {option.id === "daily" && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                            )}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
+                {isDropdownOpen && (
+                  <>
+                    <div onClick={() => setIsDropdownOpen(false)} className="fixed inset-0 z-10" />
+                    <div className="absolute top-full mt-2 right-0 bg-white dark:bg-slate-900 rounded-2xl border border-[#DFE6EB] dark:border-slate-800 shadow-lg z-50 min-w-[280px] sm:min-w-[360px] max-w-[calc(100vw-32px)] p-4 flex flex-col gap-4 absolute-dropdown">
+                      <div className="grid grid-cols-3 gap-1 bg-[#F4F7F9] dark:bg-slate-950 p-1 rounded-xl">
+                        {periodOptions.map((option) => (
+                          <button
+                            key={option.id}
+                            onClick={() => setSelectedPeriod(option.id)}
+                            className={`py-2 px-1 rounded-lg text-[11px] font-bold transition-all text-center flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                              selectedPeriod === option.id 
+                                ? "bg-white dark:bg-slate-800 text-[#1B9C90] dark:text-[#29B5A8] shadow-sm" 
+                                : "text-[#67737C] dark:text-slate-400 hover:text-[#13222D] dark:hover:text-white"
+                            }`}
+                          >
+                            {option.icon}
+                            <span className="flex items-center gap-1">
+                              {option.id === "daily" ? "Hari Ini" : option.label}
+                              {option.id === "daily" && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                              )}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
 
-                    {selectedPeriod === "monthly" && (
-                      <div className="space-y-3 p-1">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-[#67737C] uppercase tracking-wide">Pilih Tahun</label>
-                          <Select value={monthlyYear} onValueChange={setMonthlyYear}>
-                            <SelectTrigger className="h-9 rounded-xl border-[#DFE6EB] text-xs font-semibold text-[#13222D] shadow-none bg-[#F4F7F9]/50"><SelectValue /></SelectTrigger>
-                            <SelectContent className="rounded-xl border-[#DFE6EB]">
-                              {yearOptions.map((year) => <SelectItem key={year} value={year} className="text-xs rounded-lg">{year}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
+                      {selectedPeriod === "monthly" && (
+                        <div className="space-y-3 p-1">
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-[#67737C] uppercase tracking-wide">Dari Bulan</label>
-                            <Select value={startMonth} onValueChange={setStartMonth}>
-                              <SelectTrigger className="h-9 rounded-xl border-[#DFE6EB] text-xs font-semibold text-[#13222D] shadow-none bg-[#F4F7F9]/50"><SelectValue /></SelectTrigger>
-                              <SelectContent className="rounded-xl border-[#DFE6EB]">
+                            <label className="text-[10px] font-bold text-[#67737C] dark:text-slate-400 uppercase tracking-wide">Pilih Tahun</label>
+                            <Select value={monthlyYear} onValueChange={setMonthlyYear}>
+                              <SelectTrigger className="h-9 rounded-xl border-[#DFE6EB] dark:border-slate-800 text-xs font-semibold text-[#13222D] dark:text-white shadow-none bg-[#F4F7F9]/50 dark:bg-slate-950"><SelectValue /></SelectTrigger>
+                              <SelectContent className="rounded-xl border-[#DFE6EB] dark:border-slate-800 dark:bg-slate-900">
+                                {yearOptions.map((year) => <SelectItem key={year} value={year} className="text-xs rounded-lg">{year}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[#67737C] dark:text-slate-400 uppercase tracking-wide">Pilih Bulan</label>
+                            <Select value={startMonth} onValueChange={(val) => {
+                              setStartMonth(val);
+                              setEndMonth(val);
+                            }}>
+                              <SelectTrigger className="h-9 rounded-xl border-[#DFE6EB] dark:border-slate-800 text-xs font-semibold text-[#13222D] dark:text-white shadow-none bg-[#F4F7F9]/50 dark:bg-slate-950"><SelectValue /></SelectTrigger>
+                              <SelectContent className="rounded-xl border-[#DFE6EB] dark:border-slate-800 dark:bg-slate-900">
                                 {monthOptions.map((m) => <SelectItem key={m.value} value={m.value} className="text-xs rounded-lg">{m.label}</SelectItem>)}
                               </SelectContent>
                             </Select>
                           </div>
+                        </div>
+                      )}
+
+                      {selectedPeriod === "yearly" && (
+                        <div className="space-y-3 p-1">
                           <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-[#67737C] uppercase tracking-wide">Sampai Bulan</label>
-                            <Select value={endMonth} onValueChange={setEndMonth}>
-                              <SelectTrigger className="h-9 rounded-xl border-[#DFE6EB] text-xs font-semibold text-[#13222D] shadow-none bg-[#F4F7F9]/50"><SelectValue /></SelectTrigger>
-                              <SelectContent className="rounded-xl border-[#DFE6EB]">
-                                {monthOptions.map((m) => (
-                                  <SelectItem key={m.value} value={m.value} className="text-xs rounded-lg" disabled={Number(m.value) < Number(startMonth)}>{m.label}</SelectItem>
-                                ))}
+                            <label className="text-[10px] font-bold text-[#67737C] dark:text-slate-400 uppercase tracking-wide">Pilih Tahun</label>
+                            <Select value={startYear} onValueChange={(val) => {
+                              setStartYear(val);
+                              setEndYear(val);
+                            }}>
+                              <SelectTrigger className="h-9 rounded-xl border-[#DFE6EB] dark:border-slate-800 text-xs font-semibold text-[#13222D] dark:text-white shadow-none bg-[#F4F7F9]/50 dark:bg-slate-950"><SelectValue /></SelectTrigger>
+                              <SelectContent className="rounded-xl border-[#DFE6EB] dark:border-slate-800 dark:bg-slate-900">
+                                {yearOptions.map((year) => <SelectItem key={year} value={year} className="text-xs rounded-lg">{year}</SelectItem>)}
                               </SelectContent>
                             </Select>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {selectedPeriod === "yearly" && (
-                      <div className="grid grid-cols-2 gap-3 p-1">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-[#67737C] uppercase tracking-wide">Tahun Basis</label>
-                          <Select value={startYear} onValueChange={setStartYear}>
-                            <SelectTrigger className="h-9 rounded-xl border-[#DFE6EB] text-xs font-semibold text-[#13222D] shadow-none bg-[#F4F7F9]/50"><SelectValue /></SelectTrigger>
-                            <SelectContent className="rounded-xl border-[#DFE6EB]">
-                              {yearOptions.map((year) => <SelectItem key={year} value={year} className="text-xs rounded-lg">{year}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-[#67737C] uppercase tracking-wide">Pembanding</label>
-                          <Select value={endYear} onValueChange={setEndYear}>
-                            <SelectTrigger className="h-9 rounded-xl border-[#DFE6EB] text-xs font-semibold text-[#13222D] shadow-none bg-[#F4F7F9]/50"><SelectValue /></SelectTrigger>
-                            <SelectContent className="rounded-xl border-[#DFE6EB]">
-                              {yearOptions.map((year) => (
-                                <SelectItem key={year} value={year} className="text-xs rounded-lg" disabled={Number(year) <= Number(startYear)}>{year}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
+                      <Button onClick={() => setIsDropdownOpen(false)} className="w-full h-9 bg-[#1B9C90] hover:bg-[#157A71] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 border-none shadow-none mt-1 transition-colors">
+                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>Terapkan Frekuensi</span>
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
 
-                    <Button onClick={() => setIsDropdownOpen(false)} className="w-full h-9 bg-[#1B9C90] hover:bg-[#157A71] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 border-none shadow-none mt-1 transition-colors">
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span>Terapkan Frekuensi</span>
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
+              <Button 
+                onClick={() => setIsModalOpen(true)} 
+                className="rounded-xl h-11 px-3 sm:px-4 bg-[#1B9C90] hover:bg-[#157A71] text-white font-bold flex items-center justify-center gap-2 shadow-none border-none cursor-pointer transition-colors text-xs"
+              >
+                <Sparkles className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Visual Summary</span>
+              </Button>
 
-            <Button onClick={() => setIsModalOpen(true)} className="rounded-xl h-11 px-4 bg-[#1B9C90] hover:bg-[#157A71] text-white font-bold flex items-center gap-2 shadow-none border-none cursor-pointer transition-colors text-xs">
-              <Sparkles className="w-4 h-4" />
-              <span>Visual Summary</span>
-            </Button>
-
-            {isDashboardPage && (
-              <Button onClick={handleDownloadPdf} variant="ghost" size="icon" disabled={isExporting || !isPdfReady} className="rounded-xl h-11 w-11 bg-[#DFF6F2] text-[#1B9C90] hover:bg-[#c9ece6] flex items-center justify-center border-none shadow-none cursor-pointer transition-colors disabled:opacity-50">
+              <Button 
+                onClick={handleDownloadPdf} 
+                variant="ghost" 
+                size="icon" 
+                aria-label="Unduh Laporan PDF" 
+                disabled={isExporting || !isPdfReady} 
+                className="rounded-xl h-11 w-11 bg-[#DFF6F2] dark:bg-teal-950/40 text-[#1B9C90] dark:text-[#29B5A8] hover:bg-[#c9ece6] dark:hover:bg-teal-900/40 flex items-center justify-center border-none shadow-none cursor-pointer transition-colors disabled:opacity-50 shrink-0"
+              >
                 {isExporting ? <Loader2 className="w-4 h-4 animate-spin text-[#1B9C90]" /> : <Download className="w-4 h-4" />}
               </Button>
-            )}
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       <VisualSummaryModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-
     </>
   );
 };

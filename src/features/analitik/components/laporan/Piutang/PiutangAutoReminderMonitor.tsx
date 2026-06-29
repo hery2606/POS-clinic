@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Cpu, CheckCircle2, AlertTriangle, Trash2, Plus, Activity } from "lucide-react";
+import { Cpu, CheckCircle2, AlertTriangle, Trash2, Plus, Activity, User } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -21,13 +21,32 @@ export function PiutangAutoReminderMonitor({
 }: PiutangAutoReminderMonitorProps) {
   const isQueueMet = transactionsCount > 10;
 
-  // Optimasi pemisahan string penanda waktu "[HH:MM:SS]" secara aman menggunakan useMemo
+  // Parsing logs dynamically to categorize, clean prefix tags, and set status levels
   const parsedLogs = useMemo(() => {
     return autoLogs.map((log) => {
       const match = log.match(/^\[(.*?)\]\s(.*)/);
+      const time = match ? match[1] : "";
+      const rawMessage = match ? match[2] : log;
+
+      let type: "engine" | "user" | "error" | "info" = "info";
+      let message = rawMessage;
+
+      if (rawMessage.startsWith("[Engine]")) {
+        type = "engine";
+        message = rawMessage.replace("[Engine] ", "");
+      } else if (rawMessage.startsWith("[User]")) {
+        type = "user";
+        message = rawMessage.replace("[User] ", "");
+      }
+
+      if (message.toLowerCase().includes("gagal") || message.toLowerCase().includes("error")) {
+        type = "error";
+      }
+
       return {
-        time: match ? match[1] : "",
-        message: match ? match[2] : log,
+        time,
+        message,
+        type,
       };
     });
   }, [autoLogs]);
@@ -131,7 +150,7 @@ export function PiutangAutoReminderMonitor({
           </div>
         </div>
 
-        {/* 🟢 REFACTORING RIGHT COLUMN: Interactive Timeline Log Feed */}
+        {/* Right Column: Refactored System Activity Log Feed */}
         <div className="md:col-span-7 flex flex-col space-y-2">
           <div className="flex items-center justify-between px-1">
             <span className="text-[10px] font-bold text-[#67737C] uppercase tracking-wider flex items-center gap-1.5">
@@ -143,33 +162,56 @@ export function PiutangAutoReminderMonitor({
             </span>
           </div>
 
-          <div className="bg-white rounded-2xl h-44 overflow-y-auto border border-[#DFE6EB]/60 p-4">
+          <div className="bg-[#F8FAFC]/55 rounded-2xl h-64 overflow-y-auto border border-[#DFE6EB]/60 p-3 space-y-2 scrollbar-none">
             {parsedLogs.length === 0 ? (
-              <div className="text-[#67737C] text-xs h-full flex flex-col items-center justify-center gap-1.5 text-center">
-                <div className="w-8 h-8 rounded-full bg-[#F4F7F9] flex items-center justify-center mb-0.5">
+              <div className="text-[#67737C] text-xs h-full flex flex-col items-center justify-center gap-1.5 text-center py-12">
+                <div className="w-8 h-8 rounded-full bg-[#F4F7F9] flex items-center justify-center mb-0.5 animate-pulse">
                   <Activity className="w-4 h-4 text-[#A5C0D3]" />
                 </div>
-                <span className="font-semibold text-[#13222D]">Log Monitor Bersih</span>
+                <span className="font-bold text-[#13222D]">Log Aktivitas Kosong</span>
                 <span className="text-[10px] text-slate-400">Belum mendeteksi pergerakan trigger otomatis.</span>
               </div>
             ) : (
-              <div className="relative border-l border-slate-100 pl-4 space-y-4">
+              <div className="space-y-2">
                 {parsedLogs.map((log, index) => (
-                  <div key={index} className="relative text-xs animate-in fade-in slide-in-from-left-1 duration-150">
-                    {/* Timeline Node Bullet */}
-                    <span className="absolute -left-[21px] top-1 flex h-2 w-2 items-center justify-center rounded-full bg-white border border-[#1B9C90]" />
-                    
-                    <div className="flex flex-col gap-0.5 text-left">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] font-bold text-[#67737C] tracking-tight">
+                  <div 
+                    key={index} 
+                    className="flex items-start gap-3 p-3 bg-white rounded-xl border border-[#DFE6EB]/50 hover:shadow-sm transition-all animate-in fade-in slide-in-from-top-1 duration-200"
+                  >
+                    {/* Icon wrapper based on log type */}
+                    <div className={cn(
+                      "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-sm",
+                      log.type === "engine" && "bg-teal-50 text-teal-600 border border-teal-100",
+                      log.type === "user" && "bg-blue-50 text-blue-600 border border-blue-100",
+                      log.type === "error" && "bg-red-50 text-red-600 border border-red-100",
+                      log.type === "info" && "bg-slate-50 text-slate-600 border border-slate-100",
+                    )}>
+                      {log.type === "engine" && <Cpu className="w-3.5 h-3.5" />}
+                      {log.type === "user" && <User className="w-3.5 h-3.5" />}
+                      {log.type === "error" && <AlertTriangle className="w-3.5 h-3.5" />}
+                      {log.type === "info" && <Activity className="w-3.5 h-3.5" />}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 space-y-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={cn(
+                          "text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md",
+                          log.type === "engine" && "bg-teal-50 text-teal-700",
+                          log.type === "user" && "bg-blue-50 text-blue-700",
+                          log.type === "error" && "bg-red-50 text-red-700",
+                          log.type === "info" && "bg-slate-100 text-slate-700",
+                        )}>
+                          {log.type === "engine" && "Sistem Otomatis"}
+                          {log.type === "user" && "Aksi Operator"}
+                          {log.type === "error" && "Kesalahan"}
+                          {log.type === "info" && "Info"}
+                        </span>
+                        <span className="font-mono text-[9px] font-bold text-slate-400">
                           {log.time}
                         </span>
-                        <span className="h-1 w-1 rounded-full bg-slate-300" />
-                        <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
-                          System Event
-                        </span>
                       </div>
-                      <p className="font-semibold text-[#13222D] leading-relaxed">
+                      <p className="text-[11px] font-semibold text-[#13222D] leading-relaxed wrap-break-word">
                         {log.message}
                       </p>
                     </div>

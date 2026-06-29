@@ -1,20 +1,31 @@
 export interface ActivityLogItem {
-  waktu: string;
-  user: string;
-  modul: string;
-  aksi: string;
+  id: string;
+  admin_id: string;
+  admin_name: string;
+  admin_email: string;
+  action: string;
+  module: string;
+  target_name: string;
+  target_id: string;
+  detail: string;
   status: string;
+  error_message: string | null;
+  ip_address: string;
+  user_agent: string;
+  metadata: Record<string, any>;
+  created_at: string;
 }
 
-export interface ActivityLogMetrics {
-  total_aktivitas: number;
-  aktivitas_berhasil: number;
-  aktivitas_gagal: number;
+export interface ActivityLogMeta {
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
 }
 
 export interface ActivityLogData {
-  metrik_aktivitas: ActivityLogMetrics;
-  riwayat_aktivitas: ActivityLogItem[];
+  data: ActivityLogItem[];
+  meta: ActivityLogMeta;
 }
 
 export interface ActivityLogResponse {
@@ -68,4 +79,26 @@ export interface UserDetail {
 export interface CreateUserResponse {
   message: string;
   user: UserDetail;
+}
+
+export interface CreateActivityLogRequest {
+  admin_id: string;
+  admin_name: string;
+  admin_email: string;
+  action: string;
+  module: string;
+  status: string;
+  target_name: string;
+  target_id?: string | null;
+  detail: string;
+  error_message?: string | null;
+  ip_address: string;
+  user_agent: string;
+  metadata?: Record<string, any>;
+}
+
+export interface CreateActivityLogResponse {
+  status: string;
+  message?: string;
+  data?: any;
 }

@@ -18,9 +18,19 @@ import {
   NotebookTabs,
   NotebookTextIcon,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { billingPosService } from "@/features/kasir/services/billing.pos.service";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuthContext();
+
+  const { data: outstandingResponse } = useQuery({
+    queryKey: ["outstandingInvoices"],
+    queryFn: () => billingPosService.getOutstandingInvoices(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const pendingCount = outstandingResponse?.data?.length || 0;
 
   const navMain = [
     {
@@ -42,6 +52,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Laporan",
       url: ROUTES.ADMIN.LAPORAN,
       icon: <NotebookTextIcon className="h-5 w-5" />,
+      badge: pendingCount,
     },
     {
       title: "Pengaturan",

@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { logActivity } from '@/features/analitik/utils/activityLogger';
 
 interface FinancialReportHeaderProps {
   selectedPeriod?: string;
@@ -97,49 +98,73 @@ export function FinancialReportHeader({
 
   const handleDownloadPDF = () => {
     const periodValue = selectedPeriod || `${activeYear}-${activeMonth}`;
-    if (onDownloadPDF) {
-      onDownloadPDF();
-    } else {
-      const file = new Blob(
-        [
-          `Laporan Keuangan\n\nPeriode: ${periodValue}\nTanggal Export: ${new Date().toLocaleDateString("id-ID")}`,
-        ],
-        { type: "text/plain" }
-      );
-      const fileURL = URL.createObjectURL(file);
-      
-      const iframe = document.createElement("iframe");
-      iframe.style.position = "fixed";
-      iframe.style.width = "0px";
-      iframe.style.height = "0px";
-      iframe.style.border = "none";
-      iframe.style.top = "-9999px";
-      iframe.src = fileURL;
-      document.body.appendChild(iframe);
+    const periodLabel = `${activeMonthLabel} ${activeYear}`;
 
-      iframe.onload = () => {
-        try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-        } catch (e) {
-          console.warn("Gagal membuka print dialog lewat iframe:", e);
-          window.open(fileURL, "_blank");
-        }
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-          URL.revokeObjectURL(fileURL);
-        }, 3000);
-      };
-    }
+    // 1. Tembak API log pertama kali
+    logActivity({
+      action: 'EXPORT_PDF',
+      module: 'LAPORAN',
+      detail: `Export PDF laporan keuangan periode: ${periodLabel}`,
+      target_name: 'Laporan Keuangan',
+    });
+
+    // 2. Beri waktu agar fetch terselesaikan sebelum browser hang oleh dialog print
+    setTimeout(() => {
+      if (onDownloadPDF) {
+        onDownloadPDF();
+      } else {
+        const file = new Blob(
+          [
+            `Laporan Keuangan\n\nPeriode: ${periodValue}\nTanggal Export: ${new Date().toLocaleDateString("id-ID")}`,
+          ],
+          { type: "text/plain" }
+        );
+        const fileURL = URL.createObjectURL(file);
+        
+        const iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.width = "0px";
+        iframe.style.height = "0px";
+        iframe.style.border = "none";
+        iframe.style.top = "-9999px";
+        iframe.src = fileURL;
+        document.body.appendChild(iframe);
+
+        iframe.onload = () => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch (e) {
+            console.warn("Gagal membuka print dialog lewat iframe:", e);
+            window.open(fileURL, "_blank");
+          }
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            URL.revokeObjectURL(fileURL);
+          }, 3000);
+        };
+      }
+    }, 300);
   };
 
   const handleExportExcel = () => {
     const periodValue = selectedPeriod || `${activeYear}-${activeMonth}`;
-    if (onExportExcel) {
-      onExportExcel();
-    } else {
-      alert(`Export Excel untuk periode ${periodValue} akan segera dikembangkan`);
-    }
+    
+    // Log pertama kali
+    logActivity({
+      action: 'EXPORT_EXCEL',
+      module: 'LAPORAN',
+      detail: `Export Excel laporan keuangan periode: ${activeMonthLabel} ${activeYear}`,
+      target_name: 'Laporan Keuangan',
+    });
+
+    setTimeout(() => {
+      if (onExportExcel) {
+        onExportExcel();
+      } else {
+        alert(`Export Excel untuk periode ${periodValue} akan segera dikembangkan`);
+      }
+    }, 300);
   };
 
   const activeMonthLabel = monthOptions.find((m) => m.value === activeMonth)?.label || "";
